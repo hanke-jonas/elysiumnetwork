@@ -34,8 +34,46 @@
 
 <script>
   var SEARCH_INDEX = {{ searchIndex | dump | safe }};
+  var FULL_INDEX = null;
+  var fullIndexPromise = null;
+  var lastQuery = '';
   var searchActiveIndex = -1;
   var searchLastResults = [];
+
+  function loadFullIndex(){
+    if (!fullIndexPromise){
+      fullIndexPromise = fetch('/search-index.json')
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+          FULL_INDEX = data;
+          if (lastQuery.trim()) filterSearch(lastQuery);
+          return data;
+        })
+        .catch(function(){ return null; });
+    }
+    return fullIndexPromise;
+  }
+
+  function groupForUrl(url){
+    for (var i = 0; i < SEARCH_INDEX.length; i++){
+      if (SEARCH_INDEX[i].url === url) return SEARCH_INDEX[i].group;
+    }
+    var seg = url.replace(/^\/|\/$/g, '');
+    return seg ? seg.toUpperCase() : 'HOME';
+  }
+
+  function excerpt(text, words){
+    var lower = text.toLowerCase();
+    var pos = -1;
+    for (var i = 0; i < words.length; i++){
+      var p = lower.indexOf(words[i]);
+      if (p !== -1 && (pos === -1 || p < pos)) pos = p;
+    }
+    if (pos === -1) return text.slice(0, 120) + (text.length > 120 ? '…' : '');
+    var start = Math.max(0, pos - 40);
+    var end = Math.min(text.length, pos + 100);
+    return (start > 0 ? '…' : '') + text.slice(start, end).trim() + (end < text.length ? '…' : '');
+  }
 
   var searchTrigger = null, searchUntrap = null;
   function openSearch(trigger){
@@ -45,7 +83,9 @@
     document.body.style.overflow = 'hidden';
     var input = document.getElementById('searchInput');
     input.value = '';
+    lastQuery = '';
     renderSearchResults(SEARCH_INDEX);
+    loadFullIndex();
     if (typeof trapFocus === 'function') searchUntrap = trapFocus(o);
     // Focus synchronously within the click handler's call stack — a
     // setTimeout deferral here (even 0ms) breaks the user-gesture
@@ -73,18 +113,42 @@
     }).join('');
   }
   function filterSearch(q){
-    q = q.trim().toLowerCase();
-    if (!q) return renderSearchResults(SEARCH_INDEX);
-    var scored = SEARCH_INDEX
+    lastQuery = q;
+    var trimmed = q.trim().toLowerCase();
+    if (!trimmed) return renderSearchResults(SEARCH_INDEX);
+    var words = trimmed.split(/\s+/).filter(Boolean);
+
+    if (FULL_INDEX){
+      var scored = FULL_INDEX
+        .map(function(it){
+          var hay = (it.title + ' ' + it.text).toLowerCase();
+          var allMatch = words.every(function(w){ return hay.indexOf(w) !== -1; });
+          if (!allMatch) return null;
+          var titleHit = it.title.toLowerCase().indexOf(words[0]) !== -1;
+          var firstPos = hay.indexOf(words[0]);
+          return {
+            score: (titleHit ? 0 : 1000) + (firstPos === -1 ? 0 : firstPos),
+            result: { url: it.url, title: it.title, group: groupForUrl(it.url), blurb: excerpt(it.text, words) }
+          };
+        })
+        .filter(Boolean)
+        .sort(function(a,b){ return a.score - b.score; })
+        .map(function(x){ return x.result; });
+      renderSearchResults(scored);
+      return;
+    }
+
+    // Full index still loading — fall back to the small curated blurb list.
+    var fallback = SEARCH_INDEX
       .map(function(it){
         var hay = (it.title + ' ' + it.blurb + ' ' + it.group).toLowerCase();
-        var idx = hay.indexOf(q);
-        return { it: it, score: idx === -1 ? -1 : (hay.indexOf(it.title.toLowerCase()) === 0 ? 0 : idx) };
+        var idx = hay.indexOf(trimmed);
+        return { it: it, score: idx === -1 ? -1 : idx };
       })
       .filter(function(x){ return x.score !== -1; })
       .sort(function(a,b){ return a.score - b.score; })
       .map(function(x){ return x.it; });
-    renderSearchResults(scored);
+    renderSearchResults(fallback);
   }
   function moveSearchActive(delta){
     var links = document.querySelectorAll('.search-result');

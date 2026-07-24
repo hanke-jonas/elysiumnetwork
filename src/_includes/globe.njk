@@ -29,7 +29,7 @@
           </div>
         </div>
         <div class="absolute top-4 left-4 eyebrow bg-paper border-2 border-ink px-2.5 py-1 rounded-full">Drag to rotate</div>
-        <div id="globeConfirm" class="hidden absolute z-30 left-1/2 bottom-6 -translate-x-1/2 card p-5 w-[min(90%,20rem)] text-center">
+        <div id="globeConfirm" class="hidden absolute z-30 left-0 right-0 mx-auto bottom-6 card p-5 w-[min(90%,20rem)] text-center">
           <span id="gc-flag" class="text-3xl leading-none"></span>
           <p id="gc-name" class="font-display text-lg font-bold mt-2"></p>
           <p class="text-sm text-muted mt-1">Open this branch's page?</p>
@@ -165,7 +165,29 @@ world.add(globe);
 // heaviest and most failure-prone part of the whole component. This has
 // neither, on any device.
 const MAP_OCEAN = '#AADAFF', MAP_LAND = '#F2EFE9', MAP_BORDER = '#9CA3AF';
-function buildRoadmapTexture(geo, branchIds) {
+
+// world-atlas's Russia feature (id 643, fully excluded below) merges in the
+// Crimean peninsula as one of its polygons rather than counting it under
+// Ukraine (804) — checked directly against the fetched data. Since Crimea's
+// polygon is a small, disconnected ring far from mainland Russia, isolating
+// it by its own bounding box (rather than a hardcoded array index, which
+// could shift if the CDN data changes) lets it be drawn as Ukrainian
+// territory instead of silently vanishing into open ocean.
+function findCrimeaPolygon(geo) {
+  const russia = geo.features.find(function(f) { return String(f.id) === '643'; });
+  if (!russia || !russia.geometry) return null;
+  const polys = russia.geometry.type === 'MultiPolygon' ? russia.geometry.coordinates : (russia.geometry.type === 'Polygon' ? [russia.geometry.coordinates] : []);
+  for (const poly of polys) {
+    const ring = poly[0];
+    const lons = ring.map(function(p) { return p[0]; }), lats = ring.map(function(p) { return p[1]; });
+    const minLon = Math.min.apply(null, lons), maxLon = Math.max.apply(null, lons);
+    const minLat = Math.min.apply(null, lats), maxLat = Math.max.apply(null, lats);
+    if (minLon > 29 && maxLon < 39 && minLat > 43 && maxLat < 47) return poly;
+  }
+  return null;
+}
+
+function buildRoadmapTexture(geo, branchIds, crimea) {
   const W = 2048, H = 1024;
   const c = document.createElement('canvas'); c.width = W; c.height = H;
   const ctx = c.getContext('2d');
@@ -178,6 +200,7 @@ function buildRoadmapTexture(geo, branchIds) {
     if (EXCLUDED_IDS.indexOf(id) !== -1 || !f.geometry) return; // Russia & Belarus: left as open water
     const branch = branchIds[id];
     const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : (f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : []);
+    if (id === '804' && crimea) polys.push(crimea);
     polys.forEach(function(poly) {
       ctx.beginPath();
       poly.forEach(function(ring) {
@@ -255,8 +278,9 @@ fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
   .then(r => r.json())
   .then(function(worldData){
     const geo = topojson.feature(worldData, worldData.objects.countries);
+    const crimea = findCrimeaPolygon(geo);
 
-    globeMat.map = buildRoadmapTexture(geo, branchIds);
+    globeMat.map = buildRoadmapTexture(geo, branchIds, crimea);
     globeMat.color.set(0xffffff);
     globeMat.needsUpdate = true;
 
@@ -268,12 +292,11 @@ fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
       if (!branch) return;
 
       const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : (f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : []);
+      if (id === '804' && crimea) polys.push(crimea);
 
       // Bold accent outline, drawn twice at slightly different radii for a
       // thicker line than a single 1px WebGL line would give, so home
-      // countries pop clearly on the map. Ukraine's feature here already
-      // includes Crimea (world-atlas follows the internationally
-      // recognised boundary), so no separate handling needed.
+      // countries pop clearly on the map.
       const outline = new THREE.LineBasicMaterial({ color: new THREE.Color(branch.accent), transparent: true, opacity: 1 });
       [1.015, 1.018].forEach(function(r){
         polys.forEach(function(poly){

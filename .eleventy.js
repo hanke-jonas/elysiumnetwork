@@ -1,3 +1,6 @@
+const fs = require('fs');
+const path = require('path');
+
 const ICONS = {
   instagram: '<rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>',
   facebook: '<path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>',
@@ -35,10 +38,13 @@ module.exports = function (eleventyConfig) {
 
   eleventyConfig.addShortcode('year', () => String(new Date().getUTCFullYear()));
 
-  // Full-text search index: strips every rendered page down to plain text
-  // (title + real body copy, not layout chrome) so the search bar can match
-  // any word anywhere on any page, not just a short hand-written blurb.
-  eleventyConfig.addFilter('toSearchIndex', function (items) {
+  eleventyConfig.addPassthroughCopy('src/robots.txt');
+
+  // Full-text search index, built from the final rendered HTML (results is
+  // guaranteed complete here, unlike collections.all mid-build) so the
+  // search bar can match any word anywhere on any page's real body copy —
+  // not just a short hand-written blurb.
+  eleventyConfig.on('eleventy.after', ({ dir, results }) => {
     const stripHtml = (html) =>
       String(html || '')
         .replace(/<script[\s\S]*?<\/script>/gi, ' ')
@@ -48,18 +54,19 @@ module.exports = function (eleventyConfig) {
         .replace(/\s+/g, ' ')
         .trim();
 
-    const pages = items
-      .filter((item) => item.url)
-      .map((item) => ({
-        url: item.url,
-        title: (item.data && item.data.title) || item.url,
-        text: stripHtml(item.templateContent),
-      }));
+    const pages = results
+      .filter((r) => r.url && r.content)
+      .map((r) => {
+        const titleMatch = r.content.match(/<title>([\s\S]*?)<\/title>/i);
+        const title = titleMatch ? stripHtml(titleMatch[1]) : r.url;
+        const bodyMatch = r.content.match(/<!--SEARCH-CONTENT-START-->([\s\S]*?)<!--SEARCH-CONTENT-END-->/);
+        const text = stripHtml(bodyMatch ? bodyMatch[1] : r.content);
+        return { url: r.url, title, text };
+      })
+      .filter((p) => p.text.length > 0);
 
-    return JSON.stringify(pages);
+    fs.writeFileSync(path.join(dir.output, 'search-index.json'), JSON.stringify(pages));
   });
-
-  eleventyConfig.addPassthroughCopy('src/robots.txt');
 
   return {
     dir: { input: 'src', output: '_site', includes: '_includes', data: '_data' },
