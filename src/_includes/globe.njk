@@ -33,7 +33,7 @@
           <span id="gc-flag" class="text-3xl leading-none"></span>
           <p id="gc-name" class="font-display text-lg font-bold mt-2"></p>
           <p class="text-sm text-muted mt-1">Open this branch's page?</p>
-          <div class="mt-4 flex gap-2 justify-center">
+          <div class="mt-4 flex flex-wrap gap-2 justify-center">
             <button id="gc-open" class="btn btn-accent">Open page {% icon "arrow-ur", "w-4 h-4" %}</button>
             <button id="gc-cancel" class="btn">Stay here</button>
           </div>
@@ -121,7 +121,8 @@ function equirectUVs(geo) {
   const uv = geo.attributes.uv;
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
-    const phi = Math.acos(Math.max(-1, Math.min(1, y)));
+    const radius = Math.sqrt(x * x + y * y + z * z) || 1;
+    const phi = Math.acos(Math.max(-1, Math.min(1, y / radius)));
     const theta = Math.atan2(z, -x);
     const u = (theta < 0 ? theta + 2 * Math.PI : theta) / (2 * Math.PI);
     const v = phi / Math.PI;
@@ -146,7 +147,7 @@ world.add(globe);
 loader.load(TEX_BASE + 'earth_specular_2048.jpg', function(tex){
   tex.flipY = false;
   globeMat.specularMap = tex; globeMat.specular.set(0x333333); globeMat.needsUpdate = true;
-});
+}, undefined, function(err){ console.error('Elysium+ globe: failed to load specular map.', err); });
 
 // Load the real Earth photo, then paint over Russia & Belarus with a
 // matching ocean tone before using it as the sphere's texture — a
@@ -205,7 +206,7 @@ world.add(clouds);
 loader.load(TEX_BASE + 'earth_clouds_1024.png', function(tex){
   tex.flipY = false;
   cloudMat.map = tex; cloudMat.opacity = .55; cloudMat.needsUpdate = true;
-});
+}, undefined, function(err){ console.error('Elysium+ globe: failed to load cloud map.', err); });
 
 const gratMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: .1 });
 for (let lat = -60; lat <= 60; lat += 30) {
@@ -218,6 +219,12 @@ for (let lon = -180; lon < 180; lon += 30) {
 }
 
 const controls = new OrbitControls(camera, renderer.domElement);
+// OrbitControls' constructor unconditionally sets touch-action:none on the
+// canvas itself (a more specific element than #globeHost), which would
+// permanently block page scrolling on touch devices. Override it back to
+// pan-y here; the pointer handlers below toggle it to 'none' only while a
+// drag on the canvas is actually in progress.
+renderer.domElement.style.touchAction = 'pan-y';
 controls.enablePan = false;
 controls.minDistance = 1.7; controls.maxDistance = 4.5;
 controls.autoRotate = true; controls.autoRotateSpeed = 0.6;
@@ -235,6 +242,7 @@ resize();
 (function loop(){ requestAnimationFrame(loop); controls.update(); clouds.rotation.y += 0.0006; renderer.render(scene, camera); })();
 
 const markers = [];
+let markersReady = false; // true once real positions are set (world-atlas resolved)
 const branchIds = {};
 BRANCHES.forEach(function(b){
   branchIds[b.id] = b;
@@ -246,21 +254,21 @@ BRANCHES.forEach(function(b){
   markers.push(sp);
 });
 
-Promise.all([
-  loadEarthImage(),
-  fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(r => r.json()),
-]).then(function(results){
-  const img = results[0];
-  const geo = topojson.feature(results[1], results[1].objects.countries);
-  const excludedFeatures = geo.features.filter(function(f){ return EXCLUDED_IDS.indexOf(String(f.id)) !== -1; });
+// These two concerns are deliberately independent promise chains: marker
+// positioning must succeed even if the (more failure-prone, cross-origin
+// image + pixel-read) texture masking step fails for any reason. Coupling
+// them previously meant one failure silently broke both — every marker
+// stuck at the origin (so every click focused on a meaningless direction)
+// AND Russia/Belarus staying visible because the fallback skipped masking
+// entirely.
+const worldAtlasPromise = fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(r => r.json());
 
-  globeMat.map = maskExcludedCountries(img, excludedFeatures);
-  globeMat.color.set(0xffffff);
-  globeMat.needsUpdate = true;
+worldAtlasPromise.then(function(worldData){
+  const geo = topojson.feature(worldData, worldData.objects.countries);
 
   geo.features.forEach(function(f){
     const id = String(f.id);
-    if (EXCLUDED_IDS.indexOf(id) !== -1 || !f.geometry) return; // Russia & Belarus: masked out, not outlined either
+    if (EXCLUDED_IDS.indexOf(id) !== -1 || !f.geometry) return; // Russia & Belarus: no outline either
 
     const branch = branchIds[id];
     if (!branch) return;
@@ -287,16 +295,30 @@ Promise.all([
     if (sp) sp.position.copy(llToVec3(centroid[0], centroid[1], 1.05));
   });
 }).catch(function(err){
-  console.error('Elysium+ globe: failed to load earth texture or country data.', err);
+  console.error('Elysium+ globe: failed to load country outline data — markers stay at their default position and clicking them will not focus correctly.', err);
+});
+
+Promise.all([loadEarthImage(), worldAtlasPromise]).then(function(results){
+  const img = results[0];
+  const geo = topojson.feature(results[1], results[1].objects.countries);
+  const excludedFeatures = geo.features.filter(function(f){ return EXCLUDED_IDS.indexOf(String(f.id)) !== -1; });
+  globeMat.map = maskExcludedCountries(img, excludedFeatures);
+  globeMat.color.set(0xffffff);
+  globeMat.needsUpdate = true;
+}).catch(function(err){
+  console.error('Elysium+ globe: failed to mask Russia/Belarus out of the earth texture, falling back to the unmasked photo.', err);
   loader.load(TEX_BASE + 'earth_atmos_2048.jpg', function(tex){
     tex.flipY = false; tex.colorSpace = THREE.SRGBColorSpace;
     globeMat.map = tex; globeMat.color.set(0xffffff); globeMat.needsUpdate = true;
-  });
+  }, undefined, function(err2){ console.error('Elysium+ globe: fallback earth texture also failed to load.', err2); });
 });
 
 const ray = new THREE.Raycaster();
 const ptr = new THREE.Vector2();
-let downPos = null, downTime = 0;
+let downPos = null, downTime = 0, downPointerId = null;
+// Tracks concurrent touches so a pinch's first-finger release doesn't reset
+// touch-action while the second finger is still down.
+let activePointers = 0;
 
 function ndc(ev) {
   const r = renderer.domElement.getBoundingClientRect();
@@ -304,8 +326,18 @@ function ndc(ev) {
   ptr.y = -((ev.clientY - r.top) / r.height) * 2 + 1;
 }
 
-renderer.domElement.addEventListener('pointerdown', function(e){ downPos = [e.clientX, e.clientY]; downTime = Date.now(); host.style.touchAction = 'none'; });
-renderer.domElement.addEventListener('pointercancel', function(){ host.style.touchAction = 'pan-y'; });
+renderer.domElement.addEventListener('pointerdown', function(e){
+  activePointers++;
+  downPos = [e.clientX, e.clientY];
+  downTime = Date.now();
+  downPointerId = e.pointerId;
+  renderer.domElement.style.touchAction = 'none';
+});
+renderer.domElement.addEventListener('pointercancel', function(e){
+  activePointers = Math.max(0, activePointers - 1);
+  if (e.pointerId === downPointerId) { downPos = null; downTime = 0; downPointerId = null; }
+  if (activePointers === 0) renderer.domElement.style.touchAction = 'pan-y';
+});
 
 renderer.domElement.addEventListener('pointermove', function(e){
   ndc(e);
@@ -331,9 +363,15 @@ let spinAnim = null;
 function focusOn(marker) {
   controls.autoRotate = false;
   document.getElementById('globeTip').classList.add('hidden');
+  document.getElementById('globeConfirm').classList.add('hidden');
 
   const worldDir = marker.getWorldPosition(new THREE.Vector3()).normalize();
-  const faceCamera = new THREE.Vector3(0, 0, 1);
+  // The camera keeps drifting due to autoRotate/user drag, so "face the
+  // camera" has to be computed from where the camera actually is right now
+  // — a fixed axis here was the bug: it only matched right at page load,
+  // and drifted further off (looking "random") the longer autoRotate ran
+  // before the click.
+  const faceCamera = camera.position.clone().normalize();
   const qDelta = new THREE.Quaternion().setFromUnitVectors(worldDir, faceCamera);
   const qFrom = world.quaternion.clone();
   const qTo = qDelta.multiply(qFrom);
@@ -359,12 +397,27 @@ function showConfirm(data) {
   document.getElementById('gc-cancel').onclick = function(){ panel.classList.add('hidden'); };
 }
 
+// Let Escape or a click/tap outside the confirm card dismiss it too, instead
+// of the "Stay here" button being the only way out.
+document.addEventListener('keydown', function(e){
+  if (e.key !== 'Escape') return;
+  const panel = document.getElementById('globeConfirm');
+  if (!panel.classList.contains('hidden')) panel.classList.add('hidden');
+});
+document.addEventListener('pointerdown', function(e){
+  const panel = document.getElementById('globeConfirm');
+  if (panel.classList.contains('hidden')) return;
+  if (!panel.contains(e.target)) panel.classList.add('hidden');
+});
+
 renderer.domElement.addEventListener('pointerup', function(e){
-  host.style.touchAction = 'pan-y';
-  if (!downPos) return;
+  activePointers = Math.max(0, activePointers - 1);
+  if (activePointers === 0) renderer.domElement.style.touchAction = 'pan-y';
+  if (!downPos || e.pointerId !== downPointerId) return;
   const moved = Math.hypot(e.clientX - downPos[0], e.clientY - downPos[1]);
   const quick = Date.now() - downTime < 500;
   downPos = null;
+  downPointerId = null;
   if (moved > 6 || !quick) return;
   ndc(e);
   ray.setFromCamera(ptr, camera);

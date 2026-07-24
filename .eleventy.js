@@ -35,6 +35,30 @@ module.exports = function (eleventyConfig) {
 
   eleventyConfig.addShortcode('year', () => String(new Date().getUTCFullYear()));
 
+  // Full-text search index: strips every rendered page down to plain text
+  // (title + real body copy, not layout chrome) so the search bar can match
+  // any word anywhere on any page, not just a short hand-written blurb.
+  eleventyConfig.addFilter('toSearchIndex', function (items) {
+    const stripHtml = (html) =>
+      String(html || '')
+        .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+        .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/&quot;/g, '"')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    const pages = items
+      .filter((item) => item.url)
+      .map((item) => ({
+        url: item.url,
+        title: (item.data && item.data.title) || item.url,
+        text: stripHtml(item.templateContent),
+      }));
+
+    return JSON.stringify(pages);
+  });
+
   eleventyConfig.addPassthroughCopy('src/robots.txt');
 
   return {
