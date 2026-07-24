@@ -105,7 +105,7 @@ tailwind.config = { theme: { extend: {
   .mmenu.open{ opacity:1; visibility:visible; }
   .mmenu-link{ font-family:"Bricolage Grotesque",sans-serif; font-weight:800; font-size:clamp(2rem,9vw,3rem); letter-spacing:-.02em; color:var(--ink); display:flex; align-items:baseline; gap:1rem; padding:.55rem 0; border-bottom:2px solid var(--ink); }
   .mmenu-link .idx{ font-family:"JetBrains Mono",monospace; font-size:.9rem; color:var(--coral-ink); font-weight:600; }
-  .mmenu-sub{ font-family:"JetBrains Mono",monospace; font-size:.85rem; padding-left:2.6rem; margin-top:-.3rem; margin-bottom:.6rem; }
+  .mmenu-sub{ font-family:"JetBrains Mono",monospace; font-size:.85rem; padding-left:2.6rem; margin-top:.7rem; margin-bottom:.9rem; }
 
   .heart-cursor{ position:fixed; z-index:200; pointer-events:none; width:16px; height:16px; will-change:transform,opacity; animation:heart-pop .7s ease-out forwards; }
   @keyframes heart-pop{ 0%{ transform:translate(-50%,-50%) scale(.4) rotate(var(--r,0deg)); opacity:.9; } 100%{ transform:translate(-50%,-50%) scale(1.1) translateY(-22px) rotate(var(--r,0deg)); opacity:0; } }
@@ -180,7 +180,7 @@ tailwind.config = { theme: { extend: {
 {% include "search.njk" %}
 
 <div class="mmenu" id="mmenu" role="dialog" aria-modal="true" aria-label="Navigation">
-  <div class="max-w-[1400px] mx-auto px-5 sm:px-8 py-6">
+  <div class="max-w-[1400px] mx-auto px-5 sm:px-8 pt-6" style="padding-bottom:max(2.5rem, env(safe-area-inset-bottom, 0px) + 2rem);">
     <div class="flex items-center justify-between h-10">
       <span class="font-display text-xl font-extrabold tracking-tight">Elysium<span style="color:var(--coral)">+</span></span>
       <button class="inline-grid place-items-center w-11 h-11 rounded-lg border-2 border-ink" onclick="closeMMenu()" aria-label="Close menu">{% icon "close", "w-5 h-5" %}</button>
