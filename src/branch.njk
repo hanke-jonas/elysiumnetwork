@@ -71,33 +71,33 @@ eleventyComputed:
       <div class="rounded-2xl border-2 border-ink overflow-hidden card">
         <div class="h-2 border-b-2 border-ink" style="background:{{ accent }}"></div>
         <div class="p-7">
-          <p class="eyebrow text-muted mb-5">Organisation details</p>
+          <h2 class="eyebrow text-muted mb-5">Organisation details</h2>
           <dl class="space-y-4">
             <div class="flex gap-3">
               <span class="mt-0.5 opacity-45">{% icon "id", "w-5 h-5" %}</span>
-              <div class="min-w-0"><dt class="eyebrow opacity-45">Legal name</dt><dd class="leading-snug break-words">{{ b.name_native }}</dd></div>
+              <div class="min-w-0"><dt class="eyebrow opacity-70">Legal name</dt><dd class="leading-snug break-words">{{ b.name_native }}</dd></div>
             </div>
             <div class="flex gap-3">
               <span class="mt-0.5 opacity-45">{% icon "id", "w-5 h-5" %}</span>
-              <div class="min-w-0"><dt class="eyebrow opacity-45">Erasmus+ OID</dt><dd class="leading-snug break-words mono">{{ b.oid }}</dd></div>
+              <div class="min-w-0"><dt class="eyebrow opacity-70">Erasmus+ OID</dt><dd class="leading-snug break-words mono">{{ b.oid }}</dd></div>
             </div>
             <div class="flex gap-3">
               <span class="mt-0.5 opacity-45">{% icon "pin", "w-5 h-5" %}</span>
-              <div class="min-w-0"><dt class="eyebrow opacity-45">Type</dt><dd class="leading-snug break-words">{{ b.type }}</dd></div>
+              <div class="min-w-0"><dt class="eyebrow opacity-70">Type</dt><dd class="leading-snug break-words">{{ b.type }}</dd></div>
             </div>
             <div class="flex gap-3">
               <span class="mt-0.5 opacity-45">{% icon "pin", "w-5 h-5" %}</span>
-              <div class="min-w-0"><dt class="eyebrow opacity-45">Location</dt><dd class="leading-snug break-words">{{ b.address }}</dd></div>
+              <div class="min-w-0"><dt class="eyebrow opacity-70">Location</dt><dd class="leading-snug break-words">{{ b.address }}</dd></div>
             </div>
             {% if b.phone %}
             <div class="flex gap-3">
               <span class="mt-0.5 opacity-45">{% icon "pin", "w-5 h-5" %}</span>
-              <div class="min-w-0"><dt class="eyebrow opacity-45">Phone</dt><dd class="leading-snug break-words">{{ b.phone }}</dd></div>
+              <div class="min-w-0"><dt class="eyebrow opacity-70">Phone</dt><dd class="leading-snug break-words">{{ b.phone }}</dd></div>
             </div>
             {% endif %}
             <div class="flex gap-3">
               <span class="mt-0.5 opacity-45">{% icon "mail", "w-5 h-5" %}</span>
-              <div class="min-w-0"><dt class="eyebrow opacity-45">Email</dt><dd class="leading-snug break-words"><a href="mailto:{{ b.email }}" class="hover:underline font-medium">{{ b.email }}</a></dd></div>
+              <div class="min-w-0"><dt class="eyebrow opacity-70">Email</dt><dd class="leading-snug break-words"><a href="mailto:{{ b.email }}" class="hover:underline font-medium">{{ b.email }}</a></dd></div>
             </div>
           </dl>
           {% if b.website %}

@@ -1,9 +1,9 @@
 <section class="relative bg-paper border-t-2 border-b-2 border-ink overflow-hidden">
   <div class="max-w-[1400px] mx-auto px-5 sm:px-8 py-16 sm:py-24 grid lg:grid-cols-12 gap-10 items-start">
     <div class="lg:col-span-4 order-2 lg:order-1">
-      <p class="eyebrow" style="color:var(--coral)">Live &amp; interactive</p>
+      <p class="eyebrow" style="color:var(--coral-ink)">Live &amp; interactive</p>
       <h2 class="h-sec mt-3">One network, <mark class="m-blue">four countries</mark></h2>
-      <p class="mt-5 text-muted leading-relaxed">Drag the globe to spin it, scroll to zoom. Click any of the four lit-up countries to open that branch's page.</p>
+      <p class="mt-5 text-muted leading-relaxed">Drag the globe to spin it, scroll to zoom. Click any of the four lit-up countries to spin there and open its page.</p>
 
       <div class="mt-7 space-y-2.5">
         {% for b in site.branches %}
@@ -29,6 +29,15 @@
           </div>
         </div>
         <div class="absolute top-4 left-4 eyebrow bg-paper border-2 border-ink px-2.5 py-1 rounded-full">Drag to rotate</div>
+        <div id="globeConfirm" class="hidden absolute z-30 left-1/2 bottom-6 -translate-x-1/2 card p-5 w-[min(90%,20rem)] text-center">
+          <span id="gc-flag" class="text-3xl leading-none"></span>
+          <p id="gc-name" class="font-display text-lg font-bold mt-2"></p>
+          <p class="text-sm text-muted mt-1">Open this branch's page?</p>
+          <div class="mt-4 flex gap-2 justify-center">
+            <button id="gc-open" class="btn btn-accent">Open page {% icon "arrow-ur", "w-4 h-4" %}</button>
+            <button id="gc-cancel" class="btn">Stay here</button>
+          </div>
+        </div>
         <noscript><p class="p-8">Enable JavaScript to explore the interactive globe.</p></noscript>
       </div>
     </div>
@@ -91,8 +100,8 @@ function dotTexture(color) {
   return new THREE.CanvasTexture(c);
 }
 
-const OCEAN = '#9DC3E6';
-const LAND_PALETTE = ['#E8D9B5', '#C9E4CA', '#F3C6A5', '#D9C6E4', '#F6E27F', '#B7D6D2', '#E9B4B0', '#C7D6E8'];
+const OCEAN = '#3F5AA8';
+const LAND_PALETTE = ['#7C93D6', '#FF6B54', '#FFC93C', '#59B37B', '#B478D9'];
 function landColor(id) {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
@@ -112,7 +121,7 @@ function buildWorldTexture(geo, branchIds) {
 
   geo.features.forEach(function(f) {
     const id = String(f.id);
-    if (EXCLUDED_IDS.indexOf(id) !== -1) return;
+    if (EXCLUDED_IDS.indexOf(id) !== -1 || !f.geometry) return;
     const branch = branchIds[id];
     const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : (f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : []);
     ctx.fillStyle = branch ? branch.accent : landColor(id);
@@ -164,18 +173,23 @@ const sphereGeo = new THREE.SphereGeometry(1, 96, 96);
   }
   uv.needsUpdate = true;
 }
-const globeMat = new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 2 });
+// Everything spinnable lives in one group, so focusing on a marker can rotate
+// the whole world (globe + lines + markers) as a single rigid body.
+const world = new THREE.Group();
+scene.add(world);
+
+const globeMat = new THREE.MeshPhongMaterial({ color: 0x3F5AA8, shininess: 2 });
 const globe = new THREE.Mesh(sphereGeo, globeMat);
-scene.add(globe);
+world.add(globe);
 
 const gratMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: .12 });
 for (let lat = -60; lat <= 60; lat += 30) {
   const pts = []; for (let lon = -180; lon <= 180; lon += 4) pts.push(llToVec3(lon, lat, 1.002));
-  scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), gratMat));
+  world.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), gratMat));
 }
 for (let lon = -180; lon < 180; lon += 30) {
   const pts = []; for (let lat = -90; lat <= 90; lat += 4) pts.push(llToVec3(lon, lat, 1.002));
-  scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), gratMat));
+  world.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), gratMat));
 }
 
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -202,8 +216,8 @@ BRANCHES.forEach(function(b){
   const mat = new THREE.SpriteMaterial({ map: dotTexture(b.accent), depthTest: true });
   const sp = new THREE.Sprite(mat);
   sp.scale.set(0.13, 0.13, 1);
-  sp.userData = { kind: 'branch', id: b.id, name: b.name, slug: b.slug };
-  scene.add(sp);
+  sp.userData = { kind: 'branch', id: b.id, name: b.name, slug: b.slug, flag: b.flag };
+  world.add(sp);
   markers.push(sp);
 });
 
@@ -217,7 +231,7 @@ fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
 
     geo.features.forEach(function(f){
       const id = String(f.id);
-      if (EXCLUDED_IDS.indexOf(id) !== -1) return; // Russia & Belarus: not drawn at all
+      if (EXCLUDED_IDS.indexOf(id) !== -1 || !f.geometry) return; // Russia & Belarus: not drawn at all
 
       const branch = branchIds[id];
       const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : (f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : []);
@@ -228,7 +242,7 @@ fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
         polys.forEach(function(poly){
           poly.forEach(function(ring){
             const pts = ring.map(function(c){ return llToVec3(c[0], c[1], 1.004); });
-            scene.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts), outline));
+            world.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts), outline));
           });
         });
         const centroid = featureCentroid(f.geometry);
@@ -237,7 +251,7 @@ fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
       }
     });
   })
-  .catch(function(){ /* globe still renders as a plain ocean-colored sphere if world data fails to load */ });
+  .catch(function(err){ console.error('Elysium+ globe: failed to load/render world map, showing plain ocean sphere.', err); });
 
 const ray = new THREE.Raycaster();
 const ptr = new THREE.Vector2();
@@ -260,7 +274,7 @@ renderer.domElement.addEventListener('pointermove', function(e){
   if (hit) {
     renderer.domElement.style.cursor = 'pointer';
     document.getElementById('gtip-name').textContent = '📍 ' + hit.object.userData.name;
-    document.getElementById('gtip-hint').textContent = 'Click to open this branch';
+    document.getElementById('gtip-hint').textContent = 'Click to focus';
     tip.classList.remove('hidden');
     tip.style.left = Math.min(e.clientX - host.getBoundingClientRect().left + 14, host.clientWidth - 170) + 'px';
     tip.style.top = Math.max(e.clientY - host.getBoundingClientRect().top - 40, 8) + 'px';
@@ -269,6 +283,40 @@ renderer.domElement.addEventListener('pointermove', function(e){
     tip.classList.add('hidden');
   }
 });
+
+// Spin the whole world so the clicked marker faces the camera, then ask
+// before navigating away — rather than redirecting immediately on click.
+let spinAnim = null;
+function focusOn(marker) {
+  controls.autoRotate = false;
+  document.getElementById('globeTip').classList.add('hidden');
+
+  const worldDir = marker.getWorldPosition(new THREE.Vector3()).normalize();
+  const faceCamera = new THREE.Vector3(0, 0, 1);
+  const qDelta = new THREE.Quaternion().setFromUnitVectors(worldDir, faceCamera);
+  const qFrom = world.quaternion.clone();
+  const qTo = qDelta.multiply(qFrom);
+
+  if (spinAnim) cancelAnimationFrame(spinAnim);
+  const start = performance.now(), duration = 700;
+  function step(now) {
+    const t = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - t, 3);
+    world.quaternion.slerpQuaternions(qFrom, qTo, eased);
+    if (t < 1) { spinAnim = requestAnimationFrame(step); }
+    else { spinAnim = null; showConfirm(marker.userData); }
+  }
+  spinAnim = requestAnimationFrame(step);
+}
+
+function showConfirm(data) {
+  document.getElementById('gc-flag').textContent = data.flag || '';
+  document.getElementById('gc-name').textContent = data.name;
+  const panel = document.getElementById('globeConfirm');
+  panel.classList.remove('hidden');
+  document.getElementById('gc-open').onclick = function(){ window.location.href = '/' + data.slug + '/'; };
+  document.getElementById('gc-cancel').onclick = function(){ panel.classList.add('hidden'); };
+}
 
 renderer.domElement.addEventListener('pointerup', function(e){
   host.style.touchAction = 'pan-y';
@@ -280,6 +328,6 @@ renderer.domElement.addEventListener('pointerup', function(e){
   ndc(e);
   ray.setFromCamera(ptr, camera);
   const hit = ray.intersectObjects(markers)[0];
-  if (hit) window.location.href = '/' + hit.object.userData.slug + '/';
+  if (hit) focusOn(hit.object);
 });
 </script>

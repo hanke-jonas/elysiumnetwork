@@ -15,7 +15,7 @@ permalink: /calls/
 
 <section class="relative overflow-hidden bg-paper border-b-2 border-ink">
   <div class="relative max-w-4xl mx-auto px-5 sm:px-6 pt-14 pb-16">
-    <p class="eyebrow" style="color:var(--coral)">Opportunities</p>
+    <p class="eyebrow" style="color:var(--coral-ink)">Opportunities</p>
     <h1 class="h-hero mt-4">Active <mark>calls</mark></h1>
     <p class="mt-6 text-lg text-muted max-w-2xl leading-relaxed">Open calls for exchanges, trainings and youth-led projects across the network. New calls are announced here and on our social channels.</p>
   </div>
@@ -30,7 +30,7 @@ permalink: /calls/
             <span class="w-1.5 h-1.5 rounded-full bg-ink animate-pulse"></span> Beta
           </span>
           <h2 class="font-display text-2xl font-bold mt-3">The Elysium+ Opportunity Portal</h2>
-          <p class="mt-2 text-ink/75 leading-relaxed max-w-2xl">We're building one place to discover every exchange, training and youth opportunity across the network. It's live in beta right now, so come take a look and tell us what you think.</p>
+          <p class="mt-2 text-ink/85 leading-relaxed max-w-2xl">We're building one place to discover every exchange, training and youth opportunity across the network. It's live in beta right now, so come take a look and tell us what you think.</p>
         </div>
         <span class="btn btn-ink shrink-0">Explore the portal {% icon "arrow", "w-4 h-4" %}</span>
       </div>
@@ -43,7 +43,7 @@ permalink: /calls/
       <div class="p-7 sm:p-8">
         <div class="flex flex-wrap items-center gap-3 mb-4">
           <span class="tag" style="background:{{ cb.accent }}33">{{ cb.flag }} {{ cb.name }}</span>
-          <span class="tag" style="{% if c.open %}background:var(--mint);color:#fff{% endif %}">
+          <span class="tag" style="{% if c.open %}background:var(--mint);color:var(--ink){% endif %}">
             <span class="w-1.5 h-1.5 rounded-full {% if c.open %}bg-white{% else %}bg-ink/30{% endif %}"></span>{{ "Open" if c.open else "Closed" }}
           </span>
         </div>
