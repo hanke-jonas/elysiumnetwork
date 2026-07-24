@@ -37,18 +37,24 @@
   var searchActiveIndex = -1;
   var searchLastResults = [];
 
-  function openSearch(){
+  var searchTrigger = null, searchUntrap = null;
+  function openSearch(trigger){
+    searchTrigger = trigger || document.activeElement;
     var o = document.getElementById('searchOverlay');
     o.classList.add('open');
     document.body.style.overflow = 'hidden';
     var input = document.getElementById('searchInput');
     input.value = '';
     renderSearchResults(SEARCH_INDEX);
+    if (typeof trapFocus === 'function') searchUntrap = trapFocus(o);
     setTimeout(function(){ input.focus(); }, 30);
   }
   function closeSearch(){
     document.getElementById('searchOverlay').classList.remove('open');
     document.body.style.overflow = '';
+    if (searchUntrap){ searchUntrap(); searchUntrap = null; }
+    if (searchTrigger && searchTrigger.focus) searchTrigger.focus();
+    searchTrigger = null;
   }
   function renderSearchResults(items){
     searchLastResults = items;

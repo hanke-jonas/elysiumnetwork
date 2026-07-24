@@ -21,7 +21,7 @@
 
     <div class="lg:col-span-8 order-1 lg:order-2">
       <div class="relative rounded-2xl border-2 border-ink overflow-hidden" style="background:var(--paper-2)">
-        <div id="globeHost" style="width:100%;aspect-ratio:4/3;touch-action:none;cursor:grab;"></div>
+        <div id="globeHost" style="width:100%;aspect-ratio:4/3;touch-action:pan-y;cursor:grab;"></div>
         <div id="globeTip" class="pointer-events-none absolute z-20 hidden">
           <div class="rounded-lg bg-ink text-paper shadow-2xl px-3.5 py-2.5 min-w-[150px]">
             <p id="gtip-name" class="font-display font-bold text-sm leading-tight"></p>
@@ -52,7 +52,6 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 const BRANCHES = {{ site.branches | dump | safe }}.map(function(b){ return { id: b.iso_n3, name: b.name, city: b.city, slug: b.slug, accent: b.accent, flag: b.flag }; });
 const EXCLUDED_IDS = Object.keys({{ site.globe_excluded | dump | safe }});
-const INK = 0x191712, PAPER2 = 0xEFE6CE;
 
 const host = document.getElementById('globeHost');
 
@@ -92,6 +91,50 @@ function dotTexture(color) {
   return new THREE.CanvasTexture(c);
 }
 
+const OCEAN = '#9DC3E6';
+const LAND_PALETTE = ['#E8D9B5', '#C9E4CA', '#F3C6A5', '#D9C6E4', '#F6E27F', '#B7D6D2', '#E9B4B0', '#C7D6E8'];
+function landColor(id) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return LAND_PALETTE[h % LAND_PALETTE.length];
+}
+
+// Build a colored equirectangular world map on canvas, then wrap it on the sphere.
+// Custom UV assignment below matches this exact pixel mapping, so no dependency
+// on Three.js's internal SphereGeometry UV convention.
+function buildWorldTexture(geo, branchIds) {
+  const W = 2048, H = 1024;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = OCEAN; ctx.fillRect(0, 0, W, H);
+
+  function toPx(lon, lat) { return [(lon + 180) / 360 * W, (90 - lat) / 180 * H]; }
+
+  geo.features.forEach(function(f) {
+    const id = String(f.id);
+    if (EXCLUDED_IDS.indexOf(id) !== -1) return;
+    const branch = branchIds[id];
+    const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : (f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : []);
+    ctx.fillStyle = branch ? branch.accent : landColor(id);
+    polys.forEach(function(poly) {
+      ctx.beginPath();
+      poly.forEach(function(ring) {
+        ring.forEach(function(c2, i) {
+          const [x, y] = toPx(c2[0], c2[1]);
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.closePath();
+      });
+      ctx.fill();
+    });
+  });
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.flipY = false;
+  tex.needsUpdate = true;
+  return tex;
+}
+
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(42, 4/3, 0.1, 100);
 camera.position.set(0, 0, 3.1);
@@ -100,24 +143,38 @@ const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 host.appendChild(renderer.domElement);
 
-scene.add(new THREE.AmbientLight(0xffffff, 1.1));
-const sun = new THREE.DirectionalLight(0xffffff, .6);
+scene.add(new THREE.AmbientLight(0xffffff, 1.3));
+const sun = new THREE.DirectionalLight(0xffffff, .5);
 sun.position.set(3, 2, 4);
 scene.add(sun);
 
-const globe = new THREE.Mesh(
-  new THREE.SphereGeometry(1, 48, 48),
-  new THREE.MeshPhongMaterial({ color: PAPER2, shininess: 4 })
-);
+const sphereGeo = new THREE.SphereGeometry(1, 96, 96);
+// Custom UV: u/v derived from each vertex's own lon/lat (inverse of llToVec3),
+// matching buildWorldTexture's pixel mapping exactly (no flipY guessing).
+{
+  const pos = sphereGeo.attributes.position;
+  const uv = sphereGeo.attributes.uv;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+    const phi = Math.acos(Math.max(-1, Math.min(1, y)));
+    const theta = Math.atan2(z, -x);
+    const u = (theta < 0 ? theta + 2 * Math.PI : theta) / (2 * Math.PI);
+    const v = phi / Math.PI;
+    uv.setXY(i, u, v);
+  }
+  uv.needsUpdate = true;
+}
+const globeMat = new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 2 });
+const globe = new THREE.Mesh(sphereGeo, globeMat);
 scene.add(globe);
 
-const gratMat = new THREE.LineBasicMaterial({ color: INK, transparent: true, opacity: .1 });
+const gratMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: .12 });
 for (let lat = -60; lat <= 60; lat += 30) {
-  const pts = []; for (let lon = -180; lon <= 180; lon += 4) pts.push(llToVec3(lon, lat, 1.0005));
+  const pts = []; for (let lon = -180; lon <= 180; lon += 4) pts.push(llToVec3(lon, lat, 1.002));
   scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), gratMat));
 }
 for (let lon = -180; lon < 180; lon += 30) {
-  const pts = []; for (let lat = -90; lat <= 90; lat += 4) pts.push(llToVec3(lon, lat, 1.0005));
+  const pts = []; for (let lat = -90; lat <= 90; lat += 4) pts.push(llToVec3(lon, lat, 1.002));
   scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), gratMat));
 }
 
@@ -155,34 +212,32 @@ fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
   .then(function(world){
     const geo = topojson.feature(world, world.objects.countries);
 
+    globeMat.map = buildWorldTexture(geo, branchIds);
+    globeMat.needsUpdate = true;
+
     geo.features.forEach(function(f){
       const id = String(f.id);
       if (EXCLUDED_IDS.indexOf(id) !== -1) return; // Russia & Belarus: not drawn at all
 
       const branch = branchIds[id];
-      const mat = new THREE.LineBasicMaterial({
-        color: branch ? new THREE.Color(branch.accent) : new THREE.Color(INK),
-        transparent: true,
-        opacity: branch ? 1 : 0.68,
-      });
-
       const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : (f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : []);
-      polys.forEach(function(poly){
-        poly.forEach(function(ring){
-          const pts = ring.map(function(c){ return llToVec3(c[0], c[1], 1.001); });
-          scene.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts), mat));
-          if (branch) scene.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts.map(p => p.clone().multiplyScalar(1.0015))), mat));
-        });
-      });
 
       if (branch) {
+        // Bold ink+accent outline on top of the fill so home countries pop and read as clickable.
+        const outline = new THREE.LineBasicMaterial({ color: 0x191712, transparent: true, opacity: .9 });
+        polys.forEach(function(poly){
+          poly.forEach(function(ring){
+            const pts = ring.map(function(c){ return llToVec3(c[0], c[1], 1.004); });
+            scene.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts), outline));
+          });
+        });
         const centroid = featureCentroid(f.geometry);
         const sp = markers.find(m => m.userData.id === id);
         if (sp) sp.position.copy(llToVec3(centroid[0], centroid[1], 1.035));
       }
     });
   })
-  .catch(function(){ /* globe still renders as a plain sphere if world data fails to load */ });
+  .catch(function(){ /* globe still renders as a plain ocean-colored sphere if world data fails to load */ });
 
 const ray = new THREE.Raycaster();
 const ptr = new THREE.Vector2();
@@ -194,7 +249,8 @@ function ndc(ev) {
   ptr.y = -((ev.clientY - r.top) / r.height) * 2 + 1;
 }
 
-renderer.domElement.addEventListener('pointerdown', function(e){ downPos = [e.clientX, e.clientY]; downTime = Date.now(); });
+renderer.domElement.addEventListener('pointerdown', function(e){ downPos = [e.clientX, e.clientY]; downTime = Date.now(); host.style.touchAction = 'none'; });
+renderer.domElement.addEventListener('pointercancel', function(){ host.style.touchAction = 'pan-y'; });
 
 renderer.domElement.addEventListener('pointermove', function(e){
   ndc(e);
@@ -215,6 +271,7 @@ renderer.domElement.addEventListener('pointermove', function(e){
 });
 
 renderer.domElement.addEventListener('pointerup', function(e){
+  host.style.touchAction = 'pan-y';
   if (!downPos) return;
   const moved = Math.hypot(e.clientX - downPos[0], e.clientY - downPos[1]);
   const quick = Date.now() - downTime < 500;

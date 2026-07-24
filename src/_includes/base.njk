@@ -31,6 +31,8 @@ tailwind.config = { theme: { extend: {
   :root{
     --paper:#F7F1E2; --paper-2:#EFE6CE; --ink:#191712; --line:rgba(25,23,18,.16);
     --blue:#7C93D6; --coral:#FF6B54; --sun:#FFC93C; --mint:#59B37B; --plum:#B478D9;
+    /* Darkened accent variants used for text on light/white backgrounds — meet 4.5:1 contrast */
+    --coral-ink:#B32E10; --blue-ink:#3F5AA8; --sun-ink:#8A5F08; --mint-ink:#256440; --plum-ink:#7C3FA3;
   }
   *{ -webkit-tap-highlight-color:transparent; box-sizing:border-box; }
   html{ scroll-behavior:smooth; }
@@ -83,6 +85,7 @@ tailwind.config = { theme: { extend: {
   @keyframes marq{ to{ transform:translateX(-50%); } }
 
   .ticker-bar{ position:relative; z-index:60; border-bottom:2px solid var(--ink); background:var(--ink); color:var(--paper); }
+  .ticker-bar::after{ content:''; position:absolute; top:0; right:0; bottom:0; width:2.5rem; pointer-events:none; background:linear-gradient(to right, transparent, var(--ink)); }
   .ticker-row{ display:flex; align-items:stretch; overflow-x:auto; scrollbar-width:none; }
   .ticker-row::-webkit-scrollbar{ display:none; }
   .ticker-item{ display:flex; align-items:center; gap:.55rem; padding:.5rem .95rem; border-right:1px solid rgba(247,241,226,.18); flex:none; }
@@ -94,14 +97,14 @@ tailwind.config = { theme: { extend: {
   .nav-link:hover{ color:#000; }
   .nav-link.active{ text-decoration:underline; text-decoration-color:var(--blue); text-decoration-thickness:3px; text-underline-offset:5px; }
   .nav-drop{ position:absolute; top:calc(100% + 1rem); left:50%; transform:translateX(-50%) translateY(6px) rotate(-1deg); min-width:15rem; background:#fff; border:2px solid var(--ink); box-shadow:5px 5px 0 var(--ink); border-radius:.8rem; padding:.5rem; opacity:0; visibility:hidden; transition:opacity .18s, transform .18s, visibility .18s; }
-  .nav-item-drop:hover .nav-drop, .nav-item-drop:focus-within .nav-drop{ opacity:1; visibility:visible; transform:translateX(-50%) translateY(0) rotate(-1deg); }
+  .nav-item-drop:hover .nav-drop, .nav-item-drop:focus-within .nav-drop, .nav-item-drop.open .nav-drop{ opacity:1; visibility:visible; transform:translateX(-50%) translateY(0) rotate(-1deg); }
   .nav-drop a{ display:flex; align-items:center; gap:.65rem; padding:.55rem .7rem; border-radius:.55rem; font-size:.9rem; font-weight:600; color:var(--ink); }
   .nav-drop a:hover{ background:var(--paper-2); }
 
   .mmenu{ position:fixed; inset:0; z-index:90; background:var(--paper); opacity:0; visibility:hidden; transition:opacity .3s, visibility .3s; overflow-y:auto; }
   .mmenu.open{ opacity:1; visibility:visible; }
   .mmenu-link{ font-family:"Bricolage Grotesque",sans-serif; font-weight:800; font-size:clamp(2rem,9vw,3rem); letter-spacing:-.02em; color:var(--ink); display:flex; align-items:baseline; gap:1rem; padding:.55rem 0; border-bottom:2px solid var(--ink); }
-  .mmenu-link .idx{ font-family:"JetBrains Mono",monospace; font-size:.9rem; color:var(--coral); font-weight:600; }
+  .mmenu-link .idx{ font-family:"JetBrains Mono",monospace; font-size:.9rem; color:var(--coral-ink); font-weight:600; }
   .mmenu-sub{ font-family:"JetBrains Mono",monospace; font-size:.85rem; padding-left:2.6rem; margin-top:-.3rem; margin-bottom:.6rem; }
 
   .heart-cursor{ position:fixed; z-index:200; pointer-events:none; width:16px; height:16px; will-change:transform,opacity; animation:heart-pop .7s ease-out forwards; }
@@ -128,7 +131,7 @@ tailwind.config = { theme: { extend: {
     </div>
     {% endfor %}
     <div class="ticker-item">
-      <span class="mono text-[11px] opacity-60 uppercase tracking-wider">Erasmus+ · DiscoverEU · 4 countries, one network</span>
+      <span class="mono text-[11px] opacity-60 uppercase tracking-wider">4 countries, one network</span>
     </div>
   </div>
 </div>
@@ -142,7 +145,7 @@ tailwind.config = { theme: { extend: {
     <nav class="hidden lg:flex items-center gap-8">
       <a href="/" class="nav-link{% if page.url == '/' %} active{% endif %}">Home</a>
       <div class="nav-item-drop relative">
-        <button class="nav-link inline-flex items-center gap-1.5" aria-haspopup="true">Network {% icon "chevron", "w-3.5 h-3.5" %}</button>
+        <button class="nav-link inline-flex items-center gap-1.5" aria-haspopup="true" aria-expanded="false" id="navDropBtn">Network {% icon "chevron", "w-3.5 h-3.5" %}</button>
         <div class="nav-drop">
           {% for b in site.branches %}
           <a href="/{{ b.slug }}/">
@@ -162,14 +165,14 @@ tailwind.config = { theme: { extend: {
       <a href="/contact/" class="nav-link{% if page.url == '/contact/' %} active{% endif %}">Contact</a>
     </nav>
     <div class="hidden lg:flex items-center gap-3">
-      <button class="search-trigger" onclick="openSearch()" aria-label="Search the site">
+      <button class="search-trigger" onclick="openSearch(this)" aria-label="Search the site">
         {% icon "search", "w-4 h-4" %}<span class="label">Search</span><span class="kbd">/</span>
       </button>
       <a href="{{ site.join_form }}" class="btn btn-accent">Join Us {% icon "arrow-ur", "w-4 h-4" %}</a>
     </div>
     <div class="lg:hidden flex items-center gap-2">
-      <button class="inline-grid place-items-center w-11 h-11 rounded-lg border-2 border-ink" onclick="openSearch()" aria-label="Search the site">{% icon "search", "w-5 h-5" %}</button>
-      <button class="inline-grid place-items-center w-11 h-11 rounded-lg border-2 border-ink" onclick="openMMenu()" aria-label="Open menu">{% icon "menu", "w-5 h-5" %}</button>
+      <button class="inline-grid place-items-center w-11 h-11 rounded-lg border-2 border-ink" onclick="openSearch(this)" aria-label="Search the site">{% icon "search", "w-5 h-5" %}</button>
+      <button class="inline-grid place-items-center w-11 h-11 rounded-lg border-2 border-ink" onclick="openMMenu(this)" aria-label="Open menu">{% icon "menu", "w-5 h-5" %}</button>
     </div>
   </div>
 </header>
@@ -219,7 +222,7 @@ tailwind.config = { theme: { extend: {
         </div>
       </div>
       <div class="md:col-span-3">
-        <p class="eyebrow text-paper/40 mb-4">Network</p>
+        <p class="eyebrow text-paper/60 mb-4">Network</p>
         <ul class="space-y-2.5">
           {% for b in site.branches %}
           <li><a href="/{{ b.slug }}/" class="text-paper/65 hover:text-paper transition inline-flex items-center gap-2"><span class="w-2 h-2 rounded-full" style="background:{{ b.accent }}"></span> {{ b.name }}</a></li>
@@ -227,7 +230,7 @@ tailwind.config = { theme: { extend: {
         </ul>
       </div>
       <div class="md:col-span-2">
-        <p class="eyebrow text-paper/40 mb-4">Explore</p>
+        <p class="eyebrow text-paper/60 mb-4">Explore</p>
         <ul class="space-y-2.5">
           <li><a href="/about/" class="text-paper/65 hover:text-paper transition">About</a></li>
           <li><a href="/calls/" class="text-paper/65 hover:text-paper transition">Active calls</a></li>
@@ -237,7 +240,7 @@ tailwind.config = { theme: { extend: {
         </ul>
       </div>
       <div class="md:col-span-3">
-        <p class="eyebrow text-paper/40 mb-4">Legal</p>
+        <p class="eyebrow text-paper/60 mb-4">Legal</p>
         <ul class="space-y-2.5">
           <li><a href="/privacy/" class="text-paper/65 hover:text-paper transition">Privacy Policy</a></li>
           <li><a href="/standards/" class="text-paper/65 hover:text-paper transition">Values &amp; Standards</a></li>
@@ -261,9 +264,53 @@ tailwind.config = { theme: { extend: {
   }
   tickClocks(); setInterval(tickClocks,1000);
 
-  function openMMenu(){ document.getElementById('mmenu').classList.add('open'); document.body.style.overflow='hidden'; }
-  function closeMMenu(){ document.getElementById('mmenu').classList.remove('open'); document.body.style.overflow=''; }
+  function trapFocus(container){
+    var focusable = container.querySelectorAll('a[href], button:not([disabled]), input, textarea, select, [tabindex]:not([tabindex="-1"])');
+    if (!focusable.length) return function(){};
+    var first = focusable[0], last = focusable[focusable.length - 1];
+    function handler(e){
+      if (e.key !== 'Tab') return;
+      if (e.shiftKey){
+        if (document.activeElement === first){ e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last){ e.preventDefault(); first.focus(); }
+      }
+    }
+    container.addEventListener('keydown', handler);
+    return function(){ container.removeEventListener('keydown', handler); };
+  }
+
+  var mmenuTrigger = null, mmenuUntrap = null;
+  function openMMenu(trigger){
+    mmenuTrigger = trigger || document.activeElement;
+    var el = document.getElementById('mmenu');
+    el.classList.add('open'); document.body.style.overflow='hidden';
+    mmenuUntrap = trapFocus(el);
+    var closeBtn = el.querySelector('button[aria-label="Close menu"]');
+    if (closeBtn) closeBtn.focus();
+  }
+  function closeMMenu(){
+    var el = document.getElementById('mmenu');
+    el.classList.remove('open'); document.body.style.overflow='';
+    if (mmenuUntrap){ mmenuUntrap(); mmenuUntrap = null; }
+    if (mmenuTrigger && mmenuTrigger.focus) mmenuTrigger.focus();
+    mmenuTrigger = null;
+  }
   document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeMMenu(); });
+
+  (function(){
+    var wrap = document.querySelector('.nav-item-drop');
+    var btn = document.getElementById('navDropBtn');
+    if (!wrap || !btn) return;
+    function closeDrop(){ wrap.classList.remove('open'); btn.setAttribute('aria-expanded','false'); }
+    function openDrop(){ wrap.classList.add('open'); btn.setAttribute('aria-expanded','true'); }
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      if (wrap.classList.contains('open')) closeDrop(); else openDrop();
+    });
+    document.addEventListener('click', function(e){ if (!wrap.contains(e.target)) closeDrop(); });
+    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeDrop(); });
+  })();
 
   (function(){
     if (window.matchMedia('(pointer:coarse)').matches) return;
