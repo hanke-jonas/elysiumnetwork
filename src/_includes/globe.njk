@@ -143,14 +143,59 @@ equirectUVs(sphereGeo);
 const globeMat = new THREE.MeshPhongMaterial({ color: 0x1b3a63, shininess: 6 });
 const globe = new THREE.Mesh(sphereGeo, globeMat);
 world.add(globe);
-loader.load(TEX_BASE + 'earth_atmos_2048.jpg', function(tex){
-  tex.flipY = false; tex.colorSpace = THREE.SRGBColorSpace;
-  globeMat.map = tex; globeMat.color.set(0xffffff); globeMat.needsUpdate = true;
-});
 loader.load(TEX_BASE + 'earth_specular_2048.jpg', function(tex){
   tex.flipY = false;
   globeMat.specularMap = tex; globeMat.specular.set(0x333333); globeMat.needsUpdate = true;
 });
+
+// Load the real Earth photo, then paint over Russia & Belarus with a
+// matching ocean tone before using it as the sphere's texture — a
+// photographic image can't selectively omit countries the way a drawn map
+// can, so the mask is applied to a copy of the image on canvas instead.
+function loadEarthImage() {
+  return new Promise(function(resolve, reject){
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = function(){ resolve(img); };
+    img.onerror = reject;
+    img.src = TEX_BASE + 'earth_atmos_2048.jpg';
+  });
+}
+
+function maskExcludedCountries(img, excludedFeatures) {
+  const W = img.naturalWidth || img.width, H = img.naturalHeight || img.height;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const ctx = c.getContext('2d');
+  ctx.drawImage(img, 0, 0, W, H);
+
+  function toPx(lon, lat) { return [(lon + 180) / 360 * W, (90 - lat) / 180 * H]; }
+  // Sample an open-ocean pixel (mid-Atlantic) so the mask blends with this
+  // specific image's actual ocean tone instead of a guessed color.
+  const [ox, oy] = toPx(-40, 30);
+  const [r, g, b] = ctx.getImageData(Math.round(ox), Math.round(oy), 1, 1).data;
+  ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+
+  excludedFeatures.forEach(function(f){
+    if (!f.geometry) return;
+    const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : (f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : []);
+    polys.forEach(function(poly){
+      ctx.beginPath();
+      poly.forEach(function(ring){
+        ring.forEach(function(pt, i){
+          const [x, y] = toPx(pt[0], pt[1]);
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.closePath();
+      });
+      ctx.fill();
+    });
+  });
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.flipY = false; tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+  return tex;
+}
 
 const cloudGeo = new THREE.SphereGeometry(1.012, 64, 64);
 equirectUVs(cloudGeo);
@@ -201,39 +246,53 @@ BRANCHES.forEach(function(b){
   markers.push(sp);
 });
 
-fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
-  .then(r => r.json())
-  .then(function(worldData){
-    const geo = topojson.feature(worldData, worldData.objects.countries);
+Promise.all([
+  loadEarthImage(),
+  fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(r => r.json()),
+]).then(function(results){
+  const img = results[0];
+  const geo = topojson.feature(results[1], results[1].objects.countries);
+  const excludedFeatures = geo.features.filter(function(f){ return EXCLUDED_IDS.indexOf(String(f.id)) !== -1; });
 
-    geo.features.forEach(function(f){
-      const id = String(f.id);
-      if (EXCLUDED_IDS.indexOf(id) !== -1 || !f.geometry) return; // Russia & Belarus: not drawn at all
+  globeMat.map = maskExcludedCountries(img, excludedFeatures);
+  globeMat.color.set(0xffffff);
+  globeMat.needsUpdate = true;
 
-      const branch = branchIds[id];
-      if (!branch) return;
+  geo.features.forEach(function(f){
+    const id = String(f.id);
+    if (EXCLUDED_IDS.indexOf(id) !== -1 || !f.geometry) return; // Russia & Belarus: masked out, not outlined either
 
-      const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : (f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : []);
+    const branch = branchIds[id];
+    if (!branch) return;
 
-      // Bold accent outline, drawn twice at slightly different radii for a
-      // thicker line than a single 1px WebGL line would give, so home
-      // countries pop clearly against the real earth imagery.
-      const outline = new THREE.LineBasicMaterial({ color: new THREE.Color(branch.accent), transparent: true, opacity: 1 });
-      [1.015, 1.018].forEach(function(r){
-        polys.forEach(function(poly){
-          poly.forEach(function(ring){
-            const pts = ring.map(function(c){ return llToVec3(c[0], c[1], r); });
-            world.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts), outline));
-          });
+    const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : (f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : []);
+
+    // Bold accent outline, drawn twice at slightly different radii for a
+    // thicker line than a single 1px WebGL line would give, so home
+    // countries pop clearly against the real earth imagery. Ukraine's
+    // feature here already includes Crimea (world-atlas follows the
+    // internationally recognised boundary), so no separate handling needed.
+    const outline = new THREE.LineBasicMaterial({ color: new THREE.Color(branch.accent), transparent: true, opacity: 1 });
+    [1.015, 1.018].forEach(function(r){
+      polys.forEach(function(poly){
+        poly.forEach(function(ring){
+          const pts = ring.map(function(c){ return llToVec3(c[0], c[1], r); });
+          world.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts), outline));
         });
       });
-
-      const centroid = featureCentroid(f.geometry);
-      const sp = markers.find(m => m.userData.id === id);
-      if (sp) sp.position.copy(llToVec3(centroid[0], centroid[1], 1.05));
     });
-  })
-  .catch(function(err){ console.error('Elysium+ globe: failed to load country outline data, markers may be mispositioned.', err); });
+
+    const centroid = featureCentroid(f.geometry);
+    const sp = markers.find(m => m.userData.id === id);
+    if (sp) sp.position.copy(llToVec3(centroid[0], centroid[1], 1.05));
+  });
+}).catch(function(err){
+  console.error('Elysium+ globe: failed to load earth texture or country data.', err);
+  loader.load(TEX_BASE + 'earth_atmos_2048.jpg', function(tex){
+    tex.flipY = false; tex.colorSpace = THREE.SRGBColorSpace;
+    globeMat.map = tex; globeMat.color.set(0xffffff); globeMat.needsUpdate = true;
+  });
+});
 
 const ray = new THREE.Raycaster();
 const ptr = new THREE.Vector2();
