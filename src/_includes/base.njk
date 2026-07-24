@@ -3,21 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Elysium+ is a European youth network rooted in Ukraine, moving young people across Ukraine, Poland, Italy and Germany.">
+{% set pageDescription = description or site.default_description %}
+{% set pageTitle = title or site.network_full %}
+<meta name="description" content="{{ pageDescription }}">
 <meta name="theme-color" content="#F6F1E4">
-<title>{{ title or site.network_full }}</title>
-<link rel="icon" href="{{ site.logo }}">
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-tailwind.config = { theme: { extend: {
-  colors: {
-    paper:'#F7F1E2', 'paper-2':'#EFE6CE', ink:'#191712', fg:'#191712', muted:'#5B5748',
-    line:'rgba(25,23,18,.16)',
-    blue:'#7C93D6', coral:'#FF6B54', sun:'#FFC93C', mint:'#59B37B', plum:'#B478D9',
-  },
-  fontFamily:{ display:['"Bricolage Grotesque"','ui-sans-serif','system-ui','sans-serif'], hand:['Caveat','cursive'], sans:['Inter','ui-sans-serif','system-ui','sans-serif'], mono:['"JetBrains Mono"','ui-monospace','monospace'] },
-}}};
-</script>
+<title>{{ pageTitle }}</title>
+<link rel="canonical" href="{{ site.url }}{{ page.url }}">
+<link rel="icon" type="image/png" sizes="32x32" href="{{ site.favicon_32 }}">
+<link rel="icon" type="image/png" sizes="48x48" href="{{ site.favicon_48 }}">
+<link rel="apple-touch-icon" href="{{ site.apple_touch_icon }}">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{{ site.network_full }}">
+<meta property="og:title" content="{{ pageTitle }}">
+<meta property="og:description" content="{{ pageDescription }}">
+<meta property="og:url" content="{{ site.url }}{{ page.url }}">
+<meta property="og:image" content="{{ site.url }}{{ site.og_image }}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ pageTitle }}">
+<meta name="twitter:description" content="{{ pageDescription }}">
+<meta name="twitter:image" content="{{ site.url }}{{ site.og_image }}">
+
+<link rel="stylesheet" href="/assets/tailwind.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Caveat:wght@600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -47,7 +56,7 @@ tailwind.config = { theme: { extend: {
   .num{ font-family:"JetBrains Mono",ui-monospace,monospace; font-weight:600; }
 
   ::selection{ background:var(--ink); color:var(--paper); }
-  a:focus-visible,button:focus-visible{ outline:3px solid var(--blue); outline-offset:2px; border-radius:2px; }
+  a:focus-visible,button:focus-visible{ outline:3px solid var(--blue-ink); outline-offset:2px; border-radius:2px; }
 
   .grain{ position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.05; mix-blend-mode:multiply;
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
@@ -141,7 +150,7 @@ tailwind.config = { theme: { extend: {
 <header class="navbar" id="navbar">
   <div class="max-w-[1400px] mx-auto px-5 sm:px-8 h-[4.5rem] flex items-center justify-between gap-6">
     <a href="/" class="flex items-center gap-2.5 shrink-0">
-      <img src="{{ site.logo }}" alt="Elysium+" class="h-10 w-10 object-contain">
+      <img src="{{ site.logo_small }}" alt="Elysium+" width="128" height="128" class="h-10 w-10 object-contain">
       <span class="font-display text-xl font-extrabold tracking-tight hidden sm:inline">Elysium<span style="color:var(--coral)">+</span></span>
     </a>
     <nav class="hidden lg:flex items-center gap-8">
@@ -180,6 +189,7 @@ tailwind.config = { theme: { extend: {
 </header>
 
 {% include "search.njk" %}
+{% include "detail-modal.njk" %}
 
 <div class="mmenu" id="mmenu" role="dialog" aria-modal="true" aria-label="Navigation">
   <div class="max-w-[1400px] mx-auto px-5 sm:px-8 pt-6" style="padding-bottom:max(2.5rem, env(safe-area-inset-bottom, 0px) + 2rem);">
@@ -229,7 +239,7 @@ tailwind.config = { theme: { extend: {
     <div class="grid gap-10 md:grid-cols-12">
       <div class="md:col-span-4">
         <a href="/" class="inline-flex items-center gap-2.5">
-          <img src="{{ site.logo }}" alt="Elysium+" class="h-9 w-9 object-contain">
+          <img src="{{ site.logo_small }}" alt="Elysium+" width="128" height="128" class="h-9 w-9 object-contain">
           <span class="font-display text-2xl font-extrabold tracking-tight">Elysium<span style="color:var(--coral)">+</span></span>
         </a>
         <p class="mt-4 max-w-sm text-paper/65 leading-relaxed">{{ site.tagline }}. A European youth network rooted in Ukraine, working across Poland, Italy and Germany.</p>
@@ -283,11 +293,17 @@ tailwind.config = { theme: { extend: {
   tickClocks(); setInterval(tickClocks,1000);
 
   function trapFocus(container){
-    var focusable = container.querySelectorAll('a[href], button:not([disabled]), input, textarea, select, [tabindex]:not([tabindex="-1"])');
-    if (!focusable.length) return function(){};
-    var first = focusable[0], last = focusable[focusable.length - 1];
+    // Re-queried on every Tab press rather than cached once: containers like
+    // the search overlay replace their entire results list on each keystroke,
+    // which would otherwise leave first/last pointing at detached nodes.
+    function getFocusable(){
+      return container.querySelectorAll('a[href], button:not([disabled]), input, textarea, select, [tabindex]:not([tabindex="-1"])');
+    }
     function handler(e){
       if (e.key !== 'Tab') return;
+      var focusable = getFocusable();
+      if (!focusable.length) return;
+      var first = focusable[0], last = focusable[focusable.length - 1];
       if (e.shiftKey){
         if (document.activeElement === first){ e.preventDefault(); last.focus(); }
       } else {
@@ -300,12 +316,24 @@ tailwind.config = { theme: { extend: {
 
   var mmenuTrigger = null, mmenuUntrap = null;
   function openMMenu(trigger){
+    // Never stack two aria-modal dialogs — the search overlay must fully
+    // close first (it's defined earlier in the page but always exists by
+    // the time this runs, since it only fires on a later user interaction).
+    if (typeof closeSearch === 'function') {
+      var searchOverlay = document.getElementById('searchOverlay');
+      if (searchOverlay && searchOverlay.classList.contains('open')) closeSearch();
+    }
     mmenuTrigger = trigger || document.activeElement;
     var el = document.getElementById('mmenu');
     el.classList.add('open'); document.body.style.overflow='hidden';
     mmenuUntrap = trapFocus(el);
-    var closeBtn = el.querySelector('button[aria-label="Close menu"]');
-    if (closeBtn) closeBtn.focus();
+    // Deferred one frame: focusing a button in the same tick its container
+    // leaves visibility:hidden isn't reliably honoured, which would leave
+    // the Tab trap below pointing at a container nothing is focused inside.
+    requestAnimationFrame(function(){
+      var closeBtn = el.querySelector('button[aria-label="Close menu"]');
+      if (closeBtn) closeBtn.focus();
+    });
   }
   function closeMMenu(){
     var el = document.getElementById('mmenu');
@@ -328,6 +356,14 @@ tailwind.config = { theme: { extend: {
     });
     document.addEventListener('click', function(e){ if (!wrap.contains(e.target)) closeDrop(); });
     document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeDrop(); });
+    // The panel is also revealed purely via CSS :focus-within (so Tab alone
+    // opens it), but aria-expanded was only ever flipped by the click
+    // handler above — this keeps the announced state in sync with what
+    // keyboard users actually see.
+    wrap.addEventListener('focusin', function(){ btn.setAttribute('aria-expanded', 'true'); });
+    wrap.addEventListener('focusout', function(e){
+      if (!wrap.contains(e.relatedTarget)) btn.setAttribute('aria-expanded', wrap.classList.contains('open') ? 'true' : 'false');
+    });
   })();
 
   (function(){

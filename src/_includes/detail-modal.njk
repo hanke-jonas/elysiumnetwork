@@ -1,0 +1,70 @@
+<div class="detail-overlay" id="detailOverlay" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+  <div class="detail-panel">
+    <button type="button" class="detail-close" onclick="closeDetail()" aria-label="Close">{% icon "close", "w-4 h-4" %}</button>
+    <span id="detailDot" class="detail-dot" aria-hidden="true"></span>
+    <h2 id="detailTitle" class="detail-title"></h2>
+    <p id="detailBody" class="detail-body"></p>
+    <a id="detailCta" class="btn btn-accent mt-5 hidden" href="#"></a>
+  </div>
+</div>
+
+<style>
+  .detail-overlay{ position:fixed; inset:0; z-index:92; background:rgba(25,23,18,.5); backdrop-filter:blur(2px); display:flex; align-items:center; justify-content:center; padding:1.25rem; opacity:0; visibility:hidden; transition:opacity .2s, visibility .2s; }
+  .detail-overlay.open{ opacity:1; visibility:visible; }
+  .detail-panel{ position:relative; width:100%; max-width:28rem; background:#fff; border:2px solid var(--ink); border-radius:1.1rem; box-shadow:8px 8px 0 var(--ink); padding:2rem 1.75rem 1.75rem; transform:rotate(-.4deg); max-height:85vh; overflow-y:auto; }
+  .detail-close{ position:absolute; top:.9rem; right:.9rem; display:grid; place-items:center; width:2rem; height:2rem; border-radius:.5rem; border:2px solid transparent; color:var(--ink); opacity:.5; }
+  .detail-close:hover{ opacity:1; border-color:var(--ink); }
+  .detail-dot{ display:inline-flex; width:2.5rem; height:2.5rem; border-radius:.65rem; border:2px solid var(--ink); }
+  .detail-title{ font-family:"Bricolage Grotesque",sans-serif; font-weight:800; font-size:1.4rem; line-height:1.2; margin-top:1rem; }
+  .detail-body{ margin-top:.75rem; line-height:1.65; color:var(--ink); opacity:.85; }
+</style>
+
+<script>
+  var detailTrigger = null, detailUntrap = null;
+  function openDetail(trigger){
+    detailTrigger = trigger;
+    document.getElementById('detailTitle').textContent = trigger.dataset.detailTitle || '';
+    document.getElementById('detailBody').textContent = trigger.dataset.detailBody || '';
+    document.getElementById('detailDot').style.background = trigger.dataset.detailAccent || 'var(--paper-2)';
+    var cta = document.getElementById('detailCta');
+    if (trigger.dataset.detailCtaHref){
+      cta.href = trigger.dataset.detailCtaHref;
+      cta.textContent = trigger.dataset.detailCtaLabel || 'Learn more';
+      cta.classList.remove('hidden');
+    } else {
+      cta.classList.add('hidden');
+    }
+    var o = document.getElementById('detailOverlay');
+    o.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    detailUntrap = trapFocus(o);
+    var panel = o.querySelector('.detail-panel');
+    panel.scrollTop = 0;
+    // A button inside a container that's still mid-transition out of
+    // visibility:hidden isn't reliably focusable in the same tick the
+    // 'open' class is applied — focus() can silently no-op, which would
+    // leave focus (and the Tab trap) outside the modal entirely. One rAF
+    // lets the browser flush the visibility change first. preventScroll
+    // avoids a separate bug: native focus-scroll miscomputing the offset
+    // against this panel's rotated, scrollable ancestor.
+    requestAnimationFrame(function(){
+      o.querySelector('.detail-close').focus({ preventScroll: true });
+      panel.scrollTop = 0;
+    });
+  }
+  function closeDetail(){
+    var o = document.getElementById('detailOverlay');
+    if (!o.classList.contains('open')) return;
+    o.classList.remove('open');
+    document.body.style.overflow = '';
+    if (detailUntrap){ detailUntrap(); detailUntrap = null; }
+    if (detailTrigger && detailTrigger.focus) detailTrigger.focus();
+    detailTrigger = null;
+  }
+  document.addEventListener('click', function(e){
+    var trigger = e.target.closest('.detail-trigger');
+    if (trigger){ openDetail(trigger); }
+  });
+  document.getElementById('detailOverlay').addEventListener('click', function(e){ if (e.target === this) closeDetail(); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeDetail(); });
+</script>

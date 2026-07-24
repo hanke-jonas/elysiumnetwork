@@ -7,6 +7,7 @@ pagination:
 permalink: "/{{ b.slug }}/"
 eleventyComputed:
   title: "{{ b.name }} — Elysium+ Network"
+  description: "{{ b.about }}"
 ---
 {% set accent = b.accent %}
 {% set inFormation = b.status == "In formation" %}

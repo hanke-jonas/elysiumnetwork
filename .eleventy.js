@@ -1,5 +1,7 @@
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
+const site = require('./src/_data/site.js');
 
 const ICONS = {
   instagram: '<rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>',
@@ -39,6 +41,16 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addShortcode('year', () => String(new Date().getUTCFullYear()));
 
   eleventyConfig.addPassthroughCopy('src/robots.txt');
+  eleventyConfig.addPassthroughCopy('src/assets');
+
+  // Compiled here (not via a separate package.json script) so the CSS is
+  // always regenerated no matter how the build is actually invoked —
+  // `npx eleventy`, `npm run build`, or whatever command Cloudflare Pages'
+  // dashboard has configured — rather than depending on script ordering
+  // that this config file has no visibility into.
+  eleventyConfig.on('eleventy.before', () => {
+    execSync('npx tailwindcss -i ./src/styles/main.css -o ./src/assets/tailwind.css --minify', { stdio: 'inherit' });
+  });
 
   // Full-text search index, built from the final rendered HTML (results is
   // guaranteed complete here, unlike collections.all mid-build) so the
@@ -55,7 +67,7 @@ module.exports = function (eleventyConfig) {
         .trim();
 
     const pages = results
-      .filter((r) => r.url && r.content)
+      .filter((r) => r.url && r.content && r.url !== '/404.html')
       .map((r) => {
         const titleMatch = r.content.match(/<title>([\s\S]*?)<\/title>/i);
         const title = titleMatch ? stripHtml(titleMatch[1]) : r.url;
@@ -66,6 +78,13 @@ module.exports = function (eleventyConfig) {
       .filter((p) => p.text.length > 0);
 
     fs.writeFileSync(path.join(dir.output, 'search-index.json'), JSON.stringify(pages));
+
+    // Same collections.all-incompleteness issue as above rules out a normal
+    // sitemap.njk template — built from the same guaranteed-complete
+    // `results` array instead.
+    const urls = results.filter((r) => r.url && !r.url.endsWith('.json') && r.url !== '/404.html').map((r) => r.url);
+    const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>${site.url}${u}</loc></url>`).join('\n')}\n</urlset>\n`;
+    fs.writeFileSync(path.join(dir.output, 'sitemap.xml'), sitemap);
   });
 
   return {

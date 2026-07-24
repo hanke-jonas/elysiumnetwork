@@ -2,3 +2,5 @@ node_modules/
 _site/
 .wrangler/
 .DS_Store
+# Regenerated on every build by the eleventy.before hook in .eleventy.js
+src/assets/tailwind.css

@@ -6,7 +6,17 @@ module.exports = {
   tagline: 'Empowering young people to create positive change',
   founded_year: 2020,
   contact_email,
+  // Update once a custom domain is attached to the Cloudflare Pages project —
+  // this backs canonical URLs and Open Graph og:url tags.
+  url: 'https://elysiumnetwork.pages.dev',
+  default_description: 'Elysium+ is a European youth network rooted in Ukraine, moving young people across Ukraine, Poland, Italy and Germany.',
   logo: 'https://elysium.ngo/wp-content/uploads/2025/10/Elysium-1600-x-400-px-1600-x-1600-px-Background-Removed-2-2-1-1024x1024.png',
+  logo_small: '/assets/logo-128.png',
+  logo_hero: '/assets/logo-320.png',
+  og_image: '/assets/og-image.png',
+  favicon_32: '/assets/favicon-32.png',
+  favicon_48: '/assets/favicon-48.png',
+  apple_touch_icon: '/assets/apple-touch-icon.png',
   join_form: 'mailto:' + contact_email + '?subject=' + encodeURIComponent('I want to join Elysium+'),
   hub: 'https://hub.elysium.ngo/',
   astra_site: 'https://astra.ngo',
@@ -22,19 +32,19 @@ module.exports = {
   mission: 'Our mission is to empower young people through education, mobility and active participation. We believe every young person has the right to learn, explore and shape their own future — regardless of background or nationality. Guided by the European values of democracy, equality, solidarity and respect for human dignity, we create opportunities for growth, intercultural understanding and civic engagement.',
   vision: 'A Europe where young people lead change — a continent united by cooperation, inclusion and innovation. We work toward a society where education and lifelong learning are accessible to all, and where youth are active contributors to sustainable development, peace and social justice.',
   values_short: [
-    ['Freedom & equality', 'Equal access to education, opportunities and participation.'],
-    ['Solidarity & inclusion', 'Unity, respect and understanding across diverse cultures.'],
-    ['Sustainability', 'Initiatives that protect both people and the planet.'],
-    ['Youth empowerment', 'Self-development, creativity and leadership in every young person.'],
+    ['Freedom & equality', 'Equal access to education, opportunities and participation.', 'Every person in our network has the same right to learn, take part and be heard — regardless of nationality, gender, identity, background or belief. We don’t tolerate discrimination of any kind, and equal access to our educational and mobility opportunities is a starting point, not an aspiration.'],
+    ['Solidarity & inclusion', 'Unity, respect and understanding across diverse cultures.', 'We support one another instead of competing — sharing knowledge, covering costs where we can and adapting formats so no one is excluded because of language, background or personal circumstance. Priority goes to young people facing real barriers, including displacement and limited prior access to international exchange.'],
+    ['Sustainability', 'Initiatives that protect both people and the planet.', 'Ecological responsibility is built into how we plan activities, not treated as a side project — from transport choices like favouring rail travel for exchanges when possible, to the themes we bring into our non-formal education sessions.'],
+    ['Youth empowerment', 'Self-development, creativity and leadership in every young person.', 'We treat every participant as someone capable of leading, not just attending — encouraging curiosity, creativity and responsibility, and creating space for young people to help shape the activities they take part in rather than just consume them.'],
   ],
 
   themes: [
-    { icon: 'globe', title: 'International mobility', text: 'Youth exchanges, training courses and DiscoverEU journeys that send young people across Europe.' },
-    { icon: 'spark', title: 'Non-formal education', text: 'Interactive, learning-by-doing sessions on media literacy, leadership and civic life.' },
-    { icon: 'heart', title: 'Inclusion', text: 'Priority for young people with fewer opportunities — displacement, social or mobility barriers.' },
-    { icon: 'monitor', title: 'Digital engagement', text: 'Online content and sessions that reach rural youth and IDP communities.' },
-    { icon: 'vote', title: 'Democratic participation', text: 'Campaigns and activities that give young people a real voice in their communities.' },
-    { icon: 'leaf', title: 'Sustainability', text: 'Ecological responsibility woven through our programmes and everyday practice.' },
+    { icon: 'globe', title: 'International mobility', text: 'Youth exchanges, training courses and DiscoverEU journeys that send young people across Europe.', detail: 'Through Erasmus+ and other funded frameworks, we organise youth exchanges, training courses and DiscoverEU-style journeys that take participants across our four branch countries and their wider partner network. Every mobility is built around a learning objective, from civic education to media literacy, so participants come home with new skills, contacts and perspective — not just a stamp in their passport.' },
+    { icon: 'spark', title: 'Non-formal education', text: 'Interactive, learning-by-doing sessions on media literacy, leadership and civic life.', detail: 'Rather than lectures, our sessions use non-formal education methods — simulations, workshops, group challenges and reflection circles — to build practical skills in leadership, critical thinking and civic participation. Facilitators are trained volunteers and partners from across the network, so every session carries real lived experience alongside the theory.' },
+    { icon: 'heart', title: 'Inclusion', text: 'Priority for young people with fewer opportunities — displacement, social or mobility barriers.', detail: 'We actively prioritise participants who face real barriers to opportunity: young people displaced by the war in Ukraine, those from lower-income households or rural areas, or anyone with limited prior access to international exchange. Support includes covering travel and accommodation costs and adapting formats so language or experience gaps are never a reason to be excluded.' },
+    { icon: 'monitor', title: 'Digital engagement', text: 'Online content and sessions that reach rural youth and IDP communities.', detail: 'Not everyone can travel to join us in person, so we run online sessions, webinars and digital content alongside our physical activities — designed specifically to reach young people in rural areas and internally displaced communities who would otherwise be cut off from the network entirely.' },
+    { icon: 'vote', title: 'Democratic participation', text: 'Campaigns and activities that give young people a real voice in their communities.', detail: 'We run awareness campaigns, local dialogues and participation projects that connect young people directly with civic life — from local decision-making processes to broader European-level advocacy — so participation in democracy is something they’ve practised, not just an abstract idea.' },
+    { icon: 'leaf', title: 'Sustainability', text: 'Ecological responsibility woven through our programmes and everyday practice.', detail: 'Sustainability shapes how we run everything rather than sitting apart as a separate initiative — from favouring lower-impact travel for our exchanges when possible, to building environmental themes directly into our non-formal education sessions, so it becomes a habit participants carry home.' },
   ],
 
   branches: [
@@ -113,17 +123,6 @@ module.exports = {
   ],
 
   globe_excluded: { '643': 'Russia', '112': 'Belarus' },
-  globe_candidates: {
-    '008': 'Albania', '020': 'Andorra', '040': 'Austria', '056': 'Belgium', '070': 'Bosnia & Herzegovina',
-    '100': 'Bulgaria', '191': 'Croatia', '196': 'Cyprus', '203': 'Czechia', '208': 'Denmark',
-    '233': 'Estonia', '246': 'Finland', '250': 'France', '268': 'Georgia', '300': 'Greece',
-    '348': 'Hungary', '352': 'Iceland', '372': 'Ireland', '428': 'Latvia', '438': 'Liechtenstein',
-    '440': 'Lithuania', '442': 'Luxembourg', '470': 'Malta', '498': 'Moldova', '492': 'Monaco',
-    '499': 'Montenegro', '528': 'Netherlands', '807': 'North Macedonia', '578': 'Norway', '620': 'Portugal',
-    '642': 'Romania', '674': 'San Marino', '688': 'Serbia', '703': 'Slovakia', '705': 'Slovenia',
-    '724': 'Spain', '752': 'Sweden', '756': 'Switzerland', '792': 'Turkey', '826': 'United Kingdom',
-    '051': 'Armenia', '031': 'Azerbaijan', '504': 'Morocco', '788': 'Tunisia', '818': 'Egypt',
-  },
 
   team: [
     { name: 'Anton Rubanenko', role: 'Founder & Project Manager',

@@ -21,7 +21,7 @@
 
     <div class="lg:col-span-8 order-1 lg:order-2">
       <div class="relative rounded-2xl border-2 border-ink overflow-hidden" style="background:var(--paper-2)">
-        <div id="globeHost" class="globe-host" style="touch-action:pan-y;cursor:grab;"></div>
+        <div id="globeHost" class="globe-host" style="touch-action:pan-y;cursor:grab;" aria-hidden="true"></div>
         <div id="globeTip" class="pointer-events-none absolute z-20 hidden">
           <div class="rounded-lg bg-ink text-paper shadow-2xl px-3.5 py-2.5 min-w-[150px]">
             <p id="gtip-name" class="font-display font-bold text-sm leading-tight"></p>
@@ -29,7 +29,7 @@
           </div>
         </div>
         <div class="absolute top-4 left-4 eyebrow bg-paper border-2 border-ink px-2.5 py-1 rounded-full">Drag to rotate</div>
-        <div id="globeConfirm" class="hidden absolute z-30 left-0 right-0 mx-auto bottom-6 card p-5 w-[min(90%,20rem)] text-center">
+        <div id="globeConfirm" class="hidden absolute z-30 left-0 right-0 mx-auto bottom-6 card p-5 w-[min(90%,20rem)] text-center" role="dialog" aria-modal="true" aria-labelledby="gc-name">
           <span id="gc-flag" class="text-3xl leading-none"></span>
           <p id="gc-name" class="font-display text-lg font-bold mt-2"></p>
           <p class="text-sm text-muted mt-1">Open this branch's page?</p>
@@ -256,7 +256,18 @@ function resize() {
 new ResizeObserver(resize).observe(host);
 resize();
 
-(function loop(){ requestAnimationFrame(loop); controls.update(); renderer.render(scene, camera); })();
+// Scrolling the globe off-screen (there's a lot of page below it) shouldn't
+// mean OrbitControls damping math and a full WebGL render keep running every
+// frame forever — only tab visibility pauses rAF on its own, not this.
+let inView = true;
+new IntersectionObserver(function(entries){ inView = entries[0].isIntersecting; }, { threshold: 0 }).observe(host);
+
+(function loop(){
+  requestAnimationFrame(loop);
+  if (!inView) return;
+  controls.update();
+  renderer.render(scene, camera);
+})();
 
 const markers = [];
 let markersReady = false; // true once real positions are set (world-atlas resolved)
@@ -315,6 +326,7 @@ fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
   })
   .catch(function(err){
     console.error('Elysium+ globe: failed to load country data — markers stay at their default position and clicking them will not focus correctly.', err);
+    host.insertAdjacentHTML('afterend', '<div class="absolute inset-0 grid place-items-center text-center p-6 pointer-events-none z-10"><p class="text-sm text-muted max-w-xs bg-white border-2 border-ink rounded-xl px-4 py-3 shadow-[4px_4px_0_var(--ink)]">Interactive globe unavailable right now — browse branches in the list instead.</p></div>');
   });
 
 const ray = new THREE.Raycaster();
@@ -346,7 +358,10 @@ renderer.domElement.addEventListener('pointercancel', function(e){
 renderer.domElement.addEventListener('pointermove', function(e){
   ndc(e);
   ray.setFromCamera(ptr, camera);
-  const hit = ray.intersectObjects(markers)[0];
+  // Markers all sit at the origin until markersReady — without this guard a
+  // hover near the globe's center during that window shows a tooltip for a
+  // marker that clicking would silently do nothing for.
+  const hit = markersReady ? ray.intersectObjects(markers)[0] : null;
   const tip = document.getElementById('globeTip');
   if (hit) {
     renderer.domElement.style.cursor = 'pointer';
@@ -392,26 +407,37 @@ function focusOn(marker) {
   spinAnim = requestAnimationFrame(step);
 }
 
+// Centralised so every dismiss path (Stay here, Escape, outside click) always
+// resumes autoRotate — previously only focusOn() ever turned it off, and
+// nothing ever turned it back on, permanently freezing the globe after the
+// first marker/chip click of a page view.
+function dismissConfirm() {
+  const panel = document.getElementById('globeConfirm');
+  if (panel.classList.contains('hidden')) return;
+  panel.classList.add('hidden');
+  controls.autoRotate = true;
+}
+
 function showConfirm(data) {
   document.getElementById('gc-flag').textContent = data.flag || '';
   document.getElementById('gc-name').textContent = data.name;
   const panel = document.getElementById('globeConfirm');
   panel.classList.remove('hidden');
-  document.getElementById('gc-open').onclick = function(){ window.location.href = '/' + data.slug + '/'; };
-  document.getElementById('gc-cancel').onclick = function(){ panel.classList.add('hidden'); };
+  const openBtn = document.getElementById('gc-open');
+  openBtn.onclick = function(){ window.location.href = '/' + data.slug + '/'; };
+  document.getElementById('gc-cancel').onclick = dismissConfirm;
+  openBtn.focus({ preventScroll: true });
 }
 
 // Let Escape or a click/tap outside the confirm card dismiss it too, instead
 // of the "Stay here" button being the only way out.
 document.addEventListener('keydown', function(e){
-  if (e.key !== 'Escape') return;
-  const panel = document.getElementById('globeConfirm');
-  if (!panel.classList.contains('hidden')) panel.classList.add('hidden');
+  if (e.key === 'Escape') dismissConfirm();
 });
 document.addEventListener('pointerdown', function(e){
   const panel = document.getElementById('globeConfirm');
   if (panel.classList.contains('hidden')) return;
-  if (!panel.contains(e.target)) panel.classList.add('hidden');
+  if (!panel.contains(e.target)) dismissConfirm();
 });
 
 renderer.domElement.addEventListener('pointerup', function(e){
@@ -438,6 +464,11 @@ renderer.domElement.addEventListener('pointerup', function(e){
 document.querySelectorAll('[data-branch-link]').forEach(function(el){
   el.addEventListener('click', function(e){
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    // A real mouse click always has detail >= 1 (click count); a link
+    // "clicked" via Enter/Space from the keyboard fires with detail === 0.
+    // Without this, keyboard users could never actually reach a branch page
+    // from this sidebar — Enter would silently just spin the globe instead.
+    if (e.detail === 0) return;
     if (!markersReady) return; // let the real link navigate instead
     const slug = el.getAttribute('data-branch-link');
     const marker = markers.find(function(m){ return m.userData.slug === slug; });
