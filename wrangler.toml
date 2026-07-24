@@ -2,12 +2,7 @@ name = "elysium-network"
 pages_build_output_dir = "_site"
 compatibility_date = "2024-09-01"
 
-# Local dev only (`npx wrangler pages dev _site`). The production binding is
-# configured in the Cloudflare dashboard: Pages project -> Settings ->
-# Functions -> D1 database bindings -> variable name "DB".
-# Run `npx wrangler d1 create elysium-votes` once, then paste the
-# database_id it prints below.
 [[d1_databases]]
 binding = "DB"
 database_name = "elysium-votes"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "fe7d7777-297b-4f83-88ec-4d2f2fa48872"
