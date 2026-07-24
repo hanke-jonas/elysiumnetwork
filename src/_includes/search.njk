@@ -1,0 +1,108 @@
+<div class="search-overlay" id="searchOverlay" role="dialog" aria-modal="true" aria-label="Search">
+  <div class="search-panel">
+    <div class="search-input-row">
+      {% icon "search", "w-5 h-5 shrink-0 opacity-50" %}
+      <input type="text" id="searchInput" class="search-input" placeholder="Search the site…" autocomplete="off" spellcheck="false">
+      <button class="search-close" onclick="closeSearch()" aria-label="Close search">{% icon "close", "w-4 h-4" %}</button>
+    </div>
+    <ul id="searchResults" class="search-results"></ul>
+    <p class="search-hint eyebrow opacity-40">↵ to open · Esc to close</p>
+  </div>
+</div>
+
+<style>
+  .search-overlay{ position:fixed; inset:0; z-index:95; background:rgba(25,23,18,.45); backdrop-filter:blur(2px); display:flex; align-items:flex-start; justify-content:center; padding:10vh 1.25rem 1.25rem; opacity:0; visibility:hidden; transition:opacity .2s, visibility .2s; }
+  .search-overlay.open{ opacity:1; visibility:visible; }
+  .search-panel{ width:100%; max-width:34rem; background:#fff; border:2px solid var(--ink); border-radius:1rem; box-shadow:8px 8px 0 var(--ink); transform:rotate(-.4deg); overflow:hidden; }
+  .search-input-row{ display:flex; align-items:center; gap:.65rem; padding:1rem 1.1rem; border-bottom:2px solid var(--ink); }
+  .search-input{ flex:1; border:0; outline:0; font-family:inherit; font-size:1.05rem; background:transparent; color:var(--ink); }
+  .search-input::placeholder{ color:#9a9587; }
+  .search-close{ display:grid; place-items:center; width:2rem; height:2rem; border-radius:.5rem; border:2px solid transparent; color:var(--ink); opacity:.5; }
+  .search-close:hover{ opacity:1; border-color:var(--ink); }
+  .search-results{ max-height:50vh; overflow-y:auto; list-style:none; margin:0; padding:.5rem; }
+  .search-result{ display:block; padding:.7rem .8rem; border-radius:.6rem; text-decoration:none; color:var(--ink); }
+  .search-result.active,.search-result:hover{ background:var(--paper-2); }
+  .search-result .group{ font-family:"JetBrains Mono",monospace; font-size:.65rem; text-transform:uppercase; letter-spacing:.08em; opacity:.5; }
+  .search-result .title{ font-family:"Bricolage Grotesque",sans-serif; font-weight:700; font-size:1rem; }
+  .search-result .blurb{ font-size:.85rem; opacity:.65; margin-top:.1rem; }
+  .search-empty{ padding:1.2rem; text-align:center; opacity:.5; font-size:.9rem; }
+  .search-hint{ padding:.6rem 1.1rem; border-top:2px solid var(--line); text-align:right; }
+  .search-trigger{ display:inline-flex; align-items:center; gap:.5rem; border:2px solid var(--ink); border-radius:.6rem; padding:.5rem .75rem; color:var(--ink); background:var(--paper); font-size:.85rem; }
+  .search-trigger .kbd{ font-family:"JetBrains Mono",monospace; font-size:.7rem; opacity:.5; border:1px solid currentColor; border-radius:.3rem; padding:0 .3rem; }
+  @media (max-width: 1023px){ .search-trigger .label{ display:none; } }
+</style>
+
+<script>
+  var SEARCH_INDEX = {{ searchIndex | dump | safe }};
+  var searchActiveIndex = -1;
+  var searchLastResults = [];
+
+  function openSearch(){
+    var o = document.getElementById('searchOverlay');
+    o.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    var input = document.getElementById('searchInput');
+    input.value = '';
+    renderSearchResults(SEARCH_INDEX);
+    setTimeout(function(){ input.focus(); }, 30);
+  }
+  function closeSearch(){
+    document.getElementById('searchOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  function renderSearchResults(items){
+    searchLastResults = items;
+    searchActiveIndex = items.length ? 0 : -1;
+    var ul = document.getElementById('searchResults');
+    if (!items.length){ ul.innerHTML = '<li class="search-empty">No pages match that.</li>'; return; }
+    ul.innerHTML = items.map(function(it, i){
+      return '<li><a href="'+it.url+'" class="search-result'+(i===0?' active':'')+'" data-idx="'+i+'">'
+        + '<span class="group">'+it.group+'</span>'
+        + '<span class="title">'+it.title+'</span>'
+        + '<span class="blurb">'+it.blurb+'</span>'
+        + '</a></li>';
+    }).join('');
+  }
+  function filterSearch(q){
+    q = q.trim().toLowerCase();
+    if (!q) return renderSearchResults(SEARCH_INDEX);
+    var scored = SEARCH_INDEX
+      .map(function(it){
+        var hay = (it.title + ' ' + it.blurb + ' ' + it.group).toLowerCase();
+        var idx = hay.indexOf(q);
+        return { it: it, score: idx === -1 ? -1 : (hay.indexOf(it.title.toLowerCase()) === 0 ? 0 : idx) };
+      })
+      .filter(function(x){ return x.score !== -1; })
+      .sort(function(a,b){ return a.score - b.score; })
+      .map(function(x){ return x.it; });
+    renderSearchResults(scored);
+  }
+  function moveSearchActive(delta){
+    var links = document.querySelectorAll('.search-result');
+    if (!links.length) return;
+    links[searchActiveIndex] && links[searchActiveIndex].classList.remove('active');
+    searchActiveIndex = (searchActiveIndex + delta + links.length) % links.length;
+    links[searchActiveIndex].classList.add('active');
+    links[searchActiveIndex].scrollIntoView({ block: 'nearest' });
+  }
+
+  document.getElementById('searchInput').addEventListener('input', function(e){ filterSearch(e.target.value); });
+  document.getElementById('searchOverlay').addEventListener('click', function(e){ if (e.target === this) closeSearch(); });
+  document.getElementById('searchOverlay').addEventListener('keydown', function(e){
+    if (e.key === 'Escape') { closeSearch(); return; }
+    if (e.key === 'ArrowDown') { e.preventDefault(); moveSearchActive(1); return; }
+    if (e.key === 'ArrowUp') { e.preventDefault(); moveSearchActive(-1); return; }
+    if (e.key === 'Enter') {
+      var active = document.querySelector('.search-result.active');
+      if (active) { window.location.href = active.getAttribute('href'); }
+    }
+  });
+  document.addEventListener('keydown', function(e){
+    var tag = (e.target.tagName || '').toLowerCase();
+    var typing = tag === 'input' || tag === 'textarea' || e.target.isContentEditable;
+    if ((e.key === '/' && !typing) || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k')) {
+      e.preventDefault();
+      openSearch();
+    }
+  });
+</script>

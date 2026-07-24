@@ -162,11 +162,19 @@ tailwind.config = { theme: { extend: {
       <a href="/contact/" class="nav-link{% if page.url == '/contact/' %} active{% endif %}">Contact</a>
     </nav>
     <div class="hidden lg:flex items-center gap-3">
+      <button class="search-trigger" onclick="openSearch()" aria-label="Search the site">
+        {% icon "search", "w-4 h-4" %}<span class="label">Search</span><span class="kbd">/</span>
+      </button>
       <a href="{{ site.join_form }}" class="btn btn-accent">Join Us {% icon "arrow-ur", "w-4 h-4" %}</a>
     </div>
-    <button class="lg:hidden inline-grid place-items-center w-11 h-11 rounded-lg border-2 border-ink" onclick="openMMenu()" aria-label="Open menu">{% icon "menu", "w-5 h-5" %}</button>
+    <div class="lg:hidden flex items-center gap-2">
+      <button class="inline-grid place-items-center w-11 h-11 rounded-lg border-2 border-ink" onclick="openSearch()" aria-label="Search the site">{% icon "search", "w-5 h-5" %}</button>
+      <button class="inline-grid place-items-center w-11 h-11 rounded-lg border-2 border-ink" onclick="openMMenu()" aria-label="Open menu">{% icon "menu", "w-5 h-5" %}</button>
+    </div>
   </div>
 </header>
+
+{% include "search.njk" %}
 
 <div class="mmenu" id="mmenu" role="dialog" aria-modal="true" aria-label="Navigation">
   <div class="max-w-[1400px] mx-auto px-5 sm:px-8 py-6">
