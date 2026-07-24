@@ -1,0 +1,45 @@
+---
+layout: base.njk
+title: Values & Standards — Elysium+ Network
+permalink: /standards/
+---
+{% set standards = [
+  ["Equality and Respect", "Every person in Elysium+ is treated with the same respect and dignity. We do not tolerate discrimination of any kind — whether based on nationality, gender, identity, orientation, disability, beliefs or social background. Everyone has the right to participate and contribute on equal terms."],
+  ["Inclusion as a Core Principle", "Elysium+ is a place where differences are not only accepted but valued. We work to ensure that every individual feels welcomed and able to take part, regardless of their experience, background or personal circumstances. Inclusion is not a formality; it is part of our daily practice."],
+  ["Overcoming Language Barriers", "English is our main working language so people from different countries can understand one another. Not everyone speaks at the same level, so we communicate clearly, avoid unnecessary jargon, support those who are learning and adapt when needed. No one should feel excluded because of language."],
+  ["Open Dialogue and Friendly Communication", "We expect everyone to communicate with kindness, patience and openness. Ideas should be heard without judgment, and discussions must stay constructive. Disagreement is natural, but it is always expressed respectfully. Our goal is an atmosphere where everyone feels free to speak, suggest, ask and share."],
+  ["Safe and Supportive Environment", "Elysium+ is committed to a safe space for all. We do not accept racism, xenophobia, sexism, homophobia or transphobia, hate speech, harassment or any degrading behaviour. We support LGBTQ+ individuals, people from minority backgrounds and anyone who might need additional care or protection. Safety, tolerance and empathy are fundamental in all our activities."],
+  ["Mutual Growth and Personal Development", "Learning happens when people feel supported. Our community encourages curiosity, creativity, critical thinking and personal growth. Respect for different opinions, cultures and experiences helps us develop together. Members are expected to act with maturity, responsibility and respect."],
+  ["Solidarity and Mutual Support", "Elysium+ is built on cooperation, not competition. Helping one another is part of who we are — sharing knowledge, giving practical support, or simply being present for each other. Solidarity strengthens our community and the impact we make."],
+  ["Professional and Ethical Conduct", "All individuals representing Elysium+, formally or informally, act with integrity, honesty and responsibility. This includes respecting our partners, following organisational rules and maintaining a professional attitude in communication, travel, project activities and international cooperation."],
+  ["Acceptance of This Policy", "By joining Elysium+ as a member, volunteer, participant or partner — or by taking part in any of our events, programmes or activities — you confirm that you have read this policy and agree to follow its principles. Your participation means you accept these values and commit to upholding them in all interactions connected to Elysium+."],
+  ["Consequences of Violations", "Any behaviour that goes against these values may lead to appropriate action. Depending on the situation this can include a warning, temporary removal from activities, or — in serious or repeated cases — complete termination of participation or cooperation. These measures exist to protect the safety, wellbeing and fairness of our community."]
+] %}
+{% set pal = ["var(--coral)","var(--blue)","var(--sun)","var(--mint)","var(--plum)"] %}
+
+<section class="relative overflow-hidden bg-paper border-b-2 border-ink">
+  <div class="relative max-w-4xl mx-auto px-5 sm:px-6 pt-14 pb-16">
+    <p class="eyebrow" style="color:var(--coral)">The commitment we share</p>
+    <h1 class="h-hero mt-4">Values &amp; Standards</h1>
+    <p class="mt-6 text-lg text-muted max-w-2xl leading-relaxed">These principles guide our organisation and the expectations we hold for everyone in the Elysium+ community — members, partners, volunteers, participants and anyone cooperating with us.</p>
+    <p class="mt-4 text-sm opacity-50 mono">Last updated: 19 November 2025</p>
+  </div>
+</section>
+
+<section class="bg-paper">
+  <div class="max-w-4xl mx-auto px-5 sm:px-6 py-16 space-y-4">
+    {% for s in standards %}
+    <div class="card !rounded-xl p-6 sm:p-7 flex gap-5 reveal">
+      <div class="font-display text-3xl font-extrabold leading-none shrink-0 w-10" style="color:{{ pal[loop.index0 % 5] }}">{% if loop.index < 10 %}0{% endif %}{{ loop.index }}</div>
+      <div>
+        <h2 class="font-display text-xl font-bold">{{ s[0] }}</h2>
+        <p class="mt-2 leading-relaxed">{{ s[1] }}</p>
+      </div>
+    </div>
+    {% endfor %}
+
+    <div class="rounded-xl border-2 border-ink p-6 sm:p-7 mt-4" style="background:var(--paper-2)">
+      <p class="leading-relaxed">Questions about our values, or want to report a concern? Write to us at <a href="mailto:{{ site.contact_email }}" class="font-bold underline underline-offset-2">{{ site.contact_email }}</a>.</p>
+    </div>
+  </div>
+</section>

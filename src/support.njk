@@ -1,0 +1,83 @@
+---
+layout: base.njk
+title: Support Us — Elysium+ Network
+permalink: /support/
+---
+<section class="relative overflow-hidden bg-paper border-b-2 border-ink">
+  <div class="relative max-w-4xl mx-auto px-5 sm:px-6 pt-14 pb-16">
+    <p class="eyebrow" style="color:var(--coral)">Stand with us</p>
+    <h1 class="h-hero mt-4">Support <mark class="m-blue">Us</mark></h1>
+    <p class="mt-6 text-lg text-muted max-w-2xl leading-relaxed">Elysium+ grows thanks to the people who believe in our mission. Contribute your time, skills or resources and help us create more opportunities for young people across Europe.</p>
+  </div>
+</section>
+
+<section class="bg-paper border-b-2 border-ink">
+  <div class="max-w-7xl mx-auto px-5 sm:px-6 py-20 grid gap-6 md:grid-cols-3">
+    {% set ways = [
+      { icon: "heart", col: "var(--coral)", title: "Volunteer with us", text: "Help with communication, project activities, online events and research. We provide the tools and support — and you get broader access to opportunities, plus a certificate confirming your involvement." },
+      { icon: "spark", col: "var(--plum)", title: "Help us promote", text: "Share our projects, youth opportunities and events within your community. Need descriptions, posters, visuals or links? Reach out and we'll send materials and help with your presentation." },
+      { icon: "globe", col: "var(--blue)", title: "Make a donation", text: "Your contribution directly supports our work with young people, new initiatives and the running of the organisation. Even small donations make a difference." }
+    ] %}
+    {% for w in ways %}
+    <div class="card p-7 reveal reveal-d{{ loop.index }}">
+      <div class="w-11 h-11 rounded-lg grid place-items-center border-2 border-ink mb-4" style="background:{{ w.col }}">{% icon w.icon, "w-5 h-5" %}</div>
+      <h2 class="h-card">{{ w.title }}</h2>
+      <p class="mt-2 text-muted leading-relaxed">{{ w.text }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="bg-paper-2 border-b-2 border-ink">
+  <div class="max-w-4xl mx-auto px-5 sm:px-6 py-20">
+    <div class="text-center max-w-2xl mx-auto reveal">
+      <p class="eyebrow" style="color:var(--coral)">Donation details</p>
+      <h2 class="h-sec mt-3">Official bank transfer</h2>
+      <p class="mt-4 text-muted leading-relaxed">Questions about donations? Write to <a href="mailto:{{ site.contact_email }}" class="font-bold underline underline-offset-2">{{ site.contact_email }}</a>.</p>
+    </div>
+
+    <div class="mt-10 grid md:grid-cols-2 gap-6">
+      <div class="card p-7 reveal">
+        <div class="flex items-center gap-2 mb-5">
+          <span class="text-xs font-bold px-2.5 py-1 rounded-full border-2 border-ink" style="background:var(--blue)">EUR</span>
+          <span class="text-sm text-muted">International (SWIFT)</span>
+        </div>
+        <dl class="space-y-3 text-sm">
+          {% for k, v in site.donation.eur %}
+          <div class="flex flex-col border-b border-ink/15 pb-2">
+            <dt class="eyebrow opacity-45">{{ k }}</dt>
+            <dd class="font-medium break-words{% if k == 'IBAN' or k == 'SWIFT / BIC' %} mono{% endif %}">{{ v }}</dd>
+          </div>
+          {% endfor %}
+        </dl>
+      </div>
+      <div class="card p-7 reveal">
+        <div class="flex items-center gap-2 mb-5">
+          <span class="text-xs font-bold px-2.5 py-1 rounded-full border-2 border-ink">UAH</span>
+          <span class="text-sm text-muted">Ukraine</span>
+        </div>
+        <dl class="space-y-3 text-sm">
+          {% for k, v in site.donation.uah %}
+          <div class="flex flex-col border-b border-ink/15 pb-2">
+            <dt class="eyebrow opacity-45">{{ k }}</dt>
+            <dd class="font-medium break-words{% if k == 'Account' or k == 'EDRPOU' or k == 'MFO' %} mono{% endif %}">{{ v }}</dd>
+          </div>
+          {% endfor %}
+        </dl>
+      </div>
+    </div>
+    <p class="text-center mt-8 font-medium reveal">Thank you for your contribution. Every contribution matters.</p>
+  </div>
+</section>
+
+<section class="pb-20 sm:pb-24 pt-16 bg-paper">
+  <div class="max-w-[1400px] mx-auto px-5 sm:px-8">
+    <div class="rounded-2xl p-10 sm:p-16 text-center reveal border-2 border-ink" style="background:var(--mint);box-shadow:8px 8px 0 var(--ink)">
+      <h2 class="h-sec text-white">Prefer to give your time?</h2>
+      <div class="mt-8 flex flex-wrap gap-3 justify-center">
+        <a href="mailto:{{ site.contact_email }}?subject=I%20want%20to%20volunteer" class="btn btn-ink">Email to volunteer</a>
+        <a href="/contact/" class="btn" style="background:#fff">Contact us</a>
+      </div>
+    </div>
+  </div>
+</section>

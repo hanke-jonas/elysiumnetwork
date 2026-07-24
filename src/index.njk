@@ -1,0 +1,138 @@
+---
+layout: base.njk
+title: Elysium+ — European youth network
+permalink: /
+---
+<section class="relative overflow-hidden border-b-2 border-ink">
+  <div class="max-w-[1400px] mx-auto px-5 sm:px-8 pt-14 sm:pt-20 pb-14 grid lg:grid-cols-12 gap-8 items-center">
+    <div class="lg:col-span-8">
+      <div class="stamp reveal" style="border-color:var(--coral);color:var(--coral)">est. {{ site.founded_year }} · Chernihiv, Ukraine</div>
+      <h1 class="h-hero mt-6 reveal reveal-d1">Young people move.<br>Europe <mark>changes.</mark></h1>
+      <p class="mt-7 text-lg sm:text-xl text-muted max-w-xl leading-relaxed reveal reveal-d2">Elysium+ sends young people across Ukraine, Poland, Italy and Germany through fully funded exchanges, training and non-formal education — built on inclusion, democracy and solidarity.</p>
+      <div class="mt-9 flex flex-wrap gap-3 reveal reveal-d3">
+        <a href="{{ site.join_form }}" class="btn btn-accent">Join a project {% icon "arrow-ur", "w-4 h-4" %}</a>
+        <a href="/calls/" class="btn">See active calls {% icon "arrow", "w-4 h-4" %}</a>
+      </div>
+    </div>
+    <div class="lg:col-span-4 flex justify-center reveal reveal-d2">
+      <div class="relative">
+        <img src="{{ site.logo }}" alt="Elysium+" class="w-48 sm:w-64 drop-shadow-[6px_10px_0_rgba(25,23,18,.15)]" style="transform:rotate(-4deg)">
+        <span class="font-hand text-2xl absolute -bottom-3 -right-2 rotate-6" style="color:var(--coral)">that's us! ↴</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="border-t-2 border-ink bg-ink">
+    <div class="max-w-[1400px] mx-auto px-5 sm:px-8 grid grid-cols-2 sm:grid-cols-4 divide-x-2 divide-white/15">
+      {% set stats = [["4","countries"],["20+","Erasmus+ projects joined"],["40+","countries visited by our founders"],["2020","founded as a school initiative"]] %}
+      {% set spal = ["var(--blue)","var(--coral)","var(--sun)","var(--mint)"] %}
+      {% for s in stats %}
+      <div class="px-5 sm:px-8 py-7 reveal reveal-d{{ loop.index }}">
+        <p class="num text-3xl sm:text-4xl font-bold" style="color:{{ spal[loop.index0] }}">{{ s[0] }}</p>
+        <p class="mt-1 text-xs sm:text-sm text-paper/70 leading-snug">{{ s[1] }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<div class="border-b-2 border-ink py-3 select-none" style="background:var(--sun)">
+  <div class="marquee">
+    <div class="marquee-track mono text-sm font-bold uppercase tracking-wider text-ink">
+      {% set ticks = ["Chernihiv 51.50°N","Mińsk Mazowiecki 52.18°N","San Pietro Val Lemina 44.92°N","Leipzig 51.34°N","Erasmus+","DiscoverEU","Non-formal education","Youth mobility","Inclusion","Solidarity"] %}
+      {% for r in range(0, 2) %}{% for t in ticks %}<span class="px-6 inline-flex items-center gap-6">{{ t }}<span class="opacity-50">♥</span></span>{% endfor %}{% endfor %}
+    </div>
+  </div>
+</div>
+
+{% include "globe.njk" %}
+
+<section class="bg-paper border-b-2 border-ink">
+  <div class="max-w-[1400px] mx-auto px-5 sm:px-8 py-20 sm:py-24 grid md:grid-cols-2 gap-6">
+    <div class="card p-8 sm:p-10 reveal">
+      <span class="tape left"></span>
+      <p class="eyebrow" style="color:var(--coral)">01 · Mission</p>
+      <p class="mt-4 text-xl leading-relaxed font-medium">{{ site.mission }}</p>
+    </div>
+    <div class="card p-8 sm:p-10 reveal reveal-d1">
+      <span class="tape right"></span>
+      <p class="eyebrow" style="color:var(--blue)">02 · Vision</p>
+      <p class="mt-4 text-xl leading-relaxed">{{ site.vision }}</p>
+    </div>
+  </div>
+</section>
+
+<section class="bg-paper-2 border-b-2 border-ink">
+  <div class="max-w-[1400px] mx-auto px-5 sm:px-8 py-20 sm:py-24">
+    <div class="max-w-2xl reveal">
+      <p class="eyebrow" style="color:var(--coral)">What we do</p>
+      <h2 class="h-sec mt-3">Learning that happens by doing</h2>
+    </div>
+    <div class="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {% set palette = ["var(--blue)","var(--coral)","var(--sun)","var(--mint)","var(--plum)","var(--blue)"] %}
+      {% set rot = ["-1.5deg","1deg","-.5deg","1.5deg","-1deg",".5deg"] %}
+      {% for t in site.themes %}
+      <div class="card p-6 reveal reveal-d{{ (loop.index0 % 3) + 1 }}" style="transform:rotate({{ rot[loop.index0] }})">
+        <div class="w-11 h-11 rounded-lg grid place-items-center border-2 border-ink mb-4" style="background:{{ palette[loop.index0] }}">{% icon t.icon, "w-5 h-5" %}</div>
+        <h3 class="h-card">{{ t.title }}</h3>
+        <p class="mt-2 text-muted leading-relaxed">{{ t.text }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="bg-paper border-b-2 border-ink">
+  <div class="max-w-[1400px] mx-auto px-5 sm:px-8 py-20 sm:py-24">
+    <div class="flex flex-wrap items-end justify-between gap-4 reveal">
+      <div class="max-w-xl"><p class="eyebrow" style="color:var(--coral)">What we stand for</p><h2 class="h-sec mt-3">The principles behind the work</h2></div>
+      <a href="/standards/" class="btn">Read our full standards {% icon "arrow", "w-4 h-4" %}</a>
+    </div>
+    <div class="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      {% set vpal = ["var(--coral)","var(--blue)","var(--sun)","var(--mint)"] %}
+      {% for v in site.values_short %}
+      <div class="card p-6 reveal reveal-d{{ loop.index }}">
+        <span class="block w-8 h-1.5 rounded-full mb-4 border border-ink" style="background:{{ vpal[loop.index0] }}"></span>
+        <h3 class="h-card">{{ v[0] }}</h3>
+        <p class="mt-2 text-muted leading-relaxed">{{ v[1] }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="bg-paper-2 border-b-2 border-ink">
+  <div class="max-w-[1400px] mx-auto px-5 sm:px-8 py-20 sm:py-24 space-y-6">
+    <div class="card !rounded-2xl overflow-hidden relative reveal">
+      <div class="p-8 sm:p-12 grid lg:grid-cols-3 gap-8 items-center">
+        <div class="lg:col-span-2">
+          <p class="eyebrow" style="color:var(--coral)">Featured project</p>
+          <h2 class="h-sec mt-4">Democracy on TrackS</h2>
+          <p class="mt-4 text-muted text-lg leading-relaxed max-w-2xl">A ten-day, fully funded rail journey from Berlin to Strasbourg, taking in the Bundestag, the European Commission, the Court of Justice and the European Parliament. Run through our German branch.</p>
+        </div>
+        <div class="lg:justify-self-end"><a href="/calls/" class="btn btn-accent w-full lg:w-auto justify-center">See active calls {% icon "arrow", "w-4 h-4" %}</a></div>
+      </div>
+    </div>
+    <a href="{{ site.hub }}" target="_blank" rel="noopener" class="block card p-6 sm:p-7 flex flex-col sm:flex-row sm:items-center gap-4 reveal group">
+      <div class="flex-1">
+        <span class="tag" style="border-color:var(--mint);color:var(--mint)"><span class="w-1.5 h-1.5 rounded-full" style="background:var(--mint)"></span> Beta</span>
+        <h3 class="h-card mt-3">We're building an opportunity portal</h3>
+        <p class="mt-1.5 text-muted leading-relaxed">One place to browse every opportunity across the network, now live in beta at hub.elysium.ngo.</p>
+      </div>
+      <span class="btn btn-accent shrink-0">Explore {% icon "arrow", "w-4 h-4" %}</span>
+    </a>
+  </div>
+</section>
+
+<section class="bg-paper pb-20 sm:pb-24 pt-4">
+  <div class="max-w-[1400px] mx-auto px-5 sm:px-8">
+    <div class="rounded-2xl p-10 sm:p-16 text-center reveal border-2 border-ink" style="background:var(--blue);box-shadow:8px 8px 0 var(--ink)">
+      <h2 class="h-sec">Be part of the change</h2>
+      <p class="mt-4 text-ink/80 text-lg max-w-2xl mx-auto leading-relaxed">Join a project, volunteer your skills, or support our work. There's a place for you in Elysium+.</p>
+      <div class="mt-8 flex flex-wrap gap-3 justify-center">
+        <a href="{{ site.join_form }}" class="btn btn-ink">Join Us {% icon "arrow-ur", "w-4 h-4" %}</a>
+        <a href="/support/" class="btn">Support the network</a>
+      </div>
+    </div>
+  </div>
+</section>

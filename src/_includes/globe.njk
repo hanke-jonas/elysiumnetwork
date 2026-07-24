@@ -1,0 +1,264 @@
+<section class="relative bg-paper border-t-2 border-b-2 border-ink overflow-hidden">
+  <div class="max-w-[1400px] mx-auto px-5 sm:px-8 py-16 sm:py-24 grid lg:grid-cols-12 gap-10 items-start">
+    <div class="lg:col-span-4 order-2 lg:order-1">
+      <p class="eyebrow" style="color:var(--coral)">Live &amp; interactive</p>
+      <h2 class="h-sec mt-3">Where should we go <mark class="m-blue">next?</mark></h2>
+      <p class="mt-5 text-muted leading-relaxed">Drag the globe, spin it, zoom in. The four lit-up countries are already home. Click any other European or Mediterranean country to add your vote for where Elysium+ should open its next branch — it's saved for real, for everyone.</p>
+
+      <div class="mt-7 space-y-2.5">
+        {% for b in site.branches %}
+        <div class="flex items-center gap-3 rounded-xl border-2 border-ink bg-white px-4 py-3">
+          <span class="text-xl leading-none">{{ b.flag }}</span>
+          <span class="flex-1 min-w-0">
+            <span class="block font-display font-bold leading-tight text-sm">{{ b.city }}</span>
+            <span class="block mono text-[11px] opacity-60 leading-tight mt-0.5">{{ b.country }}</span>
+          </span>
+          <span class="clock-time-globe mono text-sm font-semibold" data-tz="{{ b.tz }}" style="color:{{ b.accent }}">--:--</span>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="mt-7 card p-5" id="voteList">
+        <p class="eyebrow mb-3">Community picks <span id="voteTotal" class="opacity-50"></span></p>
+        <ol id="voteRanked" class="space-y-2 text-sm"><li class="opacity-50 mono text-xs">Loading votes…</li></ol>
+      </div>
+
+      <p class="mt-5 eyebrow opacity-45 leading-relaxed">Natural Earth data · Crimea shown as part of Ukraine · Russia and Belarus intentionally excluded from this map.</p>
+    </div>
+
+    <div class="lg:col-span-8 order-1 lg:order-2">
+      <div class="relative rounded-2xl border-2 border-ink overflow-hidden" style="background:var(--paper-2)">
+        <div id="globeHost" style="width:100%;aspect-ratio:4/3;touch-action:none;cursor:grab;"></div>
+        <div id="globeTip" class="pointer-events-none absolute z-20 hidden">
+          <div class="rounded-lg bg-ink text-paper shadow-2xl px-3.5 py-2.5 min-w-[150px]">
+            <p id="gtip-name" class="font-display font-bold text-sm leading-tight"></p>
+            <p id="gtip-hint" class="mono text-[11px] opacity-70 mt-1"></p>
+          </div>
+        </div>
+        <div class="absolute top-4 left-4 eyebrow bg-paper border-2 border-ink px-2.5 py-1 rounded-full">Drag to rotate</div>
+        <noscript><p class="p-8">Enable JavaScript to explore the interactive globe.</p></noscript>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  (function(){ function t(){ document.querySelectorAll('.clock-time-globe').forEach(function(el){ var tz=el.getAttribute('data-tz'); try{ el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:tz,hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date()); }catch(e){} }); } t(); setInterval(t,1000); })();
+</script>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/d3-geo@3/dist/d3-geo.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const BRANCHES = {{ site.branches | dump | safe }}.map(function(b){ return { id: b.iso_n3, name: b.name, city: b.city, slug: b.slug, accent: b.accent, flag: b.flag }; });
+const EXCLUDED = {{ site.globe_excluded | dump | safe }};
+const CANDIDATES = {{ site.globe_candidates | dump | safe }};
+const EXCLUDED_IDS = Object.keys(EXCLUDED);
+const INK = 0x191712, PAPER2 = 0xEFE6CE, BLUE = '#7C93D6', CORAL = '#FF6B54';
+
+const host = document.getElementById('globeHost');
+
+function llToVec3(lon, lat, r) {
+  const phi = (90 - lat) * Math.PI / 180;
+  const theta = (lon + 180) * Math.PI / 180;
+  return new THREE.Vector3(
+    -r * Math.sin(phi) * Math.cos(theta),
+     r * Math.cos(phi),
+     r * Math.sin(phi) * Math.sin(theta)
+  );
+}
+
+function dotTexture(color) {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const ctx = c.getContext('2d');
+  ctx.beginPath(); ctx.arc(32,32,22,0,Math.PI*2);
+  ctx.fillStyle = color; ctx.fill();
+  ctx.lineWidth = 5; ctx.strokeStyle = '#191712'; ctx.stroke();
+  return new THREE.CanvasTexture(c);
+}
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(42, 4/3, 0.1, 100);
+camera.position.set(0, 0, 3.1);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+host.appendChild(renderer.domElement);
+
+scene.add(new THREE.AmbientLight(0xffffff, 1.1));
+const sun = new THREE.DirectionalLight(0xffffff, .6);
+sun.position.set(3, 2, 4);
+scene.add(sun);
+
+const globe = new THREE.Mesh(
+  new THREE.SphereGeometry(1, 48, 48),
+  new THREE.MeshPhongMaterial({ color: PAPER2, shininess: 4 })
+);
+scene.add(globe);
+
+const gratMat = new THREE.LineBasicMaterial({ color: INK, transparent: true, opacity: .08 });
+for (let lat = -60; lat <= 60; lat += 30) {
+  const pts = []; for (let lon = -180; lon <= 180; lon += 4) pts.push(llToVec3(lon, lat, 1.001));
+  scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), gratMat));
+}
+for (let lon = -180; lon < 180; lon += 30) {
+  const pts = []; for (let lat = -90; lat <= 90; lat += 4) pts.push(llToVec3(lon, lat, 1.001));
+  scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), gratMat));
+}
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enablePan = false;
+controls.minDistance = 1.7; controls.maxDistance = 4.5;
+controls.autoRotate = true; controls.autoRotateSpeed = 0.6;
+controls.enableDamping = true; controls.dampingFactor = .08;
+
+function resize() {
+  const w = host.clientWidth, h = host.clientHeight;
+  if (!w || !h) return;
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+}
+new ResizeObserver(resize).observe(host);
+resize();
+
+(function loop(){ requestAnimationFrame(loop); controls.update(); renderer.render(scene, camera); })();
+
+const markers = [];
+const branchTex = dotTexture(BLUE);
+const candTex = dotTexture('#ffffff');
+const votedTex = dotTexture(CORAL);
+
+function addMarker(lon, lat, tex, scale, data) {
+  const mat = new THREE.SpriteMaterial({ map: tex, depthTest: true });
+  const sp = new THREE.Sprite(mat);
+  sp.position.copy(llToVec3(lon, lat, 1.03));
+  sp.scale.set(scale, scale, 1);
+  sp.userData = data;
+  scene.add(sp);
+  markers.push(sp);
+  return sp;
+}
+
+let votes = { counts: {}, mine: [] };
+
+function renderVoteList() {
+  const ol = document.getElementById('voteRanked');
+  const entries = Object.entries(votes.counts || {}).sort((a,b) => b[1].votes - a[1].votes).slice(0,8);
+  document.getElementById('voteTotal').textContent = votes.total ? '· ' + votes.total + ' votes' : '';
+  if (!entries.length) { ol.innerHTML = '<li class="opacity-50 mono text-xs">No votes yet — click a country on the globe!</li>'; return; }
+  ol.innerHTML = entries.map(function(e, i){
+    return '<li class="flex items-center gap-2"><span class="mono text-xs opacity-40 w-4">'+(i+1)+'</span><span class="flex-1 font-medium">'+e[1].name+'</span><span class="mono text-xs font-semibold px-2 py-0.5 rounded-full border-2 border-ink">'+e[1].votes+'</span></li>';
+  }).join('');
+}
+
+fetch('/vote').then(r => r.json()).then(function(d){
+  votes = d; renderVoteList();
+  markers.forEach(function(m){
+    if (m.userData.kind === 'candidate' && votes.mine && votes.mine.indexOf(m.userData.id) !== -1) {
+      m.material.map = votedTex; m.material.needsUpdate = true;
+    }
+  });
+}).catch(function(){ document.getElementById('voteRanked').innerHTML = '<li class="opacity-50 mono text-xs">Votes unavailable right now.</li>'; });
+
+function toggleVote(marker) {
+  const id = marker.userData.id, name = marker.userData.name;
+  const already = votes.mine && votes.mine.indexOf(id) !== -1;
+  const action = already ? 'remove' : 'add';
+  fetch('/vote', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: id, name: name, action: action }) })
+    .then(r => r.json()).then(function(d){
+      votes.counts = d.counts; votes.total = d.total;
+      if (!votes.mine) votes.mine = [];
+      if (already) votes.mine = votes.mine.filter(x => x !== id); else votes.mine.push(id);
+      marker.material.map = already ? candTex : votedTex; marker.material.needsUpdate = true;
+      renderVoteList();
+    });
+}
+
+fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+  .then(r => r.json())
+  .then(function(world){
+    const geo = topojson.feature(world, world.objects.countries);
+    const branchIds = {}; BRANCHES.forEach(function(b){ branchIds[b.id] = b; });
+
+    geo.features.forEach(function(f){
+      const id = String(f.id);
+      if (EXCLUDED_IDS.indexOf(id) !== -1) return; // Russia & Belarus: not drawn at all
+
+      const isBranch = !!branchIds[id];
+      const isCandidate = !!CANDIDATES[id];
+      const lineColor = isBranch ? new THREE.Color(branchIds[id].accent) : new THREE.Color(INK);
+      const mat = new THREE.LineBasicMaterial({ color: lineColor, transparent: true, opacity: isBranch ? 0.95 : (isCandidate ? 0.45 : 0.16) });
+
+      const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : (f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : []);
+      polys.forEach(function(poly){
+        poly.forEach(function(ring){
+          const pts = ring.map(function(c){ return llToVec3(c[0], c[1], 1.001); });
+          scene.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts), mat));
+        });
+      });
+
+      const centroid = d3.geoCentroid(f);
+      if (isBranch) {
+        addMarker(centroid[0], centroid[1], branchTex, 0.09, { kind:'branch', id: id, name: branchIds[id].name, slug: branchIds[id].slug });
+      } else if (isCandidate) {
+        addMarker(centroid[0], centroid[1], candTex, 0.065, { kind:'candidate', id: id, name: CANDIDATES[id] });
+      }
+    });
+  })
+  .catch(function(){ /* globe still renders as a plain sphere if world data fails to load */ });
+
+const ray = new THREE.Raycaster();
+const ptr = new THREE.Vector2();
+let downPos = null, downTime = 0;
+
+function ndc(ev) {
+  const r = renderer.domElement.getBoundingClientRect();
+  ptr.x = ((ev.clientX - r.left) / r.width) * 2 - 1;
+  ptr.y = -((ev.clientY - r.top) / r.height) * 2 + 1;
+}
+
+renderer.domElement.addEventListener('pointerdown', function(e){ downPos = [e.clientX, e.clientY]; downTime = Date.now(); });
+
+renderer.domElement.addEventListener('pointermove', function(e){
+  ndc(e);
+  ray.setFromCamera(ptr, camera);
+  const hit = ray.intersectObjects(markers)[0];
+  const tip = document.getElementById('globeTip');
+  if (hit) {
+    renderer.domElement.style.cursor = 'pointer';
+    document.getElementById('gtip-name').textContent = (hit.object.userData.kind === 'branch' ? '📍 ' : '') + hit.object.userData.name;
+    document.getElementById('gtip-hint').textContent = hit.object.userData.kind === 'branch' ? 'Already home — click to open' : 'Click to vote for expansion here';
+    tip.classList.remove('hidden');
+    tip.style.left = Math.min(e.clientX - host.getBoundingClientRect().left + 14, host.clientWidth - 170) + 'px';
+    tip.style.top = Math.max(e.clientY - host.getBoundingClientRect().top - 40, 8) + 'px';
+  } else {
+    renderer.domElement.style.cursor = 'grab';
+    tip.classList.add('hidden');
+  }
+});
+
+renderer.domElement.addEventListener('pointerup', function(e){
+  if (!downPos) return;
+  const moved = Math.hypot(e.clientX - downPos[0], e.clientY - downPos[1]);
+  const quick = Date.now() - downTime < 500;
+  downPos = null;
+  if (moved > 6 || !quick) return;
+  ndc(e);
+  ray.setFromCamera(ptr, camera);
+  const hit = ray.intersectObjects(markers)[0];
+  if (!hit) return;
+  if (hit.object.userData.kind === 'branch') {
+    window.location.href = '/' + hit.object.userData.slug + '/';
+  } else {
+    toggleVote(hit.object);
+  }
+});
+</script>

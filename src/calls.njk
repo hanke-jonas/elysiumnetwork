@@ -1,0 +1,70 @@
+---
+layout: base.njk
+title: Active calls — Elysium+ Network
+permalink: /calls/
+---
+{% set calls = [{
+  title: "Democracy on TrackS (DOTS)",
+  branchSlug: "germany",
+  open: false,
+  deadline: "Applications closed 10 July 2026",
+  summary: "Five seats on a ten-day, fully funded rail journey from Berlin to Strasbourg — visiting the Bundestag, the European Commission, the Court of Justice and the European Parliament along the way. Open to young people aged 18–21 legally resident in Germany. No CV, no portfolio — just curiosity and a willingness to document the journey.",
+  link: "https://hub.elysium.ngo/dots",
+  linkLabel: "Project page"
+} ] %}
+
+<section class="relative overflow-hidden bg-paper border-b-2 border-ink">
+  <div class="relative max-w-4xl mx-auto px-5 sm:px-6 pt-14 pb-16">
+    <p class="eyebrow" style="color:var(--coral)">Opportunities</p>
+    <h1 class="h-hero mt-4">Active <mark>calls</mark></h1>
+    <p class="mt-6 text-lg text-muted max-w-2xl leading-relaxed">Open calls for exchanges, trainings and youth-led projects across the network. New calls are announced here and on our social channels.</p>
+  </div>
+</section>
+
+<section class="bg-paper">
+  <div class="max-w-4xl mx-auto px-5 sm:px-6 py-16 space-y-6">
+    <a href="{{ site.hub }}" target="_blank" rel="noopener" class="block rounded-2xl overflow-hidden reveal group border-2 border-ink" style="background:var(--blue);box-shadow:6px 6px 0 var(--ink)">
+      <div class="p-7 sm:p-8 flex flex-col sm:flex-row sm:items-center gap-5">
+        <div class="flex-1">
+          <span class="inline-flex items-center gap-2 rounded-full bg-ink/10 border border-ink/30 px-3 py-1 text-xs font-bold uppercase tracking-wider">
+            <span class="w-1.5 h-1.5 rounded-full bg-ink animate-pulse"></span> Beta
+          </span>
+          <h2 class="font-display text-2xl font-bold mt-3">The Elysium+ Opportunity Portal</h2>
+          <p class="mt-2 text-ink/75 leading-relaxed max-w-2xl">We're building one place to discover every exchange, training and youth opportunity across the network. It's live in beta right now, so come take a look and tell us what you think.</p>
+        </div>
+        <span class="btn btn-ink shrink-0">Explore the portal {% icon "arrow", "w-4 h-4" %}</span>
+      </div>
+    </a>
+
+    {% for c in calls %}
+    {% for cb in site.branches %}{% if cb.slug == c.branchSlug %}
+    <div class="card !rounded-2xl overflow-hidden reveal">
+      <div class="h-1.5 border-b-2 border-ink" style="background:{{ cb.accent }}"></div>
+      <div class="p-7 sm:p-8">
+        <div class="flex flex-wrap items-center gap-3 mb-4">
+          <span class="tag" style="background:{{ cb.accent }}33">{{ cb.flag }} {{ cb.name }}</span>
+          <span class="tag" style="{% if c.open %}background:var(--mint);color:#fff{% endif %}">
+            <span class="w-1.5 h-1.5 rounded-full {% if c.open %}bg-white{% else %}bg-ink/30{% endif %}"></span>{{ "Open" if c.open else "Closed" }}
+          </span>
+        </div>
+        <h2 class="h-card text-2xl">{{ c.title }}</h2>
+        <p class="mt-3 leading-relaxed">{{ c.summary }}</p>
+        <div class="mt-6 flex flex-wrap items-center gap-4">
+          <a href="{{ c.link }}" target="_blank" rel="noopener" class="btn {% if c.open %}btn-accent{% endif %}">{{ c.linkLabel }} {% icon "arrow", "w-4 h-4" %}</a>
+          <span class="text-sm text-muted">{{ c.deadline }}</span>
+        </div>
+      </div>
+    </div>
+    {% endif %}{% endfor %}
+    {% endfor %}
+
+    <div class="rounded-2xl border-2 border-ink p-8 sm:p-10 text-center reveal" style="background:var(--paper-2)">
+      <h2 class="font-display text-2xl font-bold">Looking for the next opportunity?</h2>
+      <p class="mt-3 leading-relaxed max-w-xl mx-auto">New exchanges and trainings open throughout the year. Follow us or join our mailing list to be first to hear — individual applications for Erasmus+ always run through the network.</p>
+      <div class="mt-6 flex flex-wrap gap-3 justify-center">
+        <a href="{{ site.join_form }}" class="btn btn-accent">Join Us</a>
+        <a href="https://www.instagram.com/beyondborders.ngo" target="_blank" rel="noopener" class="btn">Follow on Instagram</a>
+      </div>
+    </div>
+  </div>
+</section>

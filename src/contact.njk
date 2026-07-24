@@ -1,0 +1,60 @@
+---
+layout: base.njk
+title: Contact — Elysium+ Network
+permalink: /contact/
+---
+<section class="relative overflow-hidden bg-paper border-b-2 border-ink">
+  <div class="relative max-w-4xl mx-auto px-5 sm:px-6 pt-14 pb-16">
+    <p class="eyebrow" style="color:var(--coral)">Say hello</p>
+    <h1 class="h-hero mt-4">Contact</h1>
+    <p class="mt-6 text-lg text-muted max-w-2xl leading-relaxed">Questions, ideas or collaboration proposals — we're always open. Reach the whole network here, or a specific branch from its page.</p>
+  </div>
+</section>
+
+<section class="bg-paper">
+  <div class="max-w-5xl mx-auto px-5 sm:px-6 py-16 grid md:grid-cols-2 gap-6">
+    <div class="card p-8 reveal">
+      <div class="w-11 h-11 rounded-lg grid place-items-center border-2 border-ink mb-4" style="background:var(--blue)">{% icon "mail", "w-5 h-5" %}</div>
+      <h2 class="h-card">Email us</h2>
+      <p class="mt-2 text-muted leading-relaxed">The fastest way to reach the network team.</p>
+      <a href="mailto:{{ site.contact_email }}" class="mt-4 inline-flex items-center gap-2 font-bold hover:gap-3 transition-all">{{ site.contact_email }} {% icon "arrow", "w-4 h-4" %}</a>
+    </div>
+
+    <div class="card p-8 reveal reveal-d1">
+      <div class="w-11 h-11 rounded-lg grid place-items-center border-2 border-ink mb-4" style="background:var(--plum)">{% icon "spark", "w-5 h-5" %}</div>
+      <h2 class="h-card">Join a project</h2>
+      <p class="mt-2 text-muted leading-relaxed">Email the network directly and we'll be in touch about upcoming opportunities.</p>
+      <a href="{{ site.join_form }}" class="btn btn-accent mt-4">Email to join {% icon "arrow", "w-4 h-4" %}</a>
+    </div>
+  </div>
+
+  <div class="max-w-5xl mx-auto px-5 sm:px-6 pb-16">
+    <div class="card p-8 reveal">
+      <h2 class="h-card mb-2">Follow the network</h2>
+      <p class="text-muted leading-relaxed mb-5">Open calls, project updates and behind-the-scenes.</p>
+      <div class="flex flex-wrap gap-3">
+        {% for s in site.socials %}
+        <a href="{{ s.url }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-full border-2 border-ink px-4 py-2.5 text-sm font-semibold hover:bg-paper-2 transition">
+          {% icon s.icon, "w-5 h-5" %} {{ s.label }}
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-5xl mx-auto px-5 sm:px-6 pb-20">
+    <h2 class="font-display text-2xl font-bold mb-5 reveal">Reach a specific branch</h2>
+    <div class="grid gap-4 sm:grid-cols-2">
+      {% for b in site.branches %}
+      <a href="/{{ b.slug }}/" class="card p-5 flex items-center gap-4 reveal">
+        <span class="text-3xl">{{ b.flag }}</span>
+        <div class="min-w-0 flex-1">
+          <p class="font-display font-bold">{{ b.name }}</p>
+          <p class="text-sm text-muted truncate">{{ b.email }}</p>
+        </div>
+        <span class="w-2.5 h-2.5 rounded-full border border-ink shrink-0" style="background:{{ b.accent }}"></span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
