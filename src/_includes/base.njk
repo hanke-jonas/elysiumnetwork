@@ -107,7 +107,7 @@ tailwind.config = { theme: { extend: {
   summary.mmenu-link::-webkit-details-marker{ display:none; }
   summary.mmenu-link::marker{ display:none; content:''; }
   .mmenu-link .idx{ font-family:"JetBrains Mono",monospace; font-size:.9rem; color:var(--coral-ink); font-weight:600; }
-  .mmenu-sub{ font-family:"JetBrains Mono",monospace; font-size:.85rem; padding-left:2.6rem; margin-top:.7rem; margin-bottom:.9rem; }
+  .mmenu-sub{ margin-top:.9rem; margin-bottom:1.1rem; }
 
   .heart-cursor{ position:fixed; z-index:200; pointer-events:none; width:16px; height:16px; will-change:transform,opacity; animation:heart-pop .7s ease-out forwards; }
   @keyframes heart-pop{ 0%{ transform:translate(-50%,-50%) scale(.4) rotate(var(--r,0deg)); opacity:.9; } 100%{ transform:translate(-50%,-50%) scale(1.1) translateY(-22px) rotate(var(--r,0deg)); opacity:0; } }
@@ -195,8 +195,17 @@ tailwind.config = { theme: { extend: {
           <span class="flex items-baseline gap-4"><span class="idx">03</span> Network</span>
           {% icon "chevron", "w-7 h-7 shrink-0 self-center group-open:rotate-180 transition-transform" %}
         </summary>
-        <div class="mmenu-sub flex flex-wrap gap-x-4 gap-y-2">
-          {% for b in site.branches %}<a href="/{{ b.slug }}/" class="hover:underline">{{ b.flag }} {{ b.country }}</a>{% endfor %}
+        <div class="mmenu-sub grid grid-cols-2 gap-3">
+          {% for b in site.branches %}
+          <a href="/{{ b.slug }}/" class="flex items-center gap-3 rounded-xl border-2 border-ink bg-white px-4 py-3.5 active:translate-y-0.5 transition">
+            <span class="text-2xl leading-none">{{ b.flag }}</span>
+            <span class="min-w-0">
+              <span class="block font-display font-bold leading-tight">{{ b.country }}</span>
+              <span class="block mono text-xs opacity-60 leading-tight mt-0.5 truncate">{{ b.city }}</span>
+            </span>
+            <span class="w-2.5 h-2.5 rounded-full border border-ink shrink-0 ml-auto" style="background:{{ b.accent }}"></span>
+          </a>
+          {% endfor %}
         </div>
       </details>
       <a href="/calls/" class="mmenu-link"><span class="idx">04</span> Active calls</a>
