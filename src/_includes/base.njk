@@ -104,6 +104,8 @@ tailwind.config = { theme: { extend: {
   .mmenu{ position:fixed; inset:0; z-index:90; background:var(--paper); opacity:0; visibility:hidden; transition:opacity .3s, visibility .3s; overflow-y:auto; overscroll-behavior:contain; }
   .mmenu.open{ opacity:1; visibility:visible; }
   .mmenu-link{ font-family:"Bricolage Grotesque",sans-serif; font-weight:800; font-size:clamp(2rem,9vw,3rem); letter-spacing:-.02em; color:var(--ink); display:flex; align-items:baseline; gap:1rem; padding:.55rem 0; border-bottom:2px solid var(--ink); }
+  summary.mmenu-link::-webkit-details-marker{ display:none; }
+  summary.mmenu-link::marker{ display:none; content:''; }
   .mmenu-link .idx{ font-family:"JetBrains Mono",monospace; font-size:.9rem; color:var(--coral-ink); font-weight:600; }
   .mmenu-sub{ font-family:"JetBrains Mono",monospace; font-size:.85rem; padding-left:2.6rem; margin-top:.7rem; margin-bottom:.9rem; }
 
@@ -188,10 +190,15 @@ tailwind.config = { theme: { extend: {
     <nav class="mt-10">
       <a href="/" class="mmenu-link"><span class="idx">01</span> Home</a>
       <a href="/about/" class="mmenu-link"><span class="idx">02</span> About</a>
-      <div class="mmenu-link" style="cursor:default"><span class="idx">03</span> Network</div>
-      <div class="mmenu-sub flex flex-wrap gap-x-4 gap-y-1">
-        {% for b in site.branches %}<a href="/{{ b.slug }}/" class="hover:underline">{{ b.flag }} {{ b.country }}</a>{% endfor %}
-      </div>
+      <details class="group">
+        <summary class="mmenu-link list-none cursor-pointer justify-between">
+          <span class="flex items-baseline gap-4"><span class="idx">03</span> Network</span>
+          {% icon "chevron", "w-7 h-7 shrink-0 self-center group-open:rotate-180 transition-transform" %}
+        </summary>
+        <div class="mmenu-sub flex flex-wrap gap-x-4 gap-y-2">
+          {% for b in site.branches %}<a href="/{{ b.slug }}/" class="hover:underline">{{ b.flag }} {{ b.country }}</a>{% endfor %}
+        </div>
+      </details>
       <a href="/calls/" class="mmenu-link"><span class="idx">04</span> Active calls</a>
       <a href="/support/" class="mmenu-link"><span class="idx">05</span> Support</a>
       <a href="/contact/" class="mmenu-link"><span class="idx">06</span> Contact</a>
