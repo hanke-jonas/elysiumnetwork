@@ -1,0 +1,52 @@
+<div class="cookie-banner hidden" id="cookieBanner" role="dialog" aria-label="Cookie preferences" aria-describedby="cookieBannerText">
+  <div class="cookie-panel">
+    <p id="cookieBannerText" class="text-sm leading-relaxed">
+      We don't use any analytics or tracking cookies on this site — only what's strictly necessary for it to work. Your choice here is saved so we don't ask again, and will apply automatically if that ever changes.
+      <a href="/privacy/" class="underline font-semibold">Privacy Policy</a>
+    </p>
+    <div class="cookie-actions">
+      <button type="button" class="btn" onclick="setCookieConsent('declined')">Decline</button>
+      <button type="button" class="btn btn-accent" onclick="setCookieConsent('accepted')">Accept</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .cookie-banner{ position:fixed; left:1rem; right:1rem; bottom:1rem; z-index:80; max-width:36rem; margin:0 auto; }
+  .cookie-banner.hidden{ display:none; }
+  .cookie-panel{ background:#fff; border:2px solid var(--ink); border-radius:1rem; box-shadow:6px 6px 0 var(--ink); padding:1.25rem 1.5rem; }
+  .cookie-actions{ display:flex; gap:.65rem; margin-top:1rem; justify-content:flex-end; }
+  @media (max-width: 480px){ .cookie-actions{ justify-content:stretch; } .cookie-actions .btn{ flex:1; justify-content:center; } }
+</style>
+
+<script>
+  var COOKIE_CONSENT_KEY = 'elysium-cookie-consent';
+
+  function getCookieConsent(){
+    try { return localStorage.getItem(COOKIE_CONSENT_KEY); } catch (e) { return null; }
+  }
+  function hasAnalyticsConsent(){
+    return getCookieConsent() === 'accepted';
+  }
+  // No analytics tool is wired in yet. Once one is added, its script/init
+  // call belongs here, guarded by hasAnalyticsConsent() — this is the single
+  // gate every future tracking script should go through, not a per-script
+  // check scattered elsewhere.
+  function loadAnalyticsIfConsented(){
+    if (!hasAnalyticsConsent()) return;
+  }
+  function openCookiePrefs(){
+    document.getElementById('cookieBanner').classList.remove('hidden');
+  }
+  function closeCookieBanner(){
+    document.getElementById('cookieBanner').classList.add('hidden');
+  }
+  function setCookieConsent(value){
+    try { localStorage.setItem(COOKIE_CONSENT_KEY, value); } catch (e) {}
+    closeCookieBanner();
+    if (value === 'accepted') loadAnalyticsIfConsented();
+  }
+
+  if (!getCookieConsent()) openCookiePrefs();
+  else loadAnalyticsIfConsented();
+</script>

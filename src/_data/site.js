@@ -10,7 +10,6 @@ module.exports = {
   // this backs canonical URLs and Open Graph og:url tags.
   url: 'https://elysiumnetwork.pages.dev',
   default_description: 'Elysium+ is a European youth network rooted in Ukraine, moving young people across Ukraine, Poland, Italy and Germany.',
-  logo: 'https://elysium.ngo/wp-content/uploads/2025/10/Elysium-1600-x-400-px-1600-x-1600-px-Background-Removed-2-2-1-1024x1024.png',
   logo_small: '/assets/logo-128.png',
   logo_hero: '/assets/logo-320.png',
   og_image: '/assets/og-image.png',
@@ -130,16 +129,16 @@ module.exports = {
     // a plain center crop cuts heads off on anyone whose face isn't dead
     // centre in the source photo. Tuned per photo instead of one blanket value.
     { name: 'Anton Rubanenko', role: 'Founder & Project Manager',
-      image: 'https://elysium.ngo/wp-content/uploads/2025/10/anton-rubanenko.jpg', focalY: '10%',
+      image: '/assets/team/anton-rubanenko.jpg', focalY: '10%',
       bio: 'Founder of Elysium+ and a youth activist focused on democracy, human rights and cultural exchange. He has joined more than 20 Erasmus+ projects and visited 40+ countries, building the partnerships that empower young people across Europe.' },
     { name: 'Jonas Hanke', role: 'Co-founder & IT Specialist',
-      image: 'https://elysium.ngo/wp-content/uploads/2025/10/jonas-hanke.jpeg', focalY: '48%',
+      image: '/assets/team/jonas-hanke.jpg', focalY: '48%',
       bio: "Co-founder with a passion for travel, media and cultural discovery, and managing director of the German branch, Astra. Inspired by brutalist architecture, he connects culture, design and youth engagement — and keeps the network's digital infrastructure running." },
     { name: 'Ergün Eraslan', role: 'Associate Member',
-      image: 'https://elysium.ngo/wp-content/uploads/2025/11/WhatsApp-Image-2025-11-07-at-22.13.05-edited.jpeg', focalY: '15%',
+      image: '/assets/team/ergun-eraslan.jpg', focalY: '15%',
       bio: 'Youth activist with a background in mechanical engineering. Passionate about equality, innovation and cultural exchange, he has taken part in initiatives addressing discrimination and promoting inclusion.' },
     { name: 'Nourhan Said', role: 'Associate Member',
-      image: 'https://elysium.ngo/wp-content/uploads/2026/03/WhatsApp-Image-2026-03-01-at-15.20.20-1.jpeg', focalY: '12%',
+      image: '/assets/team/nourhan-said.jpg', focalY: '12%',
       bio: 'U.S. Department of State alumna who served with a child-focused organisation in the United States. Her research focuses on migration, gender and refugee studies — the intersection of mobility, protection frameworks and social policy.' },
   ],
 

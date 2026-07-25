@@ -190,6 +190,7 @@
 
 {% include "search.njk" %}
 {% include "detail-modal.njk" %}
+{% include "cookie-banner.njk" %}
 
 <div class="mmenu" id="mmenu" role="dialog" aria-modal="true" aria-label="Navigation">
   <div class="max-w-[1400px] mx-auto px-5 sm:px-8 pt-6" style="padding-bottom:max(2.5rem, env(safe-area-inset-bottom, 0px) + 2rem);">
@@ -271,6 +272,7 @@
         <p class="eyebrow text-paper/60 mb-4">Legal</p>
         <ul class="space-y-2.5">
           <li><a href="/privacy/" class="text-paper/65 hover:text-paper transition">Privacy Policy</a></li>
+          <li><button type="button" onclick="openCookiePrefs()" class="text-paper/65 hover:text-paper transition text-left">Cookie preferences</button></li>
           <li><a href="/standards/" class="text-paper/65 hover:text-paper transition">Values &amp; Standards</a></li>
           <li><a href="/contact/" class="text-paper/65 hover:text-paper transition">Contact</a></li>
         </ul>
