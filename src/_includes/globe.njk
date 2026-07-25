@@ -138,18 +138,18 @@ function vertexLonLat(x, y, z) {
   return [lon, lat];
 }
 
-// Colours the sphere with a per-vertex attribute sampled from a 2D map
-// canvas, instead of the obvious approach of wrapping the canvas on as a
-// texture. A UV-mapped equirectangular texture on a sphere reproducibly
+// Colours the sphere's fill with a per-vertex attribute sampled from a 2D
+// map canvas, instead of the obvious approach of wrapping the canvas on as
+// a texture. A UV-mapped equirectangular texture on a sphere reproducibly
 // rendered a faint but distinct band exactly at the equator on this
 // hardware/driver combination — confirmed (by process of elimination
-// against every other texture/material/lighting/geometry parameter Three.js
-// exposes) to be specific to texture sampling itself, since it persisted
-// across every mipmap/anisotropy/colorSpace/UV-convention/segment-count
-// variant tried, yet vanished the moment sampling was replaced with plain
-// per-vertex color interpolation. Resolution is tied to sphere segment
-// count rather than texture pixels, which is a fair trade at this element's
-// on-screen size.
+// against every other texture/material/lighting/geometry/sampling
+// parameter Three.js exposes, including supersampling and explicit
+// smoothing of the source data) to be specific to texture sampling itself.
+// Fill resolution is tied to sphere segment count rather than texture
+// pixels, so it stays intentionally soft — crisp per-country boundaries
+// come from the separate vector-line border pass below instead, which
+// isn't resolution-limited.
 function paintVertexColors(geometry, sourceCanvas) {
   const w = sourceCanvas.width, h = sourceCanvas.height;
   const data = sourceCanvas.getContext('2d').getImageData(0, 0, w, h).data;
@@ -333,6 +333,31 @@ fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
     const crimea = findCrimeaPolygon(geo);
 
     paintVertexColors(sphereGeo, buildRoadmapCanvas(geo, branchIds, crimea));
+
+    // Crisp per-country borders, like Google Maps' political layer — drawn
+    // as real vector lines rather than baked into the (comparatively low-
+    // resolution, vertex-color-limited) fill, so every country reads
+    // clearly regardless of fill softness. Batched into a single
+    // LineSegments/BufferGeometry (one draw call for ~170 countries)
+    // instead of one object per ring.
+    const borderPts = [];
+    const borderStep = IS_MOBILE ? 2 : 1; // thin out points on phones
+    geo.features.forEach(function(f){
+      const id = String(f.id);
+      if (EXCLUDED_IDS.indexOf(id) !== -1 || !f.geometry) return;
+      const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : (f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : []);
+      if (id === '804' && crimea) polys.push(crimea);
+      polys.forEach(function(poly){
+        poly.forEach(function(ring){
+          for (let k = 0; k < ring.length - borderStep; k += borderStep) {
+            borderPts.push(llToVec3(ring[k][0], ring[k][1], 1.006));
+            borderPts.push(llToVec3(ring[k + borderStep][0], ring[k + borderStep][1], 1.006));
+          }
+        });
+      });
+    });
+    const borderMat = new THREE.LineBasicMaterial({ color: 0x6b7280, transparent: true, opacity: 0.55 });
+    world.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(borderPts), borderMat));
 
     geo.features.forEach(function(f){
       const id = String(f.id);
