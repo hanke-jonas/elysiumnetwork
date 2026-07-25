@@ -122,11 +122,6 @@ const renderer = new THREE.WebGLRenderer({ antialias: !IS_MOBILE, alpha: true })
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, IS_MOBILE ? 1 : 2));
 host.appendChild(renderer.domElement);
 
-const ambientLight = new THREE.AmbientLight(0xffffff, .85);
-scene.add(ambientLight);
-const sun = new THREE.DirectionalLight(0xffffff, 1.1);
-sun.position.set(3, 2, 4);
-scene.add(sun);
 
 // Per-vertex lon/lat, matching llToVec3's own convention (inverse of it).
 function vertexLonLat(x, y, z) {
@@ -182,9 +177,17 @@ const sphereGeo = new THREE.SphereGeometry(1, IS_MOBILE ? 48 : 96, IS_MOBILE ? 4
   for (let i = 0; i < posCount; i++) oceanLinear.toArray(initial, i * 3);
   sphereGeo.setAttribute('color', new THREE.BufferAttribute(initial, 3));
 }
-// Lambert (diffuse-only, no specular) — a flat map shouldn't have a glossy
-// highlight. vertexColors reads the per-vertex attribute above/below instead
-// of a texture map — see paintVertexColors() for why.
+// Lambert (soft per-pixel lighting, no specular). Tried switching this to an
+// unlit MeshBasicMaterial for a flatter, more map-like look — that actually
+// unmasked a faint version of the same vertex-color artifact that this
+// lighting gradient was incidentally hiding, so keeping Lambert here is
+// deliberate, not an oversight. vertexColors reads the per-vertex attribute
+// above/below instead of a texture map — see paintVertexColors() for why.
+const ambientLight = new THREE.AmbientLight(0xffffff, .85);
+scene.add(ambientLight);
+const sun = new THREE.DirectionalLight(0xffffff, 1.1);
+sun.position.set(3, 2, 4);
+scene.add(sun);
 const globeMat = new THREE.MeshLambertMaterial({ vertexColors: true });
 const globe = new THREE.Mesh(sphereGeo, globeMat);
 world.add(globe);
