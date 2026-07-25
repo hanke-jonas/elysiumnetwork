@@ -118,7 +118,14 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(42, 4/3, 0.1, 100);
 camera.position.set(0, 0, 3.1);
 
-const renderer = new THREE.WebGLRenderer({ antialias: !IS_MOBILE, alpha: true });
+// MSAA off deliberately, on every device: confirmed via direct gl.readPixels
+// (not just screenshots, which can add their own compression artifacts)
+// that this renderer/driver combination resolves multisampling into a
+// visible seam across an otherwise perfectly flat run of ocean pixels,
+// specifically along the sphere's equatorial ring of triangles. Turning
+// antialias off removes that resolve step entirely; devicePixelRatio below
+// already supersamples edges close enough that the loss isn't visible.
+const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, IS_MOBILE ? 1 : 2));
 host.appendChild(renderer.domElement);
 
