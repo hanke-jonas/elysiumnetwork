@@ -74,4 +74,4 @@ Allow: /
 User-agent: ImagesiftBot
 Allow: /
 
-Sitemap: https://elysiumnetwork.pages.dev/sitemap.xml
+Sitemap: https://elysium.ngo/sitemap.xml

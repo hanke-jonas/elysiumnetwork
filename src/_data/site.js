@@ -14,9 +14,11 @@ const fallback = {
   tagline: 'Empowering young people to create positive change',
   founded_year: 2020,
   contact_email,
-  // Update once a custom domain is attached to the Cloudflare Pages project —
-  // this backs canonical URLs and Open Graph og:url tags.
-  url: 'https://elysiumnetwork.pages.dev',
+  // Custom domain — backs canonical URLs and Open Graph og:url tags. The
+  // elysiumnetwork.pages.dev subdomain still exists (Cloudflare Pages
+  // doesn't let you disable it) but nothing in this codebase should
+  // reference it — elysium.ngo is the one and only canonical URL.
+  url: 'https://elysium.ngo',
   default_description: 'Elysium+ is a European youth network rooted in Ukraine, moving young people across Ukraine, Poland, Italy and Germany.',
   logo_small: '/assets/logo-128.png',
   logo_hero: '/assets/logo-320.png',

@@ -20,7 +20,7 @@
 // the fetch fails (e.g. the very first deployment ever, before any Function
 // has gone live yet), so the site keeps building normally in that case and
 // in local dev.
-const SITE_BASE_URL = process.env.SITE_BUILD_FETCH_URL || 'https://elysiumnetwork.pages.dev';
+const SITE_BASE_URL = process.env.SITE_BUILD_FETCH_URL || 'https://elysium.ngo';
 
 async function fetchLive(path) {
   try {
