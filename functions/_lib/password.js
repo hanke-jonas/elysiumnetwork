@@ -2,7 +2,12 @@
 // Node crypto/bcrypt, but crypto.subtle is available everywhere and PBKDF2
 // with a high iteration count is a reasonable, dependency-free choice for
 // this scale of user base.
-const ITERATIONS = 210000; // OWASP 2023 minimum recommendation for PBKDF2-SHA256
+// Cloudflare Workers' real edge runtime hard-caps PBKDF2 at 100,000
+// iterations (confirmed in production: "NotSupportedError: Pbkdf2 failed:
+// iteration counts above 100000 are not supported") even though local
+// Miniflare happily runs higher counts — so 100,000 (the platform ceiling)
+// is used here instead of OWASP's 210,000-iteration recommendation.
+const ITERATIONS = 100000;
 
 function toBase64(bytes) {
   let bin = '';
