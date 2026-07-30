@@ -1,8 +1,8 @@
-const { fetchD1 } = require('../_lib/d1.js');
+const { fetchLive } = require('../_lib/d1.js');
 
 // Kept in sync with the single hardcoded call that used to live inline in
 // calls.njk's `{% set calls = [...] %}` — same content, now the fallback
-// used whenever D1 isn't configured/reachable at build time.
+// used whenever the live site's admin API isn't reachable at build time.
 const fallback = [
   {
     id: 'call-1',
@@ -17,7 +17,7 @@ const fallback = [
 ];
 
 module.exports = async function () {
-  const rows = await fetchD1('SELECT * FROM calls ORDER BY sort_order ASC');
+  const rows = await fetchLive('/api/admin/calls');
   if (!rows) return fallback;
 
   return rows.map((r) => ({

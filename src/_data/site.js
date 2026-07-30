@@ -1,12 +1,13 @@
-const { fetchD1 } = require('../_lib/d1.js');
+const { fetchLive } = require('../_lib/d1.js');
 
 const contact_email = 'contact@elysium.ngo';
 
-// Hardcoded fallback — used whenever D1 isn't configured/reachable at build
-// time (local dev, or before the database is provisioned). Once D1 env vars
-// are set, branches/team/faqs below are overridden with live rows so admin
-// panel edits actually reach the built site; everything else in this object
-// (mission, values, donation info, etc.) has no admin UI yet and stays here.
+// Hardcoded fallback — used whenever the live site's admin API isn't
+// reachable at build time (local dev, or the very first deployment ever,
+// before any Function has gone live). Once reachable, branches/team/faqs
+// below are overridden with live rows so admin panel edits actually reach
+// the built site; everything else in this object (mission, values, donation
+// info, etc.) has no admin UI yet and stays here.
 const fallback = {
   network_name: 'Elysium+',
   network_full: 'Elysium+ Network',
@@ -176,9 +177,9 @@ const fallback = {
 
 module.exports = async function () {
   const [branchRows, teamRows, faqRows] = await Promise.all([
-    fetchD1('SELECT * FROM branches ORDER BY sort_order ASC'),
-    fetchD1('SELECT * FROM team_members ORDER BY sort_order ASC'),
-    fetchD1('SELECT * FROM faqs ORDER BY sort_order ASC'),
+    fetchLive('/api/admin/branches'),
+    fetchLive('/api/admin/team'),
+    fetchLive('/api/admin/faqs'),
   ]);
 
   return {
@@ -191,8 +192,8 @@ module.exports = async function () {
           country: r.country, city: r.city,
           oid: r.oid, type: r.type, status: r.status,
           accent: r.accent, tagline: r.tagline, about: r.about,
-          focus: JSON.parse(r.focus_json || '[]'),
-          people: JSON.parse(r.people_json || '[]'),
+          focus: r.focus_json || [],
+          people: r.people_json || [],
           email: r.email, phone: r.phone, address: r.address, website: r.website,
         }))
       : fallback.branches,
