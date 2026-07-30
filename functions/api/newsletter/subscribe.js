@@ -1,4 +1,5 @@
 import { badRequest, isValidEmail, json, randomId } from '../../_lib/http.js';
+import { sendEmail } from '../../_lib/email.js';
 
 export async function onRequestPost({ request, env }) {
   const body = await request.json().catch(() => null);
@@ -21,5 +22,16 @@ export async function onRequestPost({ request, env }) {
     ).bind(randomId(), email, token).run();
   }
 
-  return json({ ok: true, debug: 'after D1 insert/update', token });
+  const confirmUrl = new URL(`/api/newsletter/confirm?token=${token}`, request.url).toString();
+  try {
+    await sendEmail(env, {
+      to: email,
+      subject: 'Confirm your Elysium+ Network newsletter subscription',
+      html: `<p>Please confirm your subscription to the Elysium+ Network newsletter.</p><p><a href="${confirmUrl}">Confirm subscription</a></p>`,
+    });
+  } catch (err) {
+    return json({ ok: false, debug: 'sendEmail threw', detail: String(err) }, { status: 200 });
+  }
+
+  return json({ ok: true, alreadySubscribed: false });
 }
