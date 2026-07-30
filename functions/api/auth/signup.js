@@ -1,6 +1,7 @@
 import { hashPassword } from '../../_lib/password.js';
 import { createSession, sessionCookieHeader } from '../../_lib/session.js';
 import { json, badRequest, isValidEmail, randomId } from '../../_lib/http.js';
+import { sendEmail } from '../../_lib/email.js';
 
 export async function onRequestPost({ request, env }) {
   const body = await request.json().catch(() => null);
@@ -28,6 +29,27 @@ export async function onRequestPost({ request, env }) {
     await env.DB.prepare(
       'INSERT INTO newsletter_subscribers (id, email, status, token, public_user_id) VALUES (?, ?, ?, ?, ?) ON CONFLICT(email) DO UPDATE SET public_user_id = excluded.public_user_id'
     ).bind(randomId(), email.toLowerCase(), 'pending', randomId(), id).run();
+  }
+
+  const verifyToken = randomId();
+  const verifyExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  await env.DB.prepare(
+    "INSERT INTO public_user_tokens (id, user_id, kind, expires_at) VALUES (?, ?, 'verify_email', ?)"
+  ).bind(verifyToken, id, verifyExpires).run();
+
+  // Never let a flaky/unconfigured email provider break account creation —
+  // the account and session are already committed above regardless.
+  try {
+    const verifyUrl = new URL(`/api/auth/verify-email?token=${verifyToken}`, request.url).toString();
+    await sendEmail(env, {
+      to: email.toLowerCase(),
+      subject: 'Welcome to Elysium+ Network',
+      html: `<p>Welcome to Elysium+ Network, ${name.trim()}!</p>` +
+        `<p>Your account has been created. You can now log in, express interest in Active Calls, and manage your newsletter preference from your profile.</p>` +
+        `<p><a href="${verifyUrl}">Confirm your email address</a></p>`,
+    });
+  } catch (err) {
+    console.warn(`Welcome/verification email failed for ${email}: ${err}`);
   }
 
   const session = await createSession(env.DB, 'public', id);
