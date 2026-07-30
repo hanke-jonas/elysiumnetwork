@@ -35,7 +35,12 @@ export async function onRequestPost({ request, env }) {
         html: `<p>Please confirm your subscription to the Elysium+ Network newsletter.</p><p><a href="${confirmUrl}">Confirm subscription</a></p>`,
       });
     } catch (err) {
-      return json({ error: 'Could not send confirmation email', detail: String(err) }, { status: 502 });
+      // Cloudflare's edge reserves 502/521-530 for real origin-connectivity
+      // failures and replaces the response body with its own generic error
+      // page even when a Worker returns one deliberately — confirmed via a
+      // live repro where this exact JSON never reached the client. 500 is a
+      // plain application-error status Cloudflare doesn't intercept.
+      return json({ error: 'Could not send confirmation email', detail: String(err) }, { status: 500 });
     }
 
     return json({ ok: true, alreadySubscribed: false });

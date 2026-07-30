@@ -40,6 +40,9 @@ export async function onRequestPost({ request, env, params }) {
     // Left in 'sending' rather than reverted to 'draft' — a partial batch
     // failure may have already emailed some subscribers, so re-sending from
     // scratch would double-send them. Needs a human to look at it.
-    return json({ error: 'Send failed partway through', detail: String(err) }, { status: 502 });
+    // 500, not 502 — Cloudflare's edge reserves 502 for real
+    // origin-connectivity failures and replaces the response body with its
+    // own generic error page even for a deliberate Worker response.
+    return json({ error: 'Send failed partway through', detail: String(err) }, { status: 500 });
   }
 }

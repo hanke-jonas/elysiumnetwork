@@ -24,7 +24,10 @@ export async function onRequestPost({ request, env }) {
   );
   const data = await res.json().catch(() => null);
   if (!res.ok || !data?.success) {
-    return json({ error: 'Cloudflare API returned an error', status: res.status, detail: data?.errors }, { status: 502 });
+    // 500, not 502 — Cloudflare's edge reserves 502 for real
+    // origin-connectivity failures and replaces the response body with its
+    // own generic error page even for a deliberate Worker response.
+    return json({ error: 'Cloudflare API returned an error', status: res.status, detail: data?.errors }, { status: 500 });
   }
   return json({ ok: true, triggeredAt: new Date().toISOString(), deploymentId: data.result?.id });
 }
