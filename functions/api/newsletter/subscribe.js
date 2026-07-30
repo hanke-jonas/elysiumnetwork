@@ -1,6 +1,10 @@
 import { badRequest, isValidEmail, json, randomId } from '../../_lib/http.js';
 import { sendEmail } from '../../_lib/email.js';
 
+// Public, no login required — this is the newsletter-only signup path
+// (footer form etc.), distinct from creating a full account in
+// api/auth/signup.js. Double opt-in: status stays 'pending' until the
+// recipient clicks the link in the confirmation email.
 export async function onRequestPost({ request, env }) {
   const body = await request.json().catch(() => null);
   if (!body || !isValidEmail(body.email)) return badRequest('A valid email is required');
@@ -30,7 +34,11 @@ export async function onRequestPost({ request, env }) {
       html: `<p>Please confirm your subscription to the Elysium+ Network newsletter.</p><p><a href="${confirmUrl}">Confirm subscription</a></p>`,
     });
   } catch (err) {
-    return json({ ok: false, debug: 'sendEmail threw', detail: String(err) }, { status: 200 });
+    // 500, not 502 — Cloudflare's edge reserves 502 (and 521-530) for real
+    // origin-connectivity failures and appears to replace the response body
+    // with its own generic error page for those specific codes, even when a
+    // Worker returns one deliberately.
+    return json({ error: 'Could not send confirmation email', detail: String(err) }, { status: 500 });
   }
 
   return json({ ok: true, alreadySubscribed: false });
