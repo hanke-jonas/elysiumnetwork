@@ -1,0 +1,84 @@
+---
+layout: admin-auth-base.njk
+title: "Set up admin account"
+permalink: /admin/setup/
+---
+<p class="eyebrow mb-2">Admin</p>
+<h1 class="h-card mb-3">Set up the first admin account</h1>
+<p class="text-sm mb-6" style="color:var(--ink)">
+  This only works once, before any staff account exists. If an admin account has already
+  been created, use the login page instead.
+</p>
+
+<form id="setup-form" class="space-y-4">
+  <div>
+    <label class="form-label" for="name">Name</label>
+    <input class="input w-full" type="text" id="name" name="name" autocomplete="name" required>
+  </div>
+  <div>
+    <label class="form-label" for="email">Email</label>
+    <input class="input w-full" type="email" id="email" name="email" autocomplete="email" required>
+  </div>
+  <div>
+    <label class="form-label" for="password">Password</label>
+    <input class="input w-full" type="password" id="password" name="password" autocomplete="new-password" minlength="8" required>
+    <p class="text-xs mt-1" style="color:var(--ink)">Must be at least 8 characters.</p>
+  </div>
+  <button type="submit" id="submit-btn" class="btn btn-accent w-full justify-center">Create admin account</button>
+</form>
+
+<p id="status-msg" role="status" aria-live="polite" class="text-sm mt-4"></p>
+
+<div id="login-link-block" class="hidden mt-4">
+  <a href="/admin/login/" class="btn btn-ink w-full justify-center">Go to login</a>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var form = document.getElementById('setup-form');
+  var submitBtn = document.getElementById('submit-btn');
+  var statusMsg = document.getElementById('status-msg');
+  var loginLinkBlock = document.getElementById('login-link-block');
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    var name = document.getElementById('name').value.trim();
+    var email = document.getElementById('email').value.trim();
+    var password = document.getElementById('password').value;
+
+    statusMsg.style.color = 'unset';
+    statusMsg.textContent = 'Creating account…';
+    loginLinkBlock.classList.add('hidden');
+    submitBtn.disabled = true;
+
+    fetch('/api/auth/bootstrap-staff', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, password: password, name: name })
+    }).then(function (res) {
+      return res.json().then(function (data) {
+        return { ok: res.ok, status: res.status, data: data };
+      });
+    }).then(function (result) {
+      submitBtn.disabled = false;
+
+      if (result.ok) {
+        statusMsg.style.color = 'unset';
+        statusMsg.textContent = 'Admin account created. You can now log in.';
+        form.classList.add('hidden');
+        loginLinkBlock.classList.remove('hidden');
+      } else {
+        statusMsg.style.color = 'var(--coral-ink)';
+        statusMsg.textContent = (result.data && result.data.error) || 'Something went wrong. Please try again.';
+        loginLinkBlock.classList.remove('hidden');
+      }
+    }).catch(function () {
+      submitBtn.disabled = false;
+      statusMsg.style.color = 'var(--coral-ink)';
+      statusMsg.textContent = 'Network error. Please try again.';
+    });
+  });
+});
+</script>

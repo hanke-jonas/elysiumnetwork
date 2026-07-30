@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ title or "Admin" }} — Elysium+ Network</title>
+<link rel="icon" type="image/png" sizes="32x32" href="{{ site.favicon_32 }}">
+<link rel="stylesheet" href="/assets/tailwind.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+{% include "theme-style.njk" %}
+</head>
+<body class="bg-paper text-ink">
+<div class="min-h-screen grid place-items-center px-5 py-12">
+  <div class="w-full max-w-sm">
+    <a href="/" class="flex items-center justify-center gap-2 mb-8">
+      <img src="{{ site.logo_small }}" alt="Elysium+" width="128" height="128" class="h-9 w-9 object-contain">
+      <span class="font-display text-xl font-extrabold tracking-tight">Elysium<span style="color:var(--coral)">+</span></span>
+    </a>
+    <div class="card !rounded-2xl p-7 sm:p-8">
+      {{ content | safe }}
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,3 +1,12 @@
-name = "elysium-network"
+name = "elysiumnetwork"
 pages_build_output_dir = "_site"
 compatibility_date = "2024-09-01"
+
+# Created via: wrangler d1 create elysium-network
+# Then paste the database_id it prints below, and load the schema with:
+#   wrangler d1 execute elysium-network --remote --file=d1/schema.sql
+#   wrangler d1 execute elysium-network --remote --file=d1/seed.sql
+[[d1_databases]]
+binding = "DB"
+database_name = "elysium-network"
+database_id = "85c9189a-8eb9-43e2-a39e-bd272b90b2cf"

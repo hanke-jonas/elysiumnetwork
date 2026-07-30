@@ -1,0 +1,189 @@
+---
+layout: base.njk
+title: "My account — Elysium+ Network"
+description: "Manage your Elysium+ Network profile, newsletter preference and calls you're interested in."
+permalink: /account/
+---
+<section class="bg-paper">
+  <div class="max-w-2xl mx-auto px-5 py-16">
+    <p class="eyebrow" style="color:var(--coral-ink)">Elysium+ Network</p>
+    <h1 class="h-hero mt-4">My account</h1>
+    <p class="mt-4 text-muted leading-relaxed">Manage your profile, preferences and calls you've expressed interest in.</p>
+
+    <div id="account-content" class="hidden">
+      <div class="card p-8 mt-8">
+        <h2 class="h-card">Profile</h2>
+        <p class="mt-4 text-sm text-muted">Email</p>
+        <p id="profile-email" class="font-semibold"></p>
+
+        <form id="profile-form" class="flex flex-col gap-4 mt-5">
+          <div>
+            <label class="form-label" for="name">Name</label>
+            <input class="input" type="text" id="name" name="name" autocomplete="name" required>
+          </div>
+          <div>
+            <button type="submit" id="profile-save-btn" class="btn btn-accent">Save</button>
+          </div>
+          <p id="profile-status" role="status" aria-live="polite" class="text-sm"></p>
+        </form>
+      </div>
+
+      <div class="card p-8 mt-6">
+        <h2 class="h-card">Newsletter</h2>
+        <div class="flex items-start gap-2 mt-4">
+          <input class="input w-auto mt-0.5" type="checkbox" id="newsletter" name="newsletter" style="width:auto">
+          <label class="form-label !mb-0" for="newsletter">Subscribe me to the newsletter</label>
+        </div>
+        <p id="newsletter-status" role="status" aria-live="polite" class="text-sm mt-2"></p>
+      </div>
+
+      <div class="card p-8 mt-6">
+        <h2 class="h-card">Calls you're interested in</h2>
+        <div id="interest-list" class="mt-4"></div>
+      </div>
+
+      <div class="mt-8">
+        <button type="button" id="logout-btn" class="btn btn-ink">Log out</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>window.__CALLS = {{ calls | dump | safe }};</script>
+<script>
+  (function () {
+    var content = document.getElementById('account-content');
+
+    fetch('/api/auth/me', { credentials: 'include' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.signedIn || data.type !== 'public') {
+          location.href = '/account/login/?next=' + encodeURIComponent('/account/');
+          return;
+        }
+        init(data.user);
+      });
+
+    function init(user) {
+      content.classList.remove('hidden');
+
+      document.getElementById('profile-email').textContent = user.email;
+      document.getElementById('name').value = user.name || '';
+      document.getElementById('newsletter').checked = !!user.newsletter_opt_in;
+
+      renderInterests();
+
+      document.getElementById('profile-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var statusMsg = document.getElementById('profile-status');
+        var saveBtn = document.getElementById('profile-save-btn');
+        var name = document.getElementById('name').value.trim();
+
+        statusMsg.style.color = 'unset';
+        statusMsg.textContent = 'Saving…';
+        saveBtn.disabled = true;
+
+        fetch('/api/account/profile', {
+          method: 'PUT',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name })
+        }).then(function (res) {
+          return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+        }).then(function (r) {
+          saveBtn.disabled = false;
+          if (!r.ok) {
+            statusMsg.style.color = 'var(--coral-ink)';
+            statusMsg.textContent = (r.data && r.data.error) || 'Something went wrong. Please try again.';
+            return;
+          }
+          statusMsg.style.color = 'unset';
+          statusMsg.textContent = 'Saved.';
+        }).catch(function () {
+          saveBtn.disabled = false;
+          statusMsg.style.color = 'var(--coral-ink)';
+          statusMsg.textContent = 'Network error. Please try again.';
+        });
+      });
+
+      document.getElementById('newsletter').addEventListener('change', function (e) {
+        var statusMsg = document.getElementById('newsletter-status');
+        var checked = e.target.checked;
+
+        statusMsg.style.color = 'unset';
+        statusMsg.textContent = 'Saving…';
+        e.target.disabled = true;
+
+        fetch('/api/account/profile', {
+          method: 'PUT',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ newsletterOptIn: checked })
+        }).then(function (res) {
+          return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+        }).then(function (r) {
+          e.target.disabled = false;
+          if (!r.ok) {
+            statusMsg.style.color = 'var(--coral-ink)';
+            statusMsg.textContent = (r.data && r.data.error) || 'Something went wrong. Please try again.';
+            return;
+          }
+          statusMsg.style.color = 'unset';
+          statusMsg.textContent = 'Saved.';
+        }).catch(function () {
+          e.target.disabled = false;
+          statusMsg.style.color = 'var(--coral-ink)';
+          statusMsg.textContent = 'Network error. Please try again.';
+        });
+      });
+
+      document.getElementById('logout-btn').addEventListener('click', function () {
+        fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+          .then(function () { location.href = '/'; })
+          .catch(function () { location.href = '/'; });
+      });
+    }
+
+    function renderInterests() {
+      var container = document.getElementById('interest-list');
+
+      fetch('/api/calls/interest', { credentials: 'include' })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          var callIds = data.callIds || [];
+          var allCalls = window.__CALLS || [];
+
+          if (!callIds.length) {
+            container.innerHTML = '<p class="text-muted leading-relaxed">You haven\'t expressed interest in any open calls yet — visit <a href="/calls/" class="underline font-semibold">Active Calls</a>.</p>';
+            return;
+          }
+
+          var matches = allCalls.filter(function (c) {
+            return callIds.indexOf(c.id) !== -1;
+          });
+
+          if (!matches.length) {
+            container.innerHTML = '<p class="text-muted leading-relaxed">You haven\'t expressed interest in any open calls yet — visit <a href="/calls/" class="underline font-semibold">Active Calls</a>.</p>';
+            return;
+          }
+
+          var ul = document.createElement('ul');
+          ul.className = 'flex flex-col gap-2';
+          matches.forEach(function (c) {
+            var li = document.createElement('li');
+            var a = document.createElement('a');
+            a.href = '/calls/';
+            a.className = 'underline font-semibold';
+            a.textContent = c.title;
+            li.appendChild(a);
+            ul.appendChild(li);
+          });
+          container.innerHTML = '';
+          container.appendChild(ul);
+        })
+        .catch(function () {
+          container.innerHTML = '<p class="text-sm" style="color:var(--coral-ink)">Could not load your interests. Please try again later.</p>';
+        });
+    }
+  })();
+</script>

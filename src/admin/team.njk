@@ -1,0 +1,231 @@
+---
+layout: admin-base.njk
+title: "Team"
+permalink: /admin/team/
+---
+<div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+  <div>
+    <p class="eyebrow" style="color:var(--coral-ink)">Admin</p>
+    <h1 class="h-sec mt-1">Team</h1>
+  </div>
+  <button id="addBtn" type="button" class="btn btn-accent">{% icon "plus", "w-4 h-4" %} Add team member</button>
+</div>
+
+<div id="formCard" class="card p-6 mb-8" hidden>
+  <h2 class="h-card mb-4" id="formTitle">Add team member</h2>
+  <form id="teamForm">
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div>
+        <label class="form-label" for="f_sort_order">Sort order</label>
+        <input class="input" type="number" id="f_sort_order" name="sort_order" required>
+      </div>
+      <div>
+        <label class="form-label" for="f_name">Name</label>
+        <input class="input" type="text" id="f_name" name="name" required>
+      </div>
+      <div>
+        <label class="form-label" for="f_role">Role</label>
+        <input class="input" type="text" id="f_role" name="role" required>
+      </div>
+      <div>
+        <label class="form-label" for="f_image">Image</label>
+        <input class="input" type="text" id="f_image" name="image" placeholder="/assets/team/name.jpg">
+        <p class="text-xs text-muted mt-1">Path to the image file, e.g. /assets/team/name.jpg</p>
+      </div>
+      <div>
+        <label class="form-label" for="f_focal_y">Focal Y</label>
+        <input class="input" type="text" id="f_focal_y" name="focal_y" placeholder="50%">
+        <p class="text-xs text-muted mt-1">Vertical crop position for the card thumbnail</p>
+      </div>
+    </div>
+    <div class="mt-4">
+      <label class="form-label" for="f_bio">Bio</label>
+      <textarea class="input" id="f_bio" name="bio" rows="4"></textarea>
+    </div>
+    <p id="formStatus" role="status" aria-live="polite" class="mt-4 text-sm"></p>
+    <div class="mt-4 flex items-center gap-3">
+      <button type="submit" id="saveBtn" class="btn btn-accent">Create</button>
+      <button type="button" id="cancelBtn" class="btn">Cancel</button>
+    </div>
+  </form>
+</div>
+
+<div class="card overflow-x-auto">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>Sort</th>
+        <th>Name</th>
+        <th>Role</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="teamTbody">
+      <tr><td colspan="4" class="text-muted">Loading…</td></tr>
+    </tbody>
+  </table>
+</div>
+<p id="tableStatus" role="status" aria-live="polite" class="mt-3 text-sm"></p>
+
+<script>
+(function () {
+  var items = [];
+  var editingId = null;
+
+  var addBtn = document.getElementById('addBtn');
+  var formCard = document.getElementById('formCard');
+  var formTitle = document.getElementById('formTitle');
+  var form = document.getElementById('teamForm');
+  var saveBtn = document.getElementById('saveBtn');
+  var cancelBtn = document.getElementById('cancelBtn');
+  var formStatus = document.getElementById('formStatus');
+  var tableStatus = document.getElementById('tableStatus');
+  var tbody = document.getElementById('teamTbody');
+
+  function setFormStatus(msg, isError) {
+    formStatus.textContent = msg || '';
+    formStatus.style.color = isError ? 'var(--coral-ink)' : '';
+  }
+
+  function setTableStatus(msg, isError) {
+    tableStatus.textContent = msg || '';
+    tableStatus.style.color = isError ? 'var(--coral-ink)' : '';
+  }
+
+  function showForm(mode, item) {
+    form.reset();
+    setFormStatus('');
+    if (mode === 'edit' && item) {
+      editingId = item.id;
+      formTitle.textContent = 'Edit team member';
+      saveBtn.textContent = 'Save changes';
+      document.getElementById('f_sort_order').value = item.sort_order;
+      document.getElementById('f_name').value = item.name || '';
+      document.getElementById('f_role').value = item.role || '';
+      document.getElementById('f_image').value = item.image || '';
+      document.getElementById('f_focal_y').value = item.focal_y || '50%';
+      document.getElementById('f_bio').value = item.bio || '';
+    } else {
+      editingId = null;
+      formTitle.textContent = 'Add team member';
+      saveBtn.textContent = 'Create';
+      document.getElementById('f_focal_y').value = '50%';
+    }
+    formCard.hidden = false;
+    formCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function hideForm() {
+    formCard.hidden = true;
+    form.reset();
+    editingId = null;
+    setFormStatus('');
+  }
+
+  function render() {
+    if (!items.length) {
+      tbody.innerHTML = '<tr><td colspan="4" class="text-muted">No team members yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = '';
+    items.forEach(function (item) {
+      var tr = document.createElement('tr');
+
+      var tdSort = document.createElement('td');
+      tdSort.textContent = item.sort_order;
+      tr.appendChild(tdSort);
+
+      var tdName = document.createElement('td');
+      tdName.textContent = item.name;
+      tr.appendChild(tdName);
+
+      var tdRole = document.createElement('td');
+      tdRole.textContent = item.role;
+      tr.appendChild(tdRole);
+
+      var tdActions = document.createElement('td');
+      var editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'btn !py-1.5 !px-3 text-xs';
+      editBtn.textContent = 'Edit';
+      editBtn.addEventListener('click', function () { showForm('edit', item); });
+
+      var delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'btn !py-1.5 !px-3 text-xs ml-2';
+      delBtn.textContent = 'Delete';
+      delBtn.addEventListener('click', function () { deleteItem(item.id, delBtn); });
+
+      tdActions.appendChild(editBtn);
+      tdActions.appendChild(delBtn);
+      tr.appendChild(tdActions);
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  function load() {
+    setTableStatus('');
+    adminFetch('/api/admin/team').then(function (r) {
+      if (!r.ok) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-muted">Could not load team members.</td></tr>';
+        setTableStatus(r.data && r.data.error ? r.data.error : 'Failed to load team members.', true);
+        return;
+      }
+      items = r.data.items || [];
+      render();
+    });
+  }
+
+  function deleteItem(id, btn) {
+    if (!confirm('Delete this team member?')) return;
+    btn.disabled = true;
+    setTableStatus('');
+    adminFetch('/api/admin/team/' + id, { method: 'DELETE' }).then(function (r) {
+      if (!r.ok) {
+        btn.disabled = false;
+        setTableStatus(r.data && r.data.error ? r.data.error : 'Failed to delete team member.', true);
+        return;
+      }
+      load();
+    });
+  }
+
+  addBtn.addEventListener('click', function () { showForm('create'); });
+  cancelBtn.addEventListener('click', hideForm);
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    var body = {
+      sort_order: Number(document.getElementById('f_sort_order').value) || 0,
+      name: document.getElementById('f_name').value.trim(),
+      role: document.getElementById('f_role').value.trim(),
+      image: document.getElementById('f_image').value.trim(),
+      focal_y: document.getElementById('f_focal_y').value.trim() || '50%',
+      bio: document.getElementById('f_bio').value.trim()
+    };
+
+    saveBtn.disabled = true;
+    setFormStatus('Saving…', false);
+
+    var req = editingId
+      ? adminFetch('/api/admin/team/' + editingId, { method: 'PUT', body: JSON.stringify(body) })
+      : adminFetch('/api/admin/team', { method: 'POST', body: JSON.stringify(body) });
+
+    req.then(function (r) {
+      saveBtn.disabled = false;
+      if (!r.ok) {
+        setFormStatus(r.data && r.data.error ? r.data.error : 'Something went wrong.', true);
+        return;
+      }
+      hideForm();
+      load();
+    });
+  });
+
+  document.addEventListener('admin:ready', function () {
+    load();
+  });
+})();
+</script>

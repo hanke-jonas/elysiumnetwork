@@ -1,0 +1,72 @@
+---
+layout: admin-auth-base.njk
+title: "Staff sign in"
+permalink: /admin/login/
+---
+<h1 class="h-card">Staff sign in</h1>
+<p class="text-muted text-sm mt-1 mb-6">Sign in with your staff account to manage the Elysium+ Network site.</p>
+
+<form id="loginForm" class="flex flex-col gap-4">
+  <div>
+    <label class="form-label" for="email">Email</label>
+    <input class="input" type="email" id="email" name="email" autocomplete="username" required>
+  </div>
+  <div>
+    <label class="form-label" for="password">Password</label>
+    <input class="input" type="password" id="password" name="password" autocomplete="current-password" required>
+  </div>
+  <button type="submit" id="submitBtn" class="btn btn-accent w-full mt-1">Sign in</button>
+  <p id="statusMsg" role="status" aria-live="polite" class="text-sm"></p>
+</form>
+
+<p class="text-sm text-muted mt-6">First time setting this up? <a href="/admin/setup/" class="underline">Create the first admin account</a></p>
+
+<script>
+  function nextUrl() {
+    var params = new URLSearchParams(location.search);
+    return params.get('next') || '/admin/';
+  }
+
+  (function () {
+    fetch('/api/auth/me', { credentials: 'include' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.signedIn && data.type === 'staff') {
+          location.href = nextUrl();
+        }
+      });
+  })();
+
+  document.getElementById('loginForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var statusMsg = document.getElementById('statusMsg');
+    var submitBtn = document.getElementById('submitBtn');
+    var email = document.getElementById('email').value;
+    var password = document.getElementById('password').value;
+
+    statusMsg.style.color = 'unset';
+    statusMsg.textContent = 'Signing in…';
+    submitBtn.disabled = true;
+
+    fetch('/api/auth/staff-login', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, password: password })
+    }).then(function (res) {
+      return res.json().then(function (data) { return { ok: res.ok, status: res.status, data: data }; });
+    }).then(function (r) {
+      if (!r.ok) {
+        statusMsg.style.color = 'var(--coral-ink)';
+        statusMsg.textContent = r.data.error || 'Sign in failed.';
+        submitBtn.disabled = false;
+        return;
+      }
+      location.href = nextUrl();
+    }).catch(function () {
+      statusMsg.style.color = 'var(--coral-ink)';
+      statusMsg.textContent = 'Could not reach the server — try again.';
+      submitBtn.disabled = false;
+    });
+  });
+</script>

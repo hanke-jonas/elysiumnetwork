@@ -1,0 +1,297 @@
+---
+layout: admin-base.njk
+title: "Calls"
+permalink: /admin/calls/
+---
+<div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+  <div>
+    <p class="eyebrow text-muted mb-1">Content</p>
+    <h1 class="h-sec">Calls</h1>
+  </div>
+  <button type="button" id="addCallBtn" class="btn btn-accent">{% icon "plus", "w-4 h-4" %} Add call</button>
+</div>
+
+<p id="callsStatus" role="status" aria-live="polite" class="text-muted mono text-sm mb-4"></p>
+
+<div id="callFormCard" class="card p-6 mb-8" hidden>
+  <h2 id="callFormTitle" class="h-card mb-4">Add call</h2>
+  <form id="callForm" class="grid gap-4 sm:grid-cols-2">
+    <div>
+      <label class="form-label" for="callSortOrder">Sort order</label>
+      <input class="input" type="number" id="callSortOrder" name="sort_order" step="1">
+    </div>
+    <div>
+      <label class="form-label" for="callBranchSlug">Branch</label>
+      <select class="input" id="callBranchSlug" name="branch_slug"></select>
+    </div>
+    <div class="sm:col-span-2">
+      <label class="form-label" for="callTitle">Title</label>
+      <input class="input" type="text" id="callTitle" name="title" required>
+    </div>
+    <div>
+      <label class="form-label" for="callDeadlineLabel">Deadline label</label>
+      <input class="input" type="text" id="callDeadlineLabel" name="deadline_label" placeholder="Applications close 10 July 2026">
+    </div>
+    <div class="flex items-end pb-2">
+      <label class="flex items-center gap-2 text-sm font-bold">
+        <input class="w-4 h-4" type="checkbox" id="callIsOpen" name="is_open">
+        Open for applications
+      </label>
+    </div>
+    <div class="sm:col-span-2">
+      <label class="form-label" for="callSummary">Summary</label>
+      <textarea class="input" id="callSummary" name="summary" rows="3"></textarea>
+    </div>
+    <div>
+      <label class="form-label" for="callLink">Link</label>
+      <input class="input" type="url" id="callLink" name="link" placeholder="https://…">
+    </div>
+    <div>
+      <label class="form-label" for="callLinkLabel">Link label</label>
+      <input class="input" type="text" id="callLinkLabel" name="link_label" placeholder="Project page">
+    </div>
+    <div class="sm:col-span-2 flex flex-wrap items-center gap-3 mt-2">
+      <button type="submit" id="callSaveBtn" class="btn btn-accent">Save call</button>
+      <button type="button" id="callCancelBtn" class="btn">Cancel</button>
+      <p id="callFormStatus" role="status" aria-live="polite" class="text-muted mono text-sm"></p>
+    </div>
+  </form>
+</div>
+
+<div class="card p-0 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Branch</th>
+          <th>Status</th>
+          <th>Deadline</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="callsTableBody">
+        <tr><td colspan="5" class="text-muted">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+document.addEventListener('admin:ready', function () {
+  var branches = [];
+  var calls = [];
+  var editingId = null;
+
+  var addBtn = document.getElementById('addCallBtn');
+  var formCard = document.getElementById('callFormCard');
+  var form = document.getElementById('callForm');
+  var formTitle = document.getElementById('callFormTitle');
+  var cancelBtn = document.getElementById('callCancelBtn');
+  var saveBtn = document.getElementById('callSaveBtn');
+  var formStatus = document.getElementById('callFormStatus');
+  var tableStatus = document.getElementById('callsStatus');
+  var tbody = document.getElementById('callsTableBody');
+  var branchSelect = document.getElementById('callBranchSlug');
+
+  var sortOrderInput = document.getElementById('callSortOrder');
+  var titleInput = document.getElementById('callTitle');
+  var isOpenInput = document.getElementById('callIsOpen');
+  var deadlineInput = document.getElementById('callDeadlineLabel');
+  var summaryInput = document.getElementById('callSummary');
+  var linkInput = document.getElementById('callLink');
+  var linkLabelInput = document.getElementById('callLinkLabel');
+
+  function setStatus(el, msg, isError) {
+    el.textContent = msg || '';
+    el.style.color = isError ? 'var(--coral-ink)' : '';
+  }
+
+  function branchName(slug) {
+    for (var i = 0; i < branches.length; i++) {
+      if (branches[i].slug === slug) {
+        return (branches[i].flag ? branches[i].flag + ' ' : '') + branches[i].name;
+      }
+    }
+    return slug || '—';
+  }
+
+  function populateBranchSelect() {
+    branchSelect.innerHTML = '';
+    branches.forEach(function (b) {
+      var opt = document.createElement('option');
+      opt.value = b.slug;
+      opt.textContent = (b.flag ? b.flag + ' ' : '') + b.name;
+      branchSelect.appendChild(opt);
+    });
+  }
+
+  function renderTable() {
+    tbody.innerHTML = '';
+    if (!calls.length) {
+      var emptyRow = document.createElement('tr');
+      emptyRow.innerHTML = '<td colspan="5" class="text-muted">No calls yet.</td>';
+      tbody.appendChild(emptyRow);
+      return;
+    }
+    calls.forEach(function (c) {
+      var tr = document.createElement('tr');
+
+      var tdTitle = document.createElement('td');
+      tdTitle.className = 'font-semibold';
+      tdTitle.textContent = c.title;
+      tr.appendChild(tdTitle);
+
+      var tdBranch = document.createElement('td');
+      tdBranch.textContent = branchName(c.branch_slug);
+      tr.appendChild(tdBranch);
+
+      var tdStatus = document.createElement('td');
+      var tag = document.createElement('span');
+      tag.className = 'tag';
+      if (c.is_open) {
+        tag.style.background = 'var(--mint)';
+        tag.textContent = 'Open';
+      } else {
+        tag.style.background = 'var(--paper-2)';
+        tag.textContent = 'Closed';
+      }
+      tdStatus.appendChild(tag);
+      tr.appendChild(tdStatus);
+
+      var tdDeadline = document.createElement('td');
+      tdDeadline.textContent = c.deadline_label || '—';
+      tr.appendChild(tdDeadline);
+
+      var tdActions = document.createElement('td');
+      var actionsWrap = document.createElement('div');
+      actionsWrap.className = 'flex flex-wrap gap-2';
+      var editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'btn !py-1.5 !px-3 text-xs';
+      editBtn.textContent = 'Edit';
+      editBtn.addEventListener('click', function () { openEdit(c); });
+      var delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'btn !py-1.5 !px-3 text-xs';
+      delBtn.textContent = 'Delete';
+      delBtn.addEventListener('click', function () { deleteCall(c.id); });
+      actionsWrap.appendChild(editBtn);
+      actionsWrap.appendChild(delBtn);
+      tdActions.appendChild(actionsWrap);
+      tr.appendChild(tdActions);
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  function loadCalls() {
+    setStatus(tableStatus, 'Loading…', false);
+    return adminFetch('/api/admin/calls').then(function (r) {
+      if (!r.ok) { setStatus(tableStatus, r.data.error || 'Could not load calls.', true); return; }
+      calls = r.data.items || [];
+      setStatus(tableStatus, '', false);
+      renderTable();
+    });
+  }
+
+  function loadBranches() {
+    return adminFetch('/api/admin/branches').then(function (r) {
+      if (!r.ok) { setStatus(tableStatus, r.data.error || 'Could not load branches.', true); return; }
+      branches = r.data.items || [];
+      populateBranchSelect();
+    });
+  }
+
+  function resetForm() {
+    form.reset();
+    editingId = null;
+    formTitle.textContent = 'Add call';
+    setStatus(formStatus, '', false);
+  }
+
+  function openAdd() {
+    resetForm();
+    formCard.hidden = false;
+    formCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function openEdit(c) {
+    resetForm();
+    editingId = c.id;
+    formTitle.textContent = 'Edit call';
+    sortOrderInput.value = c.sort_order != null ? c.sort_order : '';
+    titleInput.value = c.title || '';
+    branchSelect.value = c.branch_slug || '';
+    isOpenInput.checked = !!c.is_open;
+    deadlineInput.value = c.deadline_label || '';
+    summaryInput.value = c.summary || '';
+    linkInput.value = c.link || '';
+    linkLabelInput.value = c.link_label || '';
+    formCard.hidden = false;
+    formCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function closeForm() {
+    formCard.hidden = true;
+    resetForm();
+  }
+
+  function deleteCall(id) {
+    if (!confirm('Delete this call? This cannot be undone.')) return;
+    setStatus(tableStatus, 'Deleting…', false);
+    adminFetch('/api/admin/calls/' + id, { method: 'DELETE' }).then(function (r) {
+      if (!r.ok) { setStatus(tableStatus, r.data.error || 'Could not delete call.', true); return; }
+      loadCalls();
+    });
+  }
+
+  addBtn.addEventListener('click', function () {
+    openAdd();
+  });
+
+  cancelBtn.addEventListener('click', function () {
+    closeForm();
+  });
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var title = titleInput.value.trim();
+    if (!title) {
+      setStatus(formStatus, 'Title is required.', true);
+      return;
+    }
+    var body = {
+      sort_order: Number(sortOrderInput.value) || 0,
+      title: title,
+      branch_slug: branchSelect.value,
+      is_open: isOpenInput.checked ? 1 : 0,
+      deadline_label: deadlineInput.value.trim(),
+      summary: summaryInput.value.trim(),
+      link: linkInput.value.trim(),
+      link_label: linkLabelInput.value.trim()
+    };
+
+    saveBtn.disabled = true;
+    setStatus(formStatus, editingId ? 'Saving…' : 'Creating…', false);
+
+    var req = editingId
+      ? adminFetch('/api/admin/calls/' + editingId, { method: 'PUT', body: JSON.stringify(body) })
+      : adminFetch('/api/admin/calls', { method: 'POST', body: JSON.stringify(body) });
+
+    req.then(function (r) {
+      saveBtn.disabled = false;
+      if (!r.ok) {
+        setStatus(formStatus, r.data.error || 'Could not save call.', true);
+        return;
+      }
+      closeForm();
+      loadCalls();
+    });
+  });
+
+  loadBranches().then(function () {
+    loadCalls();
+  });
+});
+</script>

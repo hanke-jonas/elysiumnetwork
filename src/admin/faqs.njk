@@ -1,0 +1,208 @@
+---
+layout: admin-base.njk
+title: "FAQs"
+permalink: /admin/faqs/
+---
+<div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+  <div>
+    <h1 class="h-sec">FAQs</h1>
+    <p class="text-muted text-sm mt-1">Manage the questions and answers shown on the public site.</p>
+  </div>
+  <button type="button" id="addBtn" class="btn btn-accent">{% icon "plus", "w-4 h-4" %} Add FAQ</button>
+</div>
+
+<p id="listStatus" role="status" aria-live="polite" class="text-sm mb-3"></p>
+
+<div class="card !p-0 overflow-x-auto">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th style="width:5rem">Order</th>
+        <th>Question</th>
+        <th style="width:11rem">Actions</th>
+      </tr>
+    </thead>
+    <tbody id="faqRows">
+      <tr><td colspan="3" class="text-muted text-sm">Loading…</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div id="faqFormCard" class="card mt-6" hidden>
+  <h2 class="h-card" id="faqFormTitle">Add FAQ</h2>
+  <form id="faqForm" class="flex flex-col gap-4 mt-4">
+    <input type="hidden" id="faqId">
+    <div class="max-w-[10rem]">
+      <label class="form-label" for="faqSortOrder">Sort order</label>
+      <input class="input" type="number" id="faqSortOrder" name="sort_order" required>
+    </div>
+    <div>
+      <label class="form-label" for="faqQuestion">Question</label>
+      <input class="input" type="text" id="faqQuestion" name="question" required>
+    </div>
+    <div>
+      <label class="form-label" for="faqAnswer">Answer</label>
+      <textarea class="input" id="faqAnswer" name="answer" rows="5" required></textarea>
+    </div>
+    <div class="flex items-center gap-3">
+      <button type="submit" id="faqSaveBtn" class="btn btn-accent">Save</button>
+      <button type="button" id="faqCancelBtn" class="btn">Cancel</button>
+      <p id="formStatus" role="status" aria-live="polite" class="text-sm"></p>
+    </div>
+  </form>
+</div>
+
+<script>
+  var faqRows = document.getElementById('faqRows');
+  var listStatus = document.getElementById('listStatus');
+  var faqFormCard = document.getElementById('faqFormCard');
+  var faqForm = document.getElementById('faqForm');
+  var faqFormTitle = document.getElementById('faqFormTitle');
+  var faqIdField = document.getElementById('faqId');
+  var faqSortOrder = document.getElementById('faqSortOrder');
+  var faqQuestion = document.getElementById('faqQuestion');
+  var faqAnswer = document.getElementById('faqAnswer');
+  var faqSaveBtn = document.getElementById('faqSaveBtn');
+  var formStatus = document.getElementById('formStatus');
+
+  function loadFaqs() {
+    listStatus.style.color = 'unset';
+    listStatus.textContent = 'Loading…';
+    adminFetch('/api/admin/faqs').then(function (r) {
+      if (!r.ok) {
+        listStatus.style.color = 'var(--coral-ink)';
+        listStatus.textContent = r.data.error || 'Could not load FAQs.';
+        return;
+      }
+      listStatus.textContent = '';
+      renderRows(r.data.items || []);
+    });
+  }
+
+  function renderRows(items) {
+    faqRows.innerHTML = '';
+
+    if (items.length === 0) {
+      var emptyTr = document.createElement('tr');
+      var emptyTd = document.createElement('td');
+      emptyTd.colSpan = 3;
+      emptyTd.className = 'text-muted text-sm';
+      emptyTd.textContent = 'No FAQs yet.';
+      emptyTr.appendChild(emptyTd);
+      faqRows.appendChild(emptyTr);
+      return;
+    }
+
+    items.forEach(function (item) {
+      var tr = document.createElement('tr');
+
+      var orderTd = document.createElement('td');
+      orderTd.textContent = item.sort_order;
+      tr.appendChild(orderTd);
+
+      var questionTd = document.createElement('td');
+      var questionSpan = document.createElement('span');
+      questionSpan.textContent = item.question;
+      questionSpan.title = item.question;
+      questionSpan.style.display = 'block';
+      questionSpan.style.maxWidth = '38rem';
+      questionSpan.style.overflow = 'hidden';
+      questionSpan.style.textOverflow = 'ellipsis';
+      questionSpan.style.whiteSpace = 'nowrap';
+      questionTd.appendChild(questionSpan);
+      tr.appendChild(questionTd);
+
+      var actionsTd = document.createElement('td');
+      var editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'btn !py-1.5 !px-3 text-sm mr-2';
+      editBtn.textContent = 'Edit';
+      editBtn.addEventListener('click', function () { showForm(item); });
+      actionsTd.appendChild(editBtn);
+
+      var deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.className = 'btn !py-1.5 !px-3 text-sm';
+      deleteBtn.textContent = 'Delete';
+      deleteBtn.addEventListener('click', function () { deleteFaq(item.id); });
+      actionsTd.appendChild(deleteBtn);
+
+      tr.appendChild(actionsTd);
+      faqRows.appendChild(tr);
+    });
+  }
+
+  function showForm(item) {
+    formStatus.textContent = '';
+    if (item) {
+      faqFormTitle.textContent = 'Edit FAQ';
+      faqIdField.value = item.id;
+      faqSortOrder.value = item.sort_order;
+      faqQuestion.value = item.question;
+      faqAnswer.value = item.answer;
+    } else {
+      faqFormTitle.textContent = 'Add FAQ';
+      faqIdField.value = '';
+      faqForm.reset();
+    }
+    faqFormCard.hidden = false;
+    faqFormCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function hideForm() {
+    faqFormCard.hidden = true;
+    faqForm.reset();
+    faqIdField.value = '';
+    formStatus.textContent = '';
+  }
+
+  function deleteFaq(id) {
+    if (!confirm('Delete this FAQ? This cannot be undone.')) return;
+    listStatus.style.color = 'unset';
+    listStatus.textContent = 'Deleting…';
+    adminFetch('/api/admin/faqs/' + id, { method: 'DELETE' }).then(function (r) {
+      if (!r.ok) {
+        listStatus.style.color = 'var(--coral-ink)';
+        listStatus.textContent = r.data.error || 'Could not delete FAQ.';
+        return;
+      }
+      loadFaqs();
+    });
+  }
+
+  document.getElementById('addBtn').addEventListener('click', function () { showForm(null); });
+  document.getElementById('faqCancelBtn').addEventListener('click', hideForm);
+
+  faqForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var id = faqIdField.value;
+    var body = {
+      sort_order: Number(faqSortOrder.value),
+      question: faqQuestion.value,
+      answer: faqAnswer.value
+    };
+
+    formStatus.style.color = 'unset';
+    formStatus.textContent = 'Saving…';
+    faqSaveBtn.disabled = true;
+
+    var req = id
+      ? adminFetch('/api/admin/faqs/' + id, { method: 'PUT', body: JSON.stringify(body) })
+      : adminFetch('/api/admin/faqs', { method: 'POST', body: JSON.stringify(body) });
+
+    req.then(function (r) {
+      faqSaveBtn.disabled = false;
+      if (!r.ok) {
+        formStatus.style.color = 'var(--coral-ink)';
+        formStatus.textContent = r.data.error || 'Could not save FAQ.';
+        return;
+      }
+      hideForm();
+      loadFaqs();
+    });
+  });
+
+  document.addEventListener('admin:ready', function () {
+    loadFaqs();
+  });
+</script>

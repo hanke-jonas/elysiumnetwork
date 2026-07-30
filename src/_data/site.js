@@ -1,6 +1,13 @@
+const { fetchD1 } = require('../_lib/d1.js');
+
 const contact_email = 'contact@elysium.ngo';
 
-module.exports = {
+// Hardcoded fallback — used whenever D1 isn't configured/reachable at build
+// time (local dev, or before the database is provisioned). Once D1 env vars
+// are set, branches/team/faqs below are overridden with live rows so admin
+// panel edits actually reach the built site; everything else in this object
+// (mission, values, donation info, etc.) has no admin UI yet and stays here.
+const fallback = {
   network_name: 'Elysium+',
   network_full: 'Elysium+ Network',
   tagline: 'Empowering young people to create positive change',
@@ -166,3 +173,38 @@ module.exports = {
     },
   },
 };
+
+module.exports = async function () {
+  const [branchRows, teamRows, faqRows] = await Promise.all([
+    fetchD1('SELECT * FROM branches ORDER BY sort_order ASC'),
+    fetchD1('SELECT * FROM team_members ORDER BY sort_order ASC'),
+    fetchD1('SELECT * FROM faqs ORDER BY sort_order ASC'),
+  ]);
+
+  return {
+    ...fallback,
+    branches: branchRows
+      ? branchRows.map((r) => ({
+          tz: r.tz, lat: r.lat, lon: r.lon,
+          slug: r.slug, flag: r.flag, iso_n3: r.iso_n3,
+          name: r.name, name_native: r.name_native,
+          country: r.country, city: r.city,
+          oid: r.oid, type: r.type, status: r.status,
+          accent: r.accent, tagline: r.tagline, about: r.about,
+          focus: JSON.parse(r.focus_json || '[]'),
+          people: JSON.parse(r.people_json || '[]'),
+          email: r.email, phone: r.phone, address: r.address, website: r.website,
+        }))
+      : fallback.branches,
+    team: teamRows
+      ? teamRows.map((r) => ({ name: r.name, role: r.role, image: r.image, focalY: r.focal_y, bio: r.bio }))
+      : fallback.team,
+    faqs: faqRows ? faqRows.map((r) => [r.question, r.answer]) : fallback.faqs,
+  };
+};
+
+// .eleventy.js requires this module directly (not through Eleventy's data
+// cascade) to read `site.url` for the sitemap — since the export is now a
+// function rather than a plain object, that static field is attached here
+// so `require('./src/_data/site.js').url` keeps working unchanged.
+module.exports.url = fallback.url;

@@ -1,0 +1,87 @@
+---
+layout: base.njk
+title: "Log in — Elysium+ Network"
+description: "Log in to your Elysium+ Network account to express interest in calls and manage your profile."
+permalink: /account/login/
+---
+<section class="bg-paper">
+  <div class="max-w-md mx-auto px-5 py-16">
+    <p class="eyebrow" style="color:var(--coral-ink)">Elysium+ Network</p>
+    <h1 class="h-hero mt-4">Log in</h1>
+    <p class="mt-4 text-muted leading-relaxed">Log in to express interest in open calls and manage your profile.</p>
+
+    <div class="card p-8 mt-8">
+      <form id="login-form" class="flex flex-col gap-4">
+        <div>
+          <label class="form-label" for="email">Email</label>
+          <input class="input" type="email" id="email" name="email" autocomplete="email" required>
+        </div>
+        <div>
+          <label class="form-label" for="password">Password</label>
+          <input class="input" type="password" id="password" name="password" autocomplete="current-password" required>
+        </div>
+        <button type="submit" id="submit-btn" class="btn btn-accent w-full justify-center mt-1">Log in</button>
+        <p id="status-msg" role="status" aria-live="polite" class="text-sm"></p>
+      </form>
+
+      <p class="text-sm text-muted mt-6" id="signup-link-p">New here? <a href="/account/signup/" id="signup-link" class="underline">Create an account</a></p>
+    </div>
+  </div>
+</section>
+
+<script>
+  function nextUrl() {
+    var params = new URLSearchParams(location.search);
+    return params.get('next') || '/account/';
+  }
+
+  (function () {
+    var next = new URLSearchParams(location.search).get('next');
+    var signupLink = document.getElementById('signup-link');
+    if (next) {
+      signupLink.href = '/account/signup/?next=' + encodeURIComponent(next);
+    }
+
+    fetch('/api/auth/me', { credentials: 'include' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.signedIn && data.type === 'public') {
+          location.href = nextUrl();
+        }
+      });
+  })();
+
+  document.getElementById('login-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    var statusMsg = document.getElementById('status-msg');
+    var submitBtn = document.getElementById('submit-btn');
+    var email = document.getElementById('email').value.trim();
+    var password = document.getElementById('password').value;
+
+    statusMsg.style.color = 'unset';
+    statusMsg.textContent = 'Logging in…';
+    submitBtn.disabled = true;
+
+    fetch('/api/auth/login', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, password: password })
+    }).then(function (res) {
+      return res.json().then(function (data) { return { ok: res.ok, status: res.status, data: data }; });
+    }).then(function (r) {
+      if (!r.ok) {
+        statusMsg.style.color = 'var(--coral-ink)';
+        statusMsg.textContent = (r.data && r.data.error) || 'Something went wrong. Please try again.';
+        submitBtn.disabled = false;
+        return;
+      }
+      location.href = nextUrl();
+    }).catch(function () {
+      statusMsg.style.color = 'var(--coral-ink)';
+      statusMsg.textContent = 'Network error. Please try again.';
+      submitBtn.disabled = false;
+    });
+  });
+</script>

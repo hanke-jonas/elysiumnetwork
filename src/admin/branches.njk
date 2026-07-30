@@ -1,0 +1,427 @@
+---
+layout: admin-base.njk
+title: "Branches"
+permalink: /admin/branches/
+---
+
+<div class="flex items-center justify-between gap-4 flex-wrap mb-6">
+  <div>
+    <p class="eyebrow text-muted mb-1">Content</p>
+    <h1 class="h-sec">Branches</h1>
+  </div>
+  <button type="button" id="addBranchBtn" class="btn btn-ink">{% icon "plus", "w-4 h-4" %} Add branch</button>
+</div>
+
+<p id="branchesStatus" role="status" aria-live="polite" class="mono text-sm mb-4"></p>
+
+<div class="card p-0 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="admin-table w-full">
+      <thead>
+        <tr>
+          <th>Branch</th>
+          <th>Location</th>
+          <th>Status</th>
+          <th class="text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="branchesTbody">
+        <tr><td colspan="4" class="text-muted">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div id="branchFormCard" class="card p-6 mt-8" hidden>
+  <h2 class="h-card mb-5" id="branchFormTitle">Add branch</h2>
+  <form id="branchForm">
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div>
+        <label class="form-label" for="f_slug">Slug</label>
+        <input class="input" id="f_slug" name="slug">
+        <p id="f_slug_hint" class="mono text-xs text-muted mt-1" hidden>Primary key — can't be changed after creation.</p>
+      </div>
+      <div>
+        <label class="form-label" for="f_sort_order">Sort order</label>
+        <input class="input" type="number" id="f_sort_order" name="sort_order">
+      </div>
+      <div>
+        <label class="form-label" for="f_name">Name</label>
+        <input class="input" id="f_name" name="name">
+      </div>
+      <div>
+        <label class="form-label" for="f_name_native">Native name</label>
+        <input class="input" id="f_name_native" name="name_native">
+      </div>
+      <div>
+        <label class="form-label" for="f_country">Country</label>
+        <input class="input" id="f_country" name="country">
+      </div>
+      <div>
+        <label class="form-label" for="f_city">City</label>
+        <input class="input" id="f_city" name="city">
+      </div>
+      <div>
+        <label class="form-label" for="f_flag">Flag (emoji)</label>
+        <input class="input" id="f_flag" name="flag">
+      </div>
+      <div>
+        <label class="form-label" for="f_accent">Accent color</label>
+        <input class="input" id="f_accent" name="accent" placeholder="#FFD23F">
+      </div>
+      <div>
+        <label class="form-label" for="f_tz">Timezone</label>
+        <input class="input" id="f_tz" name="tz" placeholder="Europe/Kyiv">
+      </div>
+      <div>
+        <label class="form-label" for="f_lat">Latitude</label>
+        <input class="input" id="f_lat" name="lat" placeholder="51.50°N">
+      </div>
+      <div>
+        <label class="form-label" for="f_lon">Longitude</label>
+        <input class="input" id="f_lon" name="lon" placeholder="30.52°E">
+      </div>
+      <div>
+        <label class="form-label" for="f_iso_n3">ISO N3</label>
+        <input class="input" id="f_iso_n3" name="iso_n3">
+      </div>
+      <div>
+        <label class="form-label" for="f_oid">OID</label>
+        <input class="input" id="f_oid" name="oid">
+      </div>
+      <div>
+        <label class="form-label" for="f_type">Type</label>
+        <input class="input" id="f_type" name="type">
+      </div>
+      <div>
+        <label class="form-label" for="f_status">Status</label>
+        <input class="input" id="f_status" name="status">
+      </div>
+      <div class="sm:col-span-2">
+        <label class="form-label" for="f_tagline">Tagline</label>
+        <input class="input" id="f_tagline" name="tagline">
+      </div>
+      <div class="sm:col-span-2">
+        <label class="form-label" for="f_about">About</label>
+        <textarea class="input" id="f_about" name="about" rows="4"></textarea>
+      </div>
+      <div class="sm:col-span-2">
+        <label class="form-label" for="f_focus">Focus areas (one per line)</label>
+        <textarea class="input" id="f_focus" rows="4"></textarea>
+      </div>
+      <div class="sm:col-span-2">
+        <label class="form-label">People</label>
+        <div id="peopleRows" class="flex flex-col gap-2 mb-3"></div>
+        <button type="button" id="addPersonBtn" class="btn !py-2 !px-3 text-sm">{% icon "plus", "w-4 h-4" %} Add person</button>
+      </div>
+      <div>
+        <label class="form-label" for="f_email">Email</label>
+        <input class="input" id="f_email" name="email" type="email">
+      </div>
+      <div>
+        <label class="form-label" for="f_phone">Phone</label>
+        <input class="input" id="f_phone" name="phone">
+      </div>
+      <div>
+        <label class="form-label" for="f_address">Address</label>
+        <input class="input" id="f_address" name="address">
+      </div>
+      <div>
+        <label class="form-label" for="f_website">Website</label>
+        <input class="input" id="f_website" name="website">
+      </div>
+    </div>
+
+    <p id="branchFormStatus" role="status" aria-live="polite" class="mono text-sm mt-5"></p>
+
+    <div class="flex items-center gap-3 mt-4">
+      <button type="submit" id="branchSubmitBtn" class="btn btn-accent">Save branch</button>
+      <button type="button" id="branchCancelBtn" class="btn">Cancel</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  var branchList = [];
+  var editingSlug = null;
+
+  function setStatus(el, msg, isError) {
+    el.textContent = msg || '';
+    el.style.color = isError ? 'var(--coral-ink)' : '';
+  }
+
+  function findBranch(slug) {
+    for (var i = 0; i < branchList.length; i++) {
+      if (branchList[i].slug === slug) return branchList[i];
+    }
+    return null;
+  }
+
+  function addPersonRow(person) {
+    person = person || {};
+    var row = document.createElement('div');
+    row.className = 'person-row flex flex-col sm:flex-row gap-2 sm:items-center';
+
+    var nameInput = document.createElement('input');
+    nameInput.className = 'input person-name';
+    nameInput.placeholder = 'Name';
+    nameInput.value = person.name || '';
+
+    var roleInput = document.createElement('input');
+    roleInput.className = 'input person-role';
+    roleInput.placeholder = 'Role';
+    roleInput.value = person.role || '';
+
+    var emailInput = document.createElement('input');
+    emailInput.className = 'input person-email';
+    emailInput.type = 'email';
+    emailInput.placeholder = 'Email';
+    emailInput.value = person.email || '';
+
+    var removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'btn !py-2 !px-3 text-sm shrink-0';
+    removeBtn.textContent = 'Remove';
+    removeBtn.addEventListener('click', function () { row.remove(); });
+
+    row.appendChild(nameInput);
+    row.appendChild(roleInput);
+    row.appendChild(emailInput);
+    row.appendChild(removeBtn);
+    document.getElementById('peopleRows').appendChild(row);
+  }
+
+  function renderTable(items) {
+    var tbody = document.getElementById('branchesTbody');
+    tbody.innerHTML = '';
+    if (!items.length) {
+      var emptyRow = document.createElement('tr');
+      var emptyTd = document.createElement('td');
+      emptyTd.colSpan = 4;
+      emptyTd.className = 'text-muted';
+      emptyTd.textContent = 'No branches yet.';
+      emptyRow.appendChild(emptyTd);
+      tbody.appendChild(emptyRow);
+      return;
+    }
+
+    items.forEach(function (b) {
+      var tr = document.createElement('tr');
+
+      var tdName = document.createElement('td');
+      var strong = document.createElement('strong');
+      strong.textContent = (b.flag ? b.flag + ' ' : '') + (b.name || b.slug);
+      tdName.appendChild(strong);
+      tr.appendChild(tdName);
+
+      var tdLoc = document.createElement('td');
+      tdLoc.textContent = [b.city, b.country].filter(Boolean).join(', ');
+      tr.appendChild(tdLoc);
+
+      var tdStatus = document.createElement('td');
+      var tag = document.createElement('span');
+      tag.className = 'tag';
+      tag.textContent = b.status || '—';
+      tdStatus.appendChild(tag);
+      tr.appendChild(tdStatus);
+
+      var tdActions = document.createElement('td');
+      tdActions.className = 'text-right whitespace-nowrap';
+
+      var editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'btn !py-1.5 !px-2.5 text-xs';
+      editBtn.textContent = 'Edit';
+      editBtn.addEventListener('click', function () { startEdit(b.slug); });
+
+      var delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'btn btn-coral !py-1.5 !px-2.5 text-xs ml-2';
+      delBtn.textContent = 'Delete';
+      delBtn.addEventListener('click', function () { deleteBranch(b.slug, b.name || b.slug); });
+
+      tdActions.appendChild(editBtn);
+      tdActions.appendChild(delBtn);
+      tr.appendChild(tdActions);
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  function loadBranches() {
+    setStatus(document.getElementById('branchesStatus'), 'Loading…', false);
+    adminFetch('/api/admin/branches').then(function (r) {
+      if (!r.ok) {
+        setStatus(document.getElementById('branchesStatus'), r.data.error || 'Could not load branches.', true);
+        return;
+      }
+      branchList = r.data.items;
+      renderTable(branchList);
+      setStatus(document.getElementById('branchesStatus'), '', false);
+    });
+  }
+
+  function startCreate() {
+    editingSlug = null;
+    document.getElementById('branchForm').reset();
+    document.getElementById('peopleRows').innerHTML = '';
+    var slugInput = document.getElementById('f_slug');
+    slugInput.disabled = false;
+    document.getElementById('f_slug_hint').hidden = true;
+    document.getElementById('branchFormTitle').textContent = 'Add branch';
+    setStatus(document.getElementById('branchFormStatus'), '', false);
+    var card = document.getElementById('branchFormCard');
+    card.hidden = false;
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function startEdit(slug) {
+    var b = findBranch(slug);
+    if (!b) return;
+    editingSlug = slug;
+    document.getElementById('branchForm').reset();
+
+    document.getElementById('f_slug').value = b.slug;
+    document.getElementById('f_slug').disabled = true;
+    document.getElementById('f_slug_hint').hidden = false;
+    document.getElementById('f_sort_order').value = b.sort_order == null ? '' : b.sort_order;
+    document.getElementById('f_name').value = b.name || '';
+    document.getElementById('f_name_native').value = b.name_native || '';
+    document.getElementById('f_country').value = b.country || '';
+    document.getElementById('f_city').value = b.city || '';
+    document.getElementById('f_flag').value = b.flag || '';
+    document.getElementById('f_accent').value = b.accent || '';
+    document.getElementById('f_tz').value = b.tz || '';
+    document.getElementById('f_lat').value = b.lat || '';
+    document.getElementById('f_lon').value = b.lon || '';
+    document.getElementById('f_iso_n3').value = b.iso_n3 || '';
+    document.getElementById('f_oid').value = b.oid || '';
+    document.getElementById('f_type').value = b.type || '';
+    document.getElementById('f_status').value = b.status || '';
+    document.getElementById('f_tagline').value = b.tagline || '';
+    document.getElementById('f_about').value = b.about || '';
+    document.getElementById('f_focus').value = (b.focus_json || []).join('\n');
+
+    document.getElementById('peopleRows').innerHTML = '';
+    (b.people_json || []).forEach(function (p) { addPersonRow(p); });
+
+    document.getElementById('f_email').value = b.email || '';
+    document.getElementById('f_phone').value = b.phone || '';
+    document.getElementById('f_address').value = b.address || '';
+    document.getElementById('f_website').value = b.website || '';
+
+    document.getElementById('branchFormTitle').textContent = 'Edit branch: ' + (b.name || b.slug);
+    setStatus(document.getElementById('branchFormStatus'), '', false);
+    var card = document.getElementById('branchFormCard');
+    card.hidden = false;
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function cancelForm() {
+    document.getElementById('branchFormCard').hidden = true;
+    editingSlug = null;
+  }
+
+  function deleteBranch(slug, name) {
+    if (!confirm('Delete ' + name + '? This cannot be undone.')) return;
+    adminFetch('/api/admin/branches/' + encodeURIComponent(slug), { method: 'DELETE' }).then(function (r) {
+      if (!r.ok) {
+        setStatus(document.getElementById('branchesStatus'), r.data.error || 'Could not delete branch.', true);
+        return;
+      }
+      if (editingSlug === slug) cancelForm();
+      setStatus(document.getElementById('branchesStatus'), 'Branch deleted.', false);
+      loadBranches();
+    });
+  }
+
+  document.getElementById('addBranchBtn').addEventListener('click', startCreate);
+  document.getElementById('branchCancelBtn').addEventListener('click', cancelForm);
+  document.getElementById('addPersonBtn').addEventListener('click', function () { addPersonRow({}); });
+
+  document.getElementById('branchForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var submitBtn = document.getElementById('branchSubmitBtn');
+    var statusEl = document.getElementById('branchFormStatus');
+    var slug = document.getElementById('f_slug').value.trim();
+
+    if (!editingSlug && !slug) {
+      setStatus(statusEl, 'Slug is required.', true);
+      return;
+    }
+
+    var sortOrderRaw = document.getElementById('f_sort_order').value;
+    var focusLines = document.getElementById('f_focus').value
+      .split('\n')
+      .map(function (s) { return s.trim(); })
+      .filter(function (s) { return s.length > 0; });
+
+    var people = [];
+    var rows = document.querySelectorAll('#peopleRows .person-row');
+    rows.forEach(function (row) {
+      people.push({
+        name: row.querySelector('.person-name').value.trim(),
+        role: row.querySelector('.person-role').value.trim(),
+        email: row.querySelector('.person-email').value.trim(),
+      });
+    });
+
+    var payload = {
+      sort_order: sortOrderRaw === '' ? null : Number(sortOrderRaw),
+      name: document.getElementById('f_name').value,
+      name_native: document.getElementById('f_name_native').value,
+      country: document.getElementById('f_country').value,
+      city: document.getElementById('f_city').value,
+      flag: document.getElementById('f_flag').value,
+      accent: document.getElementById('f_accent').value,
+      tz: document.getElementById('f_tz').value,
+      lat: document.getElementById('f_lat').value,
+      lon: document.getElementById('f_lon').value,
+      iso_n3: document.getElementById('f_iso_n3').value,
+      oid: document.getElementById('f_oid').value,
+      type: document.getElementById('f_type').value,
+      status: document.getElementById('f_status').value,
+      tagline: document.getElementById('f_tagline').value,
+      about: document.getElementById('f_about').value,
+      focus_json: focusLines,
+      people_json: people,
+      email: document.getElementById('f_email').value,
+      phone: document.getElementById('f_phone').value,
+      address: document.getElementById('f_address').value,
+      website: document.getElementById('f_website').value,
+    };
+
+    submitBtn.disabled = true;
+    setStatus(statusEl, 'Saving…', false);
+
+    var req;
+    if (editingSlug) {
+      req = adminFetch('/api/admin/branches/' + encodeURIComponent(editingSlug), {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+    } else {
+      payload.slug = slug;
+      req = adminFetch('/api/admin/branches', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    }
+
+    req.then(function (r) {
+      submitBtn.disabled = false;
+      if (!r.ok) {
+        setStatus(statusEl, r.data.error || 'Could not save branch.', true);
+        return;
+      }
+      document.getElementById('branchFormCard').hidden = true;
+      editingSlug = null;
+      setStatus(document.getElementById('branchesStatus'), 'Branch saved.', false);
+      loadBranches();
+    });
+  });
+
+  document.addEventListener('admin:ready', function () {
+    loadBranches();
+  });
+</script>

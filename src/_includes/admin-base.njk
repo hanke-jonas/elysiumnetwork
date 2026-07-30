@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ title or "Admin" }} — Elysium+ Network</title>
+<link rel="icon" type="image/png" sizes="32x32" href="{{ site.favicon_32 }}">
+<link rel="stylesheet" href="/assets/tailwind.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+{% include "theme-style.njk" %}
+<style>
+  .admin-nav-link{ font-size:.88rem; font-weight:600; padding:.5rem .7rem; border-radius:.5rem; color:var(--ink); white-space:nowrap; }
+  .admin-nav-link:hover{ background:var(--paper-2); }
+  .admin-nav-link.active{ background:var(--ink); color:var(--paper); }
+  .admin-table{ width:100%; border-collapse:collapse; font-size:.9rem; }
+  .admin-table th{ text-align:left; font-family:"JetBrains Mono",monospace; text-transform:uppercase; letter-spacing:.06em; font-size:.68rem; font-weight:600; color:var(--muted); padding:.5rem .75rem; border-bottom:2px solid var(--ink); }
+  .admin-table td{ padding:.65rem .75rem; border-bottom:1px solid var(--line); vertical-align:top; }
+  .admin-table tr:last-child td{ border-bottom:none; }
+</style>
+</head>
+<body class="bg-paper text-ink">
+<div id="adminGate" class="min-h-screen grid place-items-center px-5">
+  <p class="mono text-sm text-muted" id="adminGateMsg">Checking session…</p>
+</div>
+<div id="adminApp" class="min-h-screen flex flex-col" hidden>
+  <header class="navbar">
+    <div class="max-w-[1200px] mx-auto px-5 sm:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
+      <a href="/admin/" class="flex items-center gap-2 shrink-0">
+        <img src="{{ site.logo_small }}" alt="" width="128" height="128" class="h-8 w-8 object-contain">
+        <span class="font-display text-lg font-extrabold">Elysium<span style="color:var(--coral)">+</span> <span class="text-muted font-semibold">Admin</span></span>
+      </a>
+      <nav class="flex items-center gap-1 flex-wrap">
+        <a href="/admin/" class="admin-nav-link{% if page.url == '/admin/' %} active{% endif %}">Dashboard</a>
+        <a href="/admin/branches/" class="admin-nav-link{% if page.url == '/admin/branches/' %} active{% endif %}">Branches</a>
+        <a href="/admin/team/" class="admin-nav-link{% if page.url == '/admin/team/' %} active{% endif %}">Team</a>
+        <a href="/admin/calls/" class="admin-nav-link{% if page.url == '/admin/calls/' %} active{% endif %}">Calls</a>
+        <a href="/admin/faqs/" class="admin-nav-link{% if page.url == '/admin/faqs/' %} active{% endif %}">FAQs</a>
+        <a href="/admin/subscribers/" class="admin-nav-link{% if page.url == '/admin/subscribers/' %} active{% endif %}">Subscribers</a>
+        <a href="/admin/campaigns/" class="admin-nav-link{% if page.url == '/admin/campaigns/' %} active{% endif %}">Newsletter</a>
+        <a href="/admin/staff/" id="staffNavLink" class="admin-nav-link{% if page.url == '/admin/staff/' %} active{% endif %}" hidden>Staff</a>
+      </nav>
+      <div class="flex items-center gap-3">
+        <span id="adminWhoami" class="mono text-xs text-muted hidden sm:inline"></span>
+        <button id="adminLogoutBtn" type="button" class="btn !py-2 !px-3 text-sm">Log out</button>
+      </div>
+    </div>
+  </header>
+  <main class="flex-1 max-w-[1200px] w-full mx-auto px-5 sm:px-8 py-10">
+    {{ content | safe }}
+  </main>
+</div>
+<script>
+  // Shared fetch helper for every admin page: always sends the session
+  // cookie, always parses JSON, and bounces to login on an expired/missing
+  // session instead of making every page reimplement that check.
+  window.adminFetch = function (url, opts) {
+    opts = opts || {};
+    opts.credentials = 'include';
+    opts.headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+    return fetch(url, opts).then(function (res) {
+      if (res.status === 401) {
+        location.href = '/admin/login/?next=' + encodeURIComponent(location.pathname);
+        throw new Error('Not signed in');
+      }
+      return res.json().then(function (data) { return { ok: res.ok, status: res.status, data: data }; });
+    });
+  };
+
+  (function () {
+    fetch('/api/auth/me', { credentials: 'include' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.signedIn || data.type !== 'staff') {
+          location.href = '/admin/login/?next=' + encodeURIComponent(location.pathname);
+          return;
+        }
+        window.__staff = data.user;
+        document.getElementById('adminWhoami').textContent = data.user.name + ' · ' + data.user.role;
+        if (data.user.role === 'owner') document.getElementById('staffNavLink').hidden = false;
+        document.getElementById('adminGate').hidden = true;
+        document.getElementById('adminApp').hidden = false;
+        document.dispatchEvent(new CustomEvent('admin:ready', { detail: data.user }));
+      })
+      .catch(function () {
+        document.getElementById('adminGateMsg').textContent = 'Could not reach the server — try reloading.';
+      });
+
+    document.getElementById('adminLogoutBtn').addEventListener('click', function () {
+      fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).then(function () {
+        location.href = '/admin/login/';
+      });
+    });
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,239 @@
+---
+layout: admin-base.njk
+title: "Staff"
+permalink: /admin/staff/
+---
+<div class="flex flex-wrap items-start justify-between gap-4 mb-8">
+  <div>
+    <p class="eyebrow" style="color:var(--coral-ink)">Accounts</p>
+    <h1 class="h-sec mt-2">Staff</h1>
+  </div>
+</div>
+
+<p id="staffOnlyMsg" class="text-muted" hidden>Only account owners can manage staff accounts.</p>
+
+<div id="staffMgmt" hidden>
+  <div class="card mb-6">
+    <h2 class="h-card mb-4">Add staff account</h2>
+    <form id="addStaffForm" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label class="form-label" for="staffEmail">Email</label>
+        <input class="input" type="email" id="staffEmail" required>
+      </div>
+      <div>
+        <label class="form-label" for="staffName">Name</label>
+        <input class="input" type="text" id="staffName" required>
+      </div>
+      <div>
+        <label class="form-label" for="staffPassword">Password</label>
+        <input class="input" type="password" id="staffPassword" minlength="8" required>
+        <p class="text-xs text-muted mt-1">At least 8 characters.</p>
+      </div>
+      <div>
+        <label class="form-label" for="staffRole">Role</label>
+        <select class="input" id="staffRole">
+          <option value="editor">Editor</option>
+          <option value="owner">Owner</option>
+        </select>
+      </div>
+      <div class="sm:col-span-2 flex items-center gap-3">
+        <button type="submit" id="addStaffBtn" class="btn btn-accent">{% icon "plus", "w-4 h-4" %} Add account</button>
+        <p id="addStaffStatus" role="status" aria-live="polite" class="text-sm"></p>
+      </div>
+    </form>
+  </div>
+
+  <div class="card !p-0 overflow-x-auto">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Name</th>
+          <th style="width:14rem">Role</th>
+          <th>Created</th>
+          <th>Last login</th>
+          <th style="width:6rem">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="staffRows">
+        <tr><td colspan="6" class="text-muted text-sm">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p id="staffListStatus" role="status" aria-live="polite" class="text-sm mt-3"></p>
+</div>
+
+<script>
+  var staffOnlyMsg = document.getElementById('staffOnlyMsg');
+  var staffMgmt = document.getElementById('staffMgmt');
+  var staffRows = document.getElementById('staffRows');
+  var staffListStatus = document.getElementById('staffListStatus');
+  var addStaffForm = document.getElementById('addStaffForm');
+  var addStaffBtn = document.getElementById('addStaffBtn');
+  var addStaffStatus = document.getElementById('addStaffStatus');
+
+  function formatDate(value) {
+    if (!value) return '—';
+    var d = new Date(value);
+    if (isNaN(d.getTime())) return value;
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  function loadStaff() {
+    staffListStatus.style.color = 'unset';
+    staffListStatus.textContent = 'Loading…';
+    adminFetch('/api/admin/staff').then(function (r) {
+      if (!r.ok) {
+        staffListStatus.style.color = 'var(--coral-ink)';
+        staffListStatus.textContent = r.data.error || 'Could not load staff accounts.';
+        return;
+      }
+      staffListStatus.textContent = '';
+      renderRows(r.data.items || []);
+    });
+  }
+
+  function renderRows(items) {
+    staffRows.innerHTML = '';
+
+    if (items.length === 0) {
+      var emptyTr = document.createElement('tr');
+      var emptyTd = document.createElement('td');
+      emptyTd.colSpan = 6;
+      emptyTd.className = 'text-muted text-sm';
+      emptyTd.textContent = 'No staff accounts yet.';
+      emptyTr.appendChild(emptyTd);
+      staffRows.appendChild(emptyTr);
+      return;
+    }
+
+    items.forEach(function (item) {
+      var tr = document.createElement('tr');
+
+      var emailTd = document.createElement('td');
+      emailTd.textContent = item.email;
+      tr.appendChild(emailTd);
+
+      var nameTd = document.createElement('td');
+      nameTd.textContent = item.name;
+      tr.appendChild(nameTd);
+
+      var roleTd = document.createElement('td');
+      var roleWrap = document.createElement('div');
+      roleWrap.className = 'flex items-center gap-2';
+
+      var roleSelect = document.createElement('select');
+      roleSelect.className = 'input !py-1.5 !text-sm';
+      ['owner', 'editor'].forEach(function (roleValue) {
+        var opt = document.createElement('option');
+        opt.value = roleValue;
+        opt.textContent = roleValue === 'owner' ? 'Owner' : 'Editor';
+        if (item.role === roleValue) opt.selected = true;
+        roleSelect.appendChild(opt);
+      });
+      roleWrap.appendChild(roleSelect);
+
+      var saveBtn = document.createElement('button');
+      saveBtn.type = 'button';
+      saveBtn.className = 'btn !py-1.5 !px-3 text-sm';
+      saveBtn.textContent = 'Save';
+      saveBtn.addEventListener('click', function () { saveRole(item.id, roleSelect.value, saveBtn); });
+      roleWrap.appendChild(saveBtn);
+
+      roleTd.appendChild(roleWrap);
+      tr.appendChild(roleTd);
+
+      var createdTd = document.createElement('td');
+      createdTd.textContent = formatDate(item.created_at);
+      tr.appendChild(createdTd);
+
+      var lastLoginTd = document.createElement('td');
+      lastLoginTd.textContent = formatDate(item.last_login_at);
+      tr.appendChild(lastLoginTd);
+
+      var actionsTd = document.createElement('td');
+      var deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.className = 'btn !py-1.5 !px-3 text-sm';
+      deleteBtn.textContent = 'Delete';
+      deleteBtn.addEventListener('click', function () { deleteStaff(item.id, item.email, deleteBtn); });
+      actionsTd.appendChild(deleteBtn);
+      tr.appendChild(actionsTd);
+
+      staffRows.appendChild(tr);
+    });
+  }
+
+  function saveRole(id, role, btn) {
+    staffListStatus.style.color = 'unset';
+    staffListStatus.textContent = 'Saving…';
+    btn.disabled = true;
+    adminFetch('/api/admin/staff/' + id, { method: 'PUT', body: JSON.stringify({ role: role }) }).then(function (r) {
+      btn.disabled = false;
+      if (!r.ok) {
+        staffListStatus.style.color = 'var(--coral-ink)';
+        staffListStatus.textContent = r.data.error || 'Could not update role.';
+        return;
+      }
+      staffListStatus.style.color = 'unset';
+      staffListStatus.textContent = 'Role updated.';
+      loadStaff();
+    });
+  }
+
+  function deleteStaff(id, email, btn) {
+    if (!confirm('Remove ' + email + '? They will lose staff access immediately.')) return;
+    staffListStatus.style.color = 'unset';
+    staffListStatus.textContent = 'Removing…';
+    btn.disabled = true;
+    adminFetch('/api/admin/staff/' + id, { method: 'DELETE' }).then(function (r) {
+      btn.disabled = false;
+      if (!r.ok) {
+        staffListStatus.style.color = 'var(--coral-ink)';
+        staffListStatus.textContent = r.data.error || 'Could not remove account.';
+        return;
+      }
+      staffListStatus.textContent = '';
+      loadStaff();
+    });
+  }
+
+  addStaffForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var body = {
+      email: document.getElementById('staffEmail').value.trim(),
+      password: document.getElementById('staffPassword').value,
+      name: document.getElementById('staffName').value.trim(),
+      role: document.getElementById('staffRole').value
+    };
+
+    addStaffStatus.style.color = 'unset';
+    addStaffStatus.textContent = 'Saving…';
+    addStaffBtn.disabled = true;
+
+    adminFetch('/api/admin/staff', { method: 'POST', body: JSON.stringify(body) }).then(function (r) {
+      addStaffBtn.disabled = false;
+      if (!r.ok) {
+        addStaffStatus.style.color = 'var(--coral-ink)';
+        addStaffStatus.textContent = r.data.error || 'Could not create account.';
+        return;
+      }
+      addStaffStatus.textContent = '';
+      addStaffForm.reset();
+      document.getElementById('staffRole').value = 'editor';
+      loadStaff();
+    });
+  });
+
+  document.addEventListener('admin:ready', function (e) {
+    var me = e.detail;
+    if (me.role !== 'owner') {
+      staffOnlyMsg.hidden = false;
+      staffMgmt.hidden = true;
+      return;
+    }
+    staffOnlyMsg.hidden = true;
+    staffMgmt.hidden = false;
+    loadStaff();
+  });
+</script>

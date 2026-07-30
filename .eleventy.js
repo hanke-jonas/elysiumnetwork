@@ -67,7 +67,7 @@ module.exports = function (eleventyConfig) {
         .trim();
 
     const pages = results
-      .filter((r) => r.url && r.content && r.url !== '/404.html')
+      .filter((r) => r.url && r.content && r.url !== '/404.html' && !r.url.startsWith('/admin/'))
       .map((r) => {
         const titleMatch = r.content.match(/<title>([\s\S]*?)<\/title>/i);
         const title = titleMatch ? stripHtml(titleMatch[1]) : r.url;

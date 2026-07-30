@@ -1,0 +1,99 @@
+---
+layout: admin-base.njk
+title: "Dashboard"
+permalink: /admin/
+---
+<div class="flex flex-wrap items-start justify-between gap-4 mb-8">
+  <div>
+    <p class="eyebrow" style="color:var(--coral-ink)">Dashboard</p>
+    <h1 class="h-sec mt-2" id="dashGreeting">Welcome back</h1>
+  </div>
+  <span class="tag" id="dashRoleTag" hidden></span>
+</div>
+
+<div class="card p-6 mb-6">
+  <p class="eyebrow" style="color:var(--blue-ink)">Newsletter</p>
+  <p class="mt-2 text-lg font-semibold" id="statsText">Loading subscriber stats…</p>
+</div>
+
+<div class="card p-6 mb-10">
+  <h2 class="h-card">Publish changes to the live site</h2>
+  <p class="mt-2 text-muted leading-relaxed max-w-2xl">Branches, team, calls and FAQ edits save straight to the database, but the public site is a static build — changes won't appear there until you publish. Click below to trigger a fresh build.</p>
+  <button id="rebuildBtn" type="button" class="btn btn-accent mt-4">Publish changes to the live site {% icon "arrow", "w-4 h-4" %}</button>
+  <p role="status" aria-live="polite" id="rebuildStatus" class="mt-3 text-sm"></p>
+</div>
+
+<div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+  <a href="/admin/branches/" class="card p-6 hover:-translate-y-0.5 transition-transform">
+    <h2 class="h-card">Branches</h2>
+    <p class="mt-2 text-muted text-sm">Regional branches, contacts and focus areas.</p>
+  </a>
+  <a href="/admin/team/" class="card p-6 hover:-translate-y-0.5 transition-transform">
+    <h2 class="h-card">Team</h2>
+    <p class="mt-2 text-muted text-sm">Network team members, roles and bios.</p>
+  </a>
+  <a href="/admin/calls/" class="card p-6 hover:-translate-y-0.5 transition-transform">
+    <h2 class="h-card">Calls</h2>
+    <p class="mt-2 text-muted text-sm">Open calls for collaborators and projects.</p>
+  </a>
+  <a href="/admin/faqs/" class="card p-6 hover:-translate-y-0.5 transition-transform">
+    <h2 class="h-card">FAQs</h2>
+    <p class="mt-2 text-muted text-sm">Frequently asked questions shown on the site.</p>
+  </a>
+  <a href="/admin/subscribers/" class="card p-6 hover:-translate-y-0.5 transition-transform">
+    <h2 class="h-card">Subscribers</h2>
+    <p class="mt-2 text-muted text-sm">Newsletter subscriber list and status.</p>
+  </a>
+  <a href="/admin/campaigns/" class="card p-6 hover:-translate-y-0.5 transition-transform">
+    <h2 class="h-card">Newsletter</h2>
+    <p class="mt-2 text-muted text-sm">Draft, edit and send newsletter campaigns.</p>
+  </a>
+  <a href="/admin/staff/" id="staffTile" class="card p-6 hover:-translate-y-0.5 transition-transform" hidden>
+    <h2 class="h-card">Staff</h2>
+    <p class="mt-2 text-muted text-sm">Staff accounts and roles.</p>
+  </a>
+</div>
+
+<script>
+  document.addEventListener('admin:ready', function (me) {
+    var user = me.detail;
+    document.getElementById('dashGreeting').textContent = 'Welcome back, ' + user.name;
+    var roleTag = document.getElementById('dashRoleTag');
+    roleTag.textContent = user.role;
+    roleTag.hidden = false;
+
+    if (user.role === 'owner') {
+      document.getElementById('staffTile').hidden = false;
+    }
+
+    var statsText = document.getElementById('statsText');
+    adminFetch('/api/admin/subscribers').then(function (r) {
+      if (!r.ok) {
+        statsText.style.color = 'var(--coral-ink)';
+        statsText.textContent = r.data.error || 'Could not load subscriber stats.';
+        return;
+      }
+      statsText.textContent = r.data.total + ' subscribers, ' + r.data.confirmed + ' confirmed';
+    });
+  });
+
+  (function () {
+    var btn = document.getElementById('rebuildBtn');
+    var status = document.getElementById('rebuildStatus');
+    btn.addEventListener('click', function () {
+      btn.disabled = true;
+      status.style.color = '';
+      status.textContent = 'Triggering rebuild…';
+      adminFetch('/api/admin/rebuild', { method: 'POST' }).then(function (r) {
+        btn.disabled = false;
+        if (!r.ok) {
+          status.style.color = 'var(--coral-ink)';
+          status.textContent = r.data.error || 'Something went wrong.';
+          return;
+        }
+        status.style.color = '';
+        status.textContent = 'Rebuild triggered — the live site will update in a minute or two.';
+      });
+    });
+  })();
+</script>

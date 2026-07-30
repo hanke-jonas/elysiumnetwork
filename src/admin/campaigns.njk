@@ -1,0 +1,315 @@
+---
+layout: admin-base.njk
+title: "Newsletter"
+permalink: /admin/campaigns/
+---
+<div class="flex flex-wrap items-start justify-between gap-4 mb-8">
+  <div>
+    <p class="eyebrow" style="color:var(--coral-ink)">Newsletter</p>
+    <h1 class="h-sec mt-2">Campaigns</h1>
+    <p class="text-muted text-sm mt-1">Draft, edit and send newsletter campaigns to confirmed subscribers.</p>
+  </div>
+  <button type="button" id="newCampaignBtn" class="btn btn-accent">{% icon "plus", "w-4 h-4" %} New campaign</button>
+</div>
+
+<p id="listStatus" role="status" aria-live="polite" class="text-sm mb-3"></p>
+
+<div class="card !p-0 overflow-x-auto">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>Subject</th>
+        <th style="width:7rem">Status</th>
+        <th style="width:11rem">Created</th>
+        <th style="width:6rem">Recipients</th>
+        <th style="width:11rem">Sent</th>
+        <th style="width:15rem">Actions</th>
+      </tr>
+    </thead>
+    <tbody id="campaignRows">
+      <tr><td colspan="6" class="text-muted text-sm">Loading…</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card mt-6" id="viewPanel" hidden>
+  <div class="flex items-center justify-between gap-3">
+    <h2 class="h-card" id="viewTitle">Campaign</h2>
+    <button type="button" id="viewCloseBtn" class="btn !py-1.5 !px-3 text-sm">Close</button>
+  </div>
+  <div class="mt-4" id="viewBody"></div>
+</div>
+
+<div class="card mt-6">
+  <h2 class="h-card" id="composeTitle">New campaign</h2>
+  <form id="composeForm" class="flex flex-col gap-4 mt-4">
+    <input type="hidden" id="campaignId">
+    <div>
+      <label class="form-label" for="campaignSubject">Subject</label>
+      <input class="input" type="text" id="campaignSubject" name="subject" required>
+    </div>
+    <div>
+      <label class="form-label" for="campaignBody">Body (HTML)</label>
+      <textarea class="input" id="campaignBody" name="bodyHtml" rows="12" required></textarea>
+      <p class="text-muted text-sm mt-1">Raw HTML — this is emailed exactly as written.</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button type="submit" id="composeSaveBtn" class="btn btn-accent">Save</button>
+      <button type="button" id="composeCancelBtn" class="btn">Cancel</button>
+      <p id="composeStatus" role="status" aria-live="polite" class="text-sm"></p>
+    </div>
+  </form>
+</div>
+
+<script>
+  var campaignRows = document.getElementById('campaignRows');
+  var listStatus = document.getElementById('listStatus');
+
+  var viewPanel = document.getElementById('viewPanel');
+  var viewTitle = document.getElementById('viewTitle');
+  var viewBody = document.getElementById('viewBody');
+  var viewCloseBtn = document.getElementById('viewCloseBtn');
+
+  var composeTitle = document.getElementById('composeTitle');
+  var composeForm = document.getElementById('composeForm');
+  var campaignIdField = document.getElementById('campaignId');
+  var campaignSubject = document.getElementById('campaignSubject');
+  var campaignBody = document.getElementById('campaignBody');
+  var composeSaveBtn = document.getElementById('composeSaveBtn');
+  var composeCancelBtn = document.getElementById('composeCancelBtn');
+  var composeStatus = document.getElementById('composeStatus');
+
+  function formatDate(value) {
+    if (!value) return '—';
+    var d = new Date(value);
+    if (isNaN(d.getTime())) return value;
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) +
+      ' ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function statusTag(s) {
+    var bg = 'transparent';
+    if (s === 'sent') bg = 'var(--mint)';
+    else if (s === 'sending') bg = 'var(--sun)';
+    else if (s === 'draft') bg = 'var(--paper-2)';
+    var span = document.createElement('span');
+    span.className = 'tag';
+    span.style.background = bg;
+    span.textContent = s;
+    return span;
+  }
+
+  function loadCampaigns() {
+    listStatus.style.color = 'unset';
+    listStatus.textContent = 'Loading…';
+    adminFetch('/api/admin/campaigns').then(function (r) {
+      if (!r.ok) {
+        listStatus.style.color = 'var(--coral-ink)';
+        listStatus.textContent = r.data.error || 'Could not load campaigns.';
+        return;
+      }
+      listStatus.textContent = '';
+      renderRows(r.data.items || []);
+    });
+  }
+
+  function renderRows(items) {
+    campaignRows.innerHTML = '';
+
+    if (items.length === 0) {
+      var emptyTr = document.createElement('tr');
+      var emptyTd = document.createElement('td');
+      emptyTd.colSpan = 6;
+      emptyTd.className = 'text-muted text-sm';
+      emptyTd.textContent = 'No campaigns yet.';
+      emptyTr.appendChild(emptyTd);
+      campaignRows.appendChild(emptyTr);
+      return;
+    }
+
+    items.forEach(function (item) {
+      var tr = document.createElement('tr');
+
+      var subjectTd = document.createElement('td');
+      subjectTd.textContent = item.subject;
+      tr.appendChild(subjectTd);
+
+      var statusTd = document.createElement('td');
+      statusTd.appendChild(statusTag(item.status));
+      tr.appendChild(statusTd);
+
+      var createdTd = document.createElement('td');
+      createdTd.textContent = formatDate(item.created_at);
+      tr.appendChild(createdTd);
+
+      var recipientsTd = document.createElement('td');
+      recipientsTd.textContent = item.recipient_count || 0;
+      tr.appendChild(recipientsTd);
+
+      var sentTd = document.createElement('td');
+      sentTd.textContent = formatDate(item.sent_at);
+      tr.appendChild(sentTd);
+
+      var actionsTd = document.createElement('td');
+
+      if (item.status === 'draft') {
+        var editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.className = 'btn !py-1.5 !px-3 text-sm mr-2';
+        editBtn.textContent = 'Edit';
+        editBtn.addEventListener('click', function () { editCampaign(item.id); });
+        actionsTd.appendChild(editBtn);
+
+        var sendBtn = document.createElement('button');
+        sendBtn.type = 'button';
+        sendBtn.className = 'btn btn-accent !py-1.5 !px-3 text-sm mr-2';
+        sendBtn.textContent = 'Send';
+        sendBtn.addEventListener('click', function () { sendCampaign(item.id); });
+        actionsTd.appendChild(sendBtn);
+
+        var deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'btn !py-1.5 !px-3 text-sm';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.addEventListener('click', function () { deleteCampaign(item.id); });
+        actionsTd.appendChild(deleteBtn);
+      } else {
+        var viewBtn = document.createElement('button');
+        viewBtn.type = 'button';
+        viewBtn.className = 'btn !py-1.5 !px-3 text-sm';
+        viewBtn.textContent = 'View';
+        viewBtn.addEventListener('click', function () { viewCampaign(item.id); });
+        actionsTd.appendChild(viewBtn);
+      }
+
+      tr.appendChild(actionsTd);
+      campaignRows.appendChild(tr);
+    });
+  }
+
+  function viewCampaign(id) {
+    listStatus.style.color = 'unset';
+    listStatus.textContent = 'Loading campaign…';
+    adminFetch('/api/admin/campaigns/' + id).then(function (r) {
+      if (!r.ok) {
+        listStatus.style.color = 'var(--coral-ink)';
+        listStatus.textContent = r.data.error || 'Could not load campaign.';
+        return;
+      }
+      listStatus.textContent = '';
+      viewTitle.textContent = r.data.subject;
+      // Trusted staff-authored content — rendered as-is, same as it will be emailed.
+      viewBody.innerHTML = r.data.body_html;
+      viewPanel.hidden = false;
+      viewPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  }
+
+  function editCampaign(id) {
+    listStatus.style.color = 'unset';
+    listStatus.textContent = 'Loading campaign…';
+    adminFetch('/api/admin/campaigns/' + id).then(function (r) {
+      if (!r.ok) {
+        listStatus.style.color = 'var(--coral-ink)';
+        listStatus.textContent = r.data.error || 'Could not load campaign.';
+        return;
+      }
+      listStatus.textContent = '';
+      composeTitle.textContent = 'Editing draft: ' + r.data.subject;
+      campaignIdField.value = r.data.id;
+      campaignSubject.value = r.data.subject;
+      campaignBody.value = r.data.body_html;
+      composeStatus.textContent = '';
+      composeForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  }
+
+  function resetComposeForm() {
+    composeTitle.textContent = 'New campaign';
+    campaignIdField.value = '';
+    composeForm.reset();
+    composeStatus.textContent = '';
+  }
+
+  function sendCampaign(id) {
+    if (!confirm('This will immediately email every confirmed subscriber. This cannot be undone. Continue?')) return;
+    listStatus.style.color = 'unset';
+    listStatus.textContent = 'Sending…';
+    adminFetch('/api/admin/campaigns/' + id + '/send', { method: 'POST' }).then(function (r) {
+      if (!r.ok) {
+        listStatus.style.color = 'var(--coral-ink)';
+        listStatus.textContent = r.data.error || 'Could not send campaign.';
+        return;
+      }
+      listStatus.style.color = 'unset';
+      listStatus.textContent = 'Sent to ' + r.data.sent + ' subscribers.';
+      loadCampaigns();
+    });
+  }
+
+  function deleteCampaign(id) {
+    if (!confirm('Delete this draft campaign? This cannot be undone.')) return;
+    listStatus.style.color = 'unset';
+    listStatus.textContent = 'Deleting…';
+    adminFetch('/api/admin/campaigns/' + id, { method: 'DELETE' }).then(function (r) {
+      if (!r.ok) {
+        listStatus.style.color = 'var(--coral-ink)';
+        listStatus.textContent = r.data.error || 'Could not delete campaign.';
+        return;
+      }
+      listStatus.textContent = '';
+      resetComposeForm();
+      loadCampaigns();
+    });
+  }
+
+  document.getElementById('newCampaignBtn').addEventListener('click', function () {
+    resetComposeForm();
+    composeForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+
+  composeCancelBtn.addEventListener('click', resetComposeForm);
+
+  viewCloseBtn.addEventListener('click', function () {
+    viewPanel.hidden = true;
+    viewBody.innerHTML = '';
+  });
+
+  composeForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var id = campaignIdField.value;
+    var body = {
+      subject: campaignSubject.value,
+      bodyHtml: campaignBody.value
+    };
+
+    composeStatus.style.color = 'unset';
+    composeStatus.textContent = 'Saving…';
+    composeSaveBtn.disabled = true;
+
+    var req = id
+      ? adminFetch('/api/admin/campaigns/' + id, { method: 'PUT', body: JSON.stringify(body) })
+      : adminFetch('/api/admin/campaigns', { method: 'POST', body: JSON.stringify(body) });
+
+    req.then(function (r) {
+      composeSaveBtn.disabled = false;
+      if (!r.ok) {
+        composeStatus.style.color = 'var(--coral-ink)';
+        composeStatus.textContent = r.data.error || 'Could not save campaign.';
+        return;
+      }
+      composeStatus.style.color = 'unset';
+      composeStatus.textContent = 'Saved.';
+      if (!id) {
+        resetComposeForm();
+      } else {
+        composeTitle.textContent = 'Editing draft: ' + body.subject;
+      }
+      loadCampaigns();
+    });
+  });
+
+  document.addEventListener('admin:ready', function () {
+    loadCampaigns();
+  });
+</script>

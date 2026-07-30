@@ -4,15 +4,6 @@ title: Active calls — Elysium+ Network
 description: Open calls for youth exchanges, trainings and youth-led projects across the Elysium+ network in Ukraine, Poland, Italy and Germany.
 permalink: /calls/
 ---
-{% set calls = [{
-  title: "Democracy on TrackS (DOTS)",
-  branchSlug: "germany",
-  open: false,
-  deadline: "Applications closed 10 July 2026",
-  summary: "Five seats on a ten-day, fully funded rail journey from Berlin to Strasbourg — visiting the Bundestag, the European Commission, the Court of Justice and the European Parliament along the way. Open to young people aged 18–21 legally resident in Germany. No CV, no portfolio — just curiosity and a willingness to document the journey.",
-  link: "https://hub.elysium.ngo/dots",
-  linkLabel: "Project page"
-} ] %}
 
 <section class="relative overflow-hidden bg-paper border-b-2 border-ink">
   <div class="relative max-w-4xl mx-auto px-5 sm:px-6 pt-14 pb-16">
@@ -52,6 +43,9 @@ permalink: /calls/
         <p class="mt-3 leading-relaxed">{{ c.summary }}</p>
         <div class="mt-6 flex flex-wrap items-center gap-4">
           <a href="{{ c.link }}" target="_blank" rel="noopener" class="btn {% if c.open %}btn-accent{% endif %}">{{ c.linkLabel }} {% icon "arrow", "w-4 h-4" %}</a>
+          {% if c.open %}
+          <button type="button" class="btn express-interest-btn" data-call-id="{{ c.id }}">I'm interested</button>
+          {% endif %}
           <span class="text-sm text-muted">{{ c.deadline }}</span>
         </div>
       </div>
@@ -69,3 +63,47 @@ permalink: /calls/
     </div>
   </div>
 </section>
+
+<script>
+  (function(){
+    var buttons = document.querySelectorAll('.express-interest-btn');
+    if (!buttons.length) return;
+
+    function markInterested(btn){
+      btn.textContent = "You're interested ✓";
+      btn.disabled = true;
+    }
+
+    fetch('/api/auth/me', {credentials:'include'}).then(function(r){ return r.json(); }).then(function(session){
+      if (!session.signedIn || session.type !== 'public') return;
+      fetch('/api/calls/interest', {credentials:'include'}).then(function(r){ return r.json(); }).then(function(data){
+        (data.callIds || []).forEach(function(id){
+          var btn = document.querySelector('.express-interest-btn[data-call-id="' + id + '"]');
+          if (btn) markInterested(btn);
+        });
+      });
+    });
+
+    buttons.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        fetch('/api/auth/me', {credentials:'include'}).then(function(r){ return r.json(); }).then(function(session){
+          if (!session.signedIn || session.type !== 'public') {
+            location.href = '/account/login/?next=' + encodeURIComponent('/calls/');
+            return;
+          }
+          btn.disabled = true;
+          fetch('/api/calls/interest', {
+            method: 'POST', credentials: 'include',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({callId: btn.getAttribute('data-call-id')})
+          }).then(function(res){ return res.json().then(function(data){ return {ok: res.ok, data: data}; }); })
+            .then(function(r){
+              if (!r.ok) { btn.disabled = false; alert(r.data.error || 'Something went wrong — please try again.'); return; }
+              markInterested(btn);
+            })
+            .catch(function(){ btn.disabled = false; alert('Something went wrong — please try again.'); });
+        });
+      });
+    });
+  })();
+</script>

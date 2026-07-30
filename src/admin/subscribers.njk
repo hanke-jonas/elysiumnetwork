@@ -1,0 +1,119 @@
+---
+layout: admin-base.njk
+title: "Subscribers"
+permalink: /admin/subscribers/
+---
+<div class="flex flex-wrap items-start justify-between gap-4 mb-8">
+  <div>
+    <p class="eyebrow" style="color:var(--coral-ink)">Newsletter</p>
+    <h1 class="h-sec mt-2">Subscribers</h1>
+  </div>
+</div>
+
+<div class="card p-6 mb-6">
+  <p class="mono text-sm text-muted" id="statsText">Loading subscriber stats…</p>
+</div>
+
+<div class="card p-6">
+  <div class="overflow-x-auto">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Status</th>
+          <th>Created</th>
+          <th>Confirmed</th>
+        </tr>
+      </thead>
+      <tbody id="subsBody">
+        <tr><td colspan="4" class="text-muted">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<p role="status" aria-live="polite" id="subsStatus" class="mt-3 text-sm"></p>
+
+<script>
+  document.addEventListener('admin:ready', function () {
+    var statsText = document.getElementById('statsText');
+    var body = document.getElementById('subsBody');
+    var status = document.getElementById('subsStatus');
+
+    function formatDate(value) {
+      if (!value) return '—';
+      var d = new Date(value);
+      if (isNaN(d.getTime())) return value;
+      return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    function statusTag(s) {
+      var bg = 'transparent';
+      if (s === 'confirmed') bg = 'var(--mint)';
+      else if (s === 'pending') bg = 'var(--paper-2)';
+      var span = document.createElement('span');
+      span.className = 'tag';
+      span.style.background = bg;
+      span.textContent = s;
+      return span;
+    }
+
+    function emptyRow(message) {
+      var tr = document.createElement('tr');
+      var td = document.createElement('td');
+      td.colSpan = 4;
+      td.className = 'text-muted';
+      td.textContent = message;
+      tr.appendChild(td);
+      return tr;
+    }
+
+    adminFetch('/api/admin/subscribers').then(function (r) {
+      if (!r.ok) {
+        statsText.style.color = 'var(--coral-ink)';
+        statsText.textContent = r.data.error || 'Could not load subscribers.';
+        body.innerHTML = '';
+        body.appendChild(emptyRow('Nothing to show.'));
+        return;
+      }
+
+      statsText.textContent = r.data.total + ' total · ' + r.data.confirmed + ' confirmed';
+
+      var items = r.data.items || [];
+      body.innerHTML = '';
+      if (items.length === 0) {
+        body.appendChild(emptyRow('No subscribers yet.'));
+        return;
+      }
+
+      // Subscriber emails come from the public, unauthenticated newsletter
+      // signup form — build every cell via textContent/DOM methods, never
+      // string-concatenated innerHTML, so a crafted "email" can't run script
+      // in a signed-in staff member's session.
+      items.forEach(function (item) {
+        var tr = document.createElement('tr');
+
+        var emailTd = document.createElement('td');
+        emailTd.textContent = item.email;
+        tr.appendChild(emailTd);
+
+        var statusTd = document.createElement('td');
+        statusTd.appendChild(statusTag(item.status));
+        tr.appendChild(statusTd);
+
+        var createdTd = document.createElement('td');
+        createdTd.textContent = formatDate(item.created_at);
+        tr.appendChild(createdTd);
+
+        var confirmedTd = document.createElement('td');
+        confirmedTd.textContent = formatDate(item.confirmed_at);
+        tr.appendChild(confirmedTd);
+
+        body.appendChild(tr);
+      });
+    }).catch(function () {
+      status.style.color = 'var(--coral-ink)';
+      status.textContent = 'Something went wrong loading subscribers.';
+    });
+  });
+</script>
