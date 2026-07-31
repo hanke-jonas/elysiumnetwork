@@ -184,25 +184,34 @@ module.exports = async function () {
     fetchLive('/api/admin/faqs'),
   ]);
 
+  const branches = branchRows
+    ? branchRows.map((r) => ({
+        tz: r.tz, lat: r.lat, lon: r.lon,
+        slug: r.slug, flag: r.flag, iso_n3: r.iso_n3,
+        name: r.name, name_native: r.name_native,
+        country: r.country, city: r.city,
+        oid: r.oid, type: r.type, status: r.status,
+        accent: r.accent, tagline: r.tagline, about: r.about,
+        focus: r.focus_json || [],
+        people: r.people_json || [],
+        email: r.email, phone: r.phone, address: r.address, website: r.website,
+      }))
+    : fallback.branches;
+
   return {
     ...fallback,
-    branches: branchRows
-      ? branchRows.map((r) => ({
-          tz: r.tz, lat: r.lat, lon: r.lon,
-          slug: r.slug, flag: r.flag, iso_n3: r.iso_n3,
-          name: r.name, name_native: r.name_native,
-          country: r.country, city: r.city,
-          oid: r.oid, type: r.type, status: r.status,
-          accent: r.accent, tagline: r.tagline, about: r.about,
-          focus: r.focus_json || [],
-          people: r.people_json || [],
-          email: r.email, phone: r.phone, address: r.address, website: r.website,
-        }))
-      : fallback.branches,
+    branches,
     team: teamRows
       ? teamRows.map((r) => ({ name: r.name, role: r.role, image: r.image, focalY: r.focal_y, bio: r.bio }))
       : fallback.team,
     faqs: faqRows ? faqRows.map((r) => [r.question, r.answer]) : fallback.faqs,
+    // Precomputed here rather than in Nunjucks templates — this project's
+    // bundled Nunjucks (3.2.4) has no `namespace()` global (that's a Jinja2
+    // feature, not a Nunjucks one), so there's no clean way to accumulate a
+    // filtered/mapped list across a template {% for %} loop; plain JS does
+    // it in one line.
+    socialUrls: fallback.socials.filter((s) => !s.url.startsWith('mailto:')).map((s) => s.url),
+    branchCountries: branches.map((b) => b.country),
   };
 };
 

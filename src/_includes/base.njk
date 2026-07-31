@@ -26,6 +26,8 @@
 <meta name="twitter:description" content="{{ pageDescription }}">
 <meta name="twitter:image" content="{{ site.url }}{{ site.og_image }}">
 
+{% set orgSchema = { "@context": "https://schema.org", "@type": "NGO", "name": site.network_full, "alternateName": site.network_name, "url": site.url, "logo": site.url + site.logo_small, "description": site.default_description, "foundingDate": site.founded_year | string, "email": site.contact_email, "sameAs": site.socialUrls.concat([site.hub]), "areaServed": site.branchCountries } %}
+<script type="application/ld+json">{{ orgSchema | dump | safe }}</script>
 <link rel="stylesheet" href="/assets/tailwind.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,6 +35,7 @@
 {% include "theme-style.njk" %}
 </head>
 <body class="bg-paper text-ink">
+<a href="#main-content" class="skip-link">Skip to main content</a>
 <div class="grain"></div>
 
 <div class="ticker-bar">
@@ -140,7 +143,9 @@
 </div>
 
 <!--SEARCH-CONTENT-START-->
+<main id="main-content">
 {{ content | safe }}
+</main>
 <!--SEARCH-CONTENT-END-->
 
 <footer class="bg-ink text-paper relative z-10 border-t-2 border-ink">

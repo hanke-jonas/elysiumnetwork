@@ -1,7 +1,7 @@
 <div class="cookie-banner hidden" id="cookieBanner" role="dialog" aria-label="Cookie preferences" aria-describedby="cookieBannerText">
   <div class="cookie-panel">
     <p id="cookieBannerText" class="text-sm leading-relaxed">
-      We don't use any analytics or tracking cookies on this site — only what's strictly necessary for it to work. Your choice here is saved so we don't ask again, and will apply automatically if that ever changes.
+      We use Cloudflare's privacy-friendly analytics to see which pages are useful — no cookies, no cross-site tracking, no personal profile built on you. Your choice here is saved so we don't ask again, and will apply automatically if that ever changes.
       <a href="/privacy/" class="underline font-semibold">Privacy Policy</a>
     </p>
     <div class="cookie-actions">
@@ -28,12 +28,18 @@
   function hasAnalyticsConsent(){
     return getCookieConsent() === 'accepted';
   }
-  // No analytics tool is wired in yet. Once one is added, its script/init
-  // call belongs here, guarded by hasAnalyticsConsent() — this is the single
-  // gate every future tracking script should go through, not a per-script
-  // check scattered elsewhere.
+  // Cloudflare Web Analytics — cookieless, no cross-site tracking, no
+  // fingerprinting, so it doesn't need cookie-level consent under most
+  // readings of GDPR. Gated through the same consent flag anyway, since
+  // this site makes a stronger privacy promise than the legal minimum.
   function loadAnalyticsIfConsented(){
     if (!hasAnalyticsConsent()) return;
+    if (document.querySelector('script[data-cf-beacon]')) return;
+    var s = document.createElement('script');
+    s.type = 'module';
+    s.src = 'https://static.cloudflareinsights.com/beacon.min.js';
+    s.setAttribute('data-cf-beacon', JSON.stringify({ token: 'afff231f9edd4db4b7bc43857e504246' }));
+    document.head.appendChild(s);
   }
   function openCookiePrefs(){
     document.getElementById('cookieBanner').classList.remove('hidden');

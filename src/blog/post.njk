@@ -9,6 +9,11 @@ eleventyComputed:
   title: "{{ post.seoTitle or post.title }} — Elysium+ Network"
   description: "{{ post.seoDescription or post.excerpt or post.title }}"
 ---
+{% set postAuthorName = post.authorName or site.network_full %}
+{% set rawPostImage = post.coverImage or site.og_image %}
+{% set postImage = rawPostImage if "://" in rawPostImage else (site.url + rawPostImage) %}
+{% set postSchema = { "@context": "https://schema.org", "@type": "BlogPosting", "headline": post.title, "description": post.excerpt or post.title, "datePublished": post.publishedAt, "dateModified": post.publishedAt, "url": site.url + "/blog/" + post.slug + "/", "image": postImage, "author": { "@type": "Person", "name": postAuthorName }, "publisher": { "@type": "Organization", "name": site.network_full, "logo": { "@type": "ImageObject", "url": site.url + site.logo_small } } } %}
+<script type="application/ld+json">{{ postSchema | dump | safe }}</script>
 <section class="bg-paper">
   <div class="max-w-3xl mx-auto px-5 sm:px-6 pt-10 pb-20">
     <nav class="mono text-xs text-muted mb-8 uppercase tracking-wider">

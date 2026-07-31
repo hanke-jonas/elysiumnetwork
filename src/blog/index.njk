@@ -31,7 +31,7 @@ permalink: "{% if pagination.pageNumber > 0 %}/blog/page/{{ pagination.pageNumbe
       {% for post in posts %}
       <a href="/blog/{{ post.slug }}/" class="card overflow-hidden reveal block group">
         {% if post.coverImage %}
-        <img src="{{ post.coverImage }}" alt="" class="aspect-video w-full object-cover">
+        <img src="{{ post.coverImage }}" alt="{{ post.title }}" loading="lazy" class="aspect-video w-full object-cover">
         {% else %}
         <div class="aspect-video w-full" style="background:{{ cardAccents[loop.index0 % cardAccents.length] }}"></div>
         {% endif %}
