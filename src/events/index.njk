@@ -16,9 +16,7 @@ permalink: /events/
 <section class="bg-paper">
   <div class="max-w-4xl mx-auto px-5 sm:px-6 py-16">
     {% if events.length == 0 %}
-    <div class="card p-10 text-center max-w-xl mx-auto">
-      <h2 class="h-card">No upcoming events right now — check back soon.</h2>
-    </div>
+    {% emptyState "calendar", "No upcoming events right now — check back soon.", "New exchanges, trainings and gatherings will appear here as soon as they're announced." %}
     {% else %}
     <div class="space-y-6">
       {% for e in events %}

@@ -313,7 +313,22 @@
   })();
 
   var io=new IntersectionObserver(function(es){es.forEach(function(x){if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target);}});},{threshold:0.12});
-  document.querySelectorAll('.reveal').forEach(function(el){io.observe(el);});
+  document.querySelectorAll('.reveal').forEach(function(el){
+    // Content already in the initial viewport was never "revealed" by
+    // scrolling — it's the first thing the visitor sees, so waiting on the
+    // observer's first callback plus the .55s fade just reads as a blank
+    // flash on every single page load. Show it immediately instead; only
+    // genuinely below-the-fold elements get the scroll-triggered fade-up.
+    var rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+      el.style.transition = 'none';
+      el.classList.add('in');
+      void el.offsetHeight;
+      el.style.transition = '';
+    } else {
+      io.observe(el);
+    }
+  });
 
   (function(){
     var bar = document.getElementById('scrollProgress');

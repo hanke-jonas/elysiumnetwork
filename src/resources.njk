@@ -16,9 +16,7 @@ permalink: /resources/
 <section class="bg-paper">
   <div class="max-w-4xl mx-auto px-5 sm:px-6 py-16">
     {% if resources.length == 0 %}
-    <div class="card p-10 text-center max-w-xl mx-auto">
-      <h2 class="h-card">Nothing here yet — check back soon.</h2>
-    </div>
+    {% emptyState "box", "Nothing here yet — check back soon.", "Reports and toolkits will appear here as soon as they're published." %}
     {% else %}
     <div class="space-y-6">
       {% for r in resources %}

@@ -24,6 +24,9 @@ const ICONS = {
   id: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="12" r="2.5"/><path d="M14 10h4M14 14h4"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+  compass: '<circle cx="12" cy="12" r="9"/><path d="m14.5 9.5-2 5-5 2 2-5z"/>',
+  box: '<path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
 };
 
 module.exports = function (eleventyConfig) {
@@ -39,6 +42,18 @@ module.exports = function (eleventyConfig) {
   });
 
   eleventyConfig.addShortcode('year', () => String(new Date().getUTCFullYear()));
+
+  // A consistent illustrated empty state (icon in a dashed badge + heading +
+  // optional subtext) for every "nothing published yet" moment across the
+  // public site — replaces what used to be a bare line of text in a card.
+  eleventyConfig.addShortcode('emptyState', function (icon, title, subtitle) {
+    const iconSvg = `<svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[icon] || ''}</svg>`;
+    return `<div class="card p-10 sm:p-14 text-center max-w-xl mx-auto">
+      <div class="w-16 h-16 mx-auto rounded-2xl border-2 border-dashed border-ink grid place-items-center mb-5 rotate-2" style="color:var(--blue-ink)">${iconSvg}</div>
+      <h2 class="h-card">${title}</h2>
+      ${subtitle ? `<p class="mt-2 text-muted leading-relaxed">${subtitle}</p>` : ''}
+    </div>`;
+  });
 
   // e.g. {{ post.publishedAt | readableDate }} -> "30 July 2026"
   eleventyConfig.addFilter('readableDate', function (value) {

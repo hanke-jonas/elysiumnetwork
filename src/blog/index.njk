@@ -22,10 +22,7 @@ permalink: "{% if pagination.pageNumber > 0 %}/blog/page/{{ pagination.pageNumbe
 <section class="bg-paper">
   <div class="max-w-7xl mx-auto px-5 sm:px-6 py-16">
     {% if posts.length == 0 %}
-    <div class="card p-10 text-center max-w-xl mx-auto">
-      <h2 class="h-card">No posts yet — check back soon.</h2>
-      <p class="mt-2 text-muted leading-relaxed">We're working on the first stories from across the network.</p>
-    </div>
+    {% emptyState "compass", "No posts yet — check back soon.", "We're working on the first stories from across the network." %}
     {% else %}
     <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {% for post in posts %}
