@@ -1,55 +1,51 @@
-// Thin wrapper around Resend's API. RESEND_API_KEY is a Cloudflare Pages
-// secret (never committed); NEWSLETTER_FROM_EMAIL is a plain env var since
-// it's not sensitive, just needs to be an address on a domain verified in
-// the Resend dashboard.
-const RESEND_API = 'https://api.resend.com';
+// Thin wrapper around SendGrid's Mail Send API. SENDGRID_API_KEY is a
+// Cloudflare Pages secret; NEWSLETTER_FROM_EMAIL must be the exact address
+// verified as a Single Sender in SendGrid (Settings > Sender Authentication)
+// — chosen specifically because it needs no DNS changes, unlike full domain
+// authentication (SPF/DKIM), which would have meant touching elysium.ngo's
+// DNS alongside its existing Google Workspace records.
+const SENDGRID_API = 'https://api.sendgrid.com/v3/mail/send';
+
+function fromAddress(env) {
+  const raw = env.NEWSLETTER_FROM_EMAIL || 'Elysium+ Network <hanke@elysium.ngo>';
+  const match = raw.match(/^(.*)<(.+)>$/);
+  return match ? { name: match[1].trim(), email: match[2].trim() } : { email: raw };
+}
 
 export async function sendEmail(env, { to, subject, html }) {
-  if (!env.RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
-  const res = await fetch(`${RESEND_API}/emails`, {
+  if (!env.SENDGRID_API_KEY) throw new Error('SENDGRID_API_KEY is not configured');
+  const res = await fetch(SENDGRID_API, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
+      Authorization: `Bearer ${env.SENDGRID_API_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: env.NEWSLETTER_FROM_EMAIL || 'Elysium+ Network <onboarding@resend.dev>',
-      to,
+      personalizations: [{ to: [{ email: to }] }],
+      from: fromAddress(env),
       subject,
-      html,
+      content: [{ type: 'text/html', value: html }],
     }),
   });
   if (!res.ok) {
     const detail = await res.text().catch(() => '');
-    throw new Error(`Resend send failed (${res.status}): ${detail}`);
+    throw new Error(`SendGrid send failed (${res.status}): ${detail}`);
   }
-  return res.json();
+  return { ok: true };
 }
 
-// Resend's batch endpoint accepts up to 100 messages per call. Each
-// recipient gets an individually-addressed email (not one email with 100
-// people in `to`), so unsubscribe links stay per-recipient.
+// SendGrid's personalizations array can vary the "to" per recipient in one
+// call, but NOT the HTML body — and here each recipient needs their own
+// unsubscribe link baked into the body. So this sends one request per
+// recipient rather than true batching. Fine at this NGO's newsletter scale;
+// worth revisiting (e.g. a queue) if the subscriber count ever approaches
+// Cloudflare's per-request subrequest cap (50 on the free plan).
 export async function sendBatch(env, emails) {
-  if (!env.RESEND_API_KEY) throw new Error('RESEND_API_KEY is not configured');
-  const from = env.NEWSLETTER_FROM_EMAIL || 'Elysium+ Network <onboarding@resend.dev>';
-  const chunks = [];
-  for (let i = 0; i < emails.length; i += 100) chunks.push(emails.slice(i, i + 100));
-
+  if (!env.SENDGRID_API_KEY) throw new Error('SENDGRID_API_KEY is not configured');
   let sent = 0;
-  for (const chunk of chunks) {
-    const res = await fetch(`${RESEND_API}/emails/batch`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${env.RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(chunk.map((e) => ({ from, to: e.to, subject: e.subject, html: e.html }))),
-    });
-    if (!res.ok) {
-      const detail = await res.text().catch(() => '');
-      throw new Error(`Resend batch send failed after ${sent} sent (${res.status}): ${detail}`);
-    }
-    sent += chunk.length;
+  for (const e of emails) {
+    await sendEmail(env, e);
+    sent += 1;
   }
   return { sent };
 }
