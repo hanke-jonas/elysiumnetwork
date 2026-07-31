@@ -5,6 +5,11 @@
     <h2 id="detailTitle" class="detail-title"></h2>
     <p id="detailBody" class="detail-body"></p>
     <a id="detailCta" class="btn btn-accent mt-5 hidden" href="#"></a>
+    <div id="detailNav" class="detail-nav hidden">
+      <button type="button" id="detailPrev" class="detail-nav-btn" aria-label="Previous">{% icon "arrow", "w-4 h-4 rotate-180" %}</button>
+      <span id="detailNavPos" class="detail-nav-pos mono" aria-live="polite"></span>
+      <button type="button" id="detailNext" class="detail-nav-btn" aria-label="Next">{% icon "arrow", "w-4 h-4" %}</button>
+    </div>
   </div>
 </div>
 
@@ -17,12 +22,21 @@
   .detail-dot{ display:inline-flex; width:2.5rem; height:2.5rem; border-radius:.65rem; border:2px solid var(--ink); }
   .detail-title{ font-family:"Bricolage Grotesque",sans-serif; font-weight:800; font-size:1.4rem; line-height:1.2; margin-top:1rem; }
   .detail-body{ margin-top:.75rem; line-height:1.65; color:var(--ink); opacity:.85; }
+  .detail-nav{ display:flex; align-items:center; justify-content:center; gap:1rem; margin-top:1.5rem; padding-top:1.25rem; border-top:2px solid var(--line); }
+  .detail-nav-btn{ display:grid; place-items:center; width:2.25rem; height:2.25rem; border-radius:.6rem; border:2px solid var(--ink); background:#fff; box-shadow:3px 3px 0 var(--ink); transition:transform .12s ease, box-shadow .12s ease; }
+  .detail-nav-btn:hover{ transform:translate(-1px,-1px); box-shadow:4px 4px 0 var(--ink); }
+  .detail-nav-btn:active{ transform:translate(0,0); box-shadow:1px 1px 0 var(--ink); }
+  .detail-nav-pos{ font-size:.78rem; opacity:.6; min-width:3.5rem; text-align:center; }
 </style>
 
 <script>
-  var detailTrigger = null, detailUntrap = null;
-  function openDetail(trigger){
-    detailTrigger = trigger;
+  var detailTrigger = null, detailUntrap = null, detailGroup = [], detailIndex = -1;
+
+  // Swaps the panel's content for `trigger` without touching the open state,
+  // focus trap, or overlay — used both by the initial open and by the
+  // prev/next arrows, which should update content in place rather than
+  // closing and reopening the modal.
+  function fillDetail(trigger){
     document.getElementById('detailTitle').textContent = trigger.dataset.detailTitle || '';
     document.getElementById('detailBody').textContent = trigger.dataset.detailBody || '';
     document.getElementById('detailDot').style.background = trigger.dataset.detailAccent || 'var(--paper-2)';
@@ -32,14 +46,41 @@
       cta.textContent = trigger.dataset.detailCtaLabel || 'Learn more';
       cta.classList.remove('hidden');
     } else {
+      // Clearing href/textContent (not just re-adding "hidden") matters:
+      // this element was rendered elsewhere as a real <a class="btn ...">,
+      // and a same-specificity CSS tie between that .btn rule and .hidden
+      // used to make .hidden silently lose (fixed separately in base.njk),
+      // which was leaving a blank, stale-href button visibly on screen for
+      // any card that never set a CTA (e.g. the homepage's theme cards).
       cta.classList.add('hidden');
+      cta.removeAttribute('href');
+      cta.textContent = '';
     }
+    var nav = document.getElementById('detailNav');
+    if (detailGroup.length > 1){
+      nav.classList.remove('hidden');
+      document.getElementById('detailNavPos').textContent = (detailIndex + 1) + ' / ' + detailGroup.length;
+    } else {
+      nav.classList.add('hidden');
+    }
+    document.getElementById('detailOverlay').querySelector('.detail-panel').scrollTop = 0;
+  }
+
+  function openDetail(trigger){
     var o = document.getElementById('detailOverlay');
+    var wasOpen = o.classList.contains('open');
+    detailTrigger = trigger;
+    // Every card sharing this trigger's own grid (themes, values, ...) forms
+    // its "group" — read straight off the DOM instead of a data attribute,
+    // since each section already renders its cards as plain siblings.
+    detailGroup = Array.prototype.slice.call(trigger.parentElement.querySelectorAll(':scope > .detail-trigger'));
+    detailIndex = detailGroup.indexOf(trigger);
+    fillDetail(trigger);
+    if (wasOpen) return;
     o.classList.add('open');
     document.body.style.overflow = 'hidden';
     detailUntrap = trapFocus(o);
     var panel = o.querySelector('.detail-panel');
-    panel.scrollTop = 0;
     // A button inside a container that's still mid-transition out of
     // visibility:hidden isn't reliably focusable in the same tick the
     // 'open' class is applied — focus() can silently no-op, which would
@@ -52,6 +93,11 @@
       panel.scrollTop = 0;
     });
   }
+  function navDetail(delta){
+    if (detailGroup.length < 2) return;
+    detailIndex = (detailIndex + delta + detailGroup.length) % detailGroup.length;
+    fillDetail(detailGroup[detailIndex]);
+  }
   function closeDetail(){
     var o = document.getElementById('detailOverlay');
     if (!o.classList.contains('open')) return;
@@ -60,11 +106,24 @@
     if (detailUntrap){ detailUntrap(); detailUntrap = null; }
     if (detailTrigger && detailTrigger.focus) detailTrigger.focus();
     detailTrigger = null;
+    detailGroup = [];
+    detailIndex = -1;
   }
   document.addEventListener('click', function(e){
     var trigger = e.target.closest('.detail-trigger');
     if (trigger){ openDetail(trigger); }
   });
+  document.getElementById('detailPrev').addEventListener('click', function(){ navDetail(-1); });
+  document.getElementById('detailNext').addEventListener('click', function(){ navDetail(1); });
   document.getElementById('detailOverlay').addEventListener('click', function(e){ if (e.target === this) closeDetail(); });
-  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeDetail(); });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') { closeDetail(); return; }
+    if (!document.getElementById('detailOverlay').classList.contains('open')) return;
+    // Arrow-key paging only kicks in while the modal is open, and only ever
+    // targets this modal's own prev/next — it never fights with a native
+    // form control's arrow-key behavior since nothing focusable inside the
+    // panel uses ArrowLeft/ArrowRight for its own purpose.
+    if (e.key === 'ArrowLeft') { e.preventDefault(); navDetail(-1); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); navDetail(1); }
+  });
 </script>

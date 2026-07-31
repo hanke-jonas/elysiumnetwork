@@ -28,11 +28,20 @@
 
 {% set orgSchema = { "@context": "https://schema.org", "@type": "NGO", "name": site.network_full, "alternateName": site.network_name, "url": site.url, "logo": site.url + site.logo_small, "description": site.default_description, "foundingDate": site.founded_year | string, "email": site.contact_email, "sameAs": site.socialUrls.concat([site.hub]), "areaServed": site.branchCountries } %}
 <script type="application/ld+json">{{ orgSchema | dump | safe }}</script>
-<link rel="stylesheet" href="/assets/tailwind.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Caveat:wght@600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 {% include "theme-style.njk" %}
+{#
+  Tailwind loads AFTER the custom component styles above (not before) so
+  its utilities reliably win any same-specificity tie against a custom
+  class on the same element — e.g. `class="btn hidden"` needs `.hidden`'s
+  display:none to beat `.btn`'s display:inline-flex. Loading Tailwind first
+  was exactly backwards: it made `.hidden` silently lose that tie (confirmed
+  live on the homepage's theme-card modal, where an unset CTA button stayed
+  visibly rendered — blank text, stale href — instead of actually hiding).
+#}
+<link rel="stylesheet" href="/assets/tailwind.css">
 </head>
 <body class="bg-paper text-ink">
 <a href="#main-content" class="skip-link">Skip to main content</a>

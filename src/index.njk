@@ -73,7 +73,7 @@ permalink: /
       {% set palette = ["var(--blue)","var(--coral)","var(--sun)","var(--mint)","var(--plum)","var(--blue)"] %}
       {% set rot = ["-1.5deg","1deg","-.5deg","1.5deg","-1deg",".5deg"] %}
       {% for t in site.themes %}
-      <button type="button" class="card p-6 reveal reveal-d{{ (loop.index0 % 3) + 1 }} w-full text-left detail-trigger" style="transform:rotate({{ rot[loop.index0] }})" data-detail-title="{{ t.title }}" data-detail-body="{{ t.detail }}" data-detail-accent="{{ palette[loop.index0] }}">
+      <button type="button" class="card p-6 reveal reveal-d{{ (loop.index0 % 3) + 1 }} w-full text-left detail-trigger" style="transform:rotate({{ rot[loop.index0] }})" data-detail-title="{{ t.title }}" data-detail-body="{{ t.detail }}" data-detail-accent="{{ palette[loop.index0] }}" data-detail-cta-href="/calls/" data-detail-cta-label="See active calls">
         <div class="w-11 h-11 rounded-lg grid place-items-center border-2 border-ink mb-4" style="background:{{ palette[loop.index0] }}">{% icon t.icon, "w-5 h-5" %}</div>
         <h3 class="h-card">{{ t.title }}</h3>
         <p class="mt-2 text-muted leading-relaxed">{{ t.text }}</p>
