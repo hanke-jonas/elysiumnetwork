@@ -102,10 +102,18 @@
   .heart-cursor{ position:fixed; z-index:200; pointer-events:none; width:16px; height:16px; will-change:transform,opacity; animation:heart-pop .7s ease-out forwards; }
   @keyframes heart-pop{ 0%{ transform:translate(-50%,-50%) scale(.4) rotate(var(--r,0deg)); opacity:.9; } 100%{ transform:translate(-50%,-50%) scale(1.1) translateY(-22px) rotate(var(--r,0deg)); opacity:0; } }
 
+  .carousel-track{ display:flex; gap:1.5rem; overflow-x:auto; overflow-y:visible; scroll-snap-type:x proximity; scroll-behavior:smooth; padding:.75rem .25rem 1rem; margin:-.75rem -.25rem -1rem; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .carousel-track::-webkit-scrollbar{ display:none; }
+  .carousel-item{ scroll-snap-align:start; flex:0 0 auto; width:320px; max-width:80%; }
+  .carousel-arrow{ display:grid; place-items:center; width:2.5rem; height:2.5rem; border-radius:.6rem; border:2px solid var(--ink); background:#fff; box-shadow:3px 3px 0 var(--ink); transition:transform .12s ease, box-shadow .12s ease; }
+  .carousel-arrow:hover{ transform:translate(-1px,-1px); box-shadow:4px 4px 0 var(--ink); }
+  .carousel-arrow:active{ transform:translate(0,0); box-shadow:1px 1px 0 var(--ink); }
+
   @media (prefers-reduced-motion: reduce){
     html{ scroll-behavior:auto; }
     .reveal{ opacity:1; transform:none; transition:none; }
     .marquee-track{ animation:none; }
     .heart-cursor{ display:none; }
+    .carousel-track{ scroll-behavior:auto; }
   }
 </style>
