@@ -1,0 +1,75 @@
+---
+layout: base.njk
+pagination:
+  data: blog
+  size: 1
+  alias: post
+permalink: "/blog/{{ post.slug }}/"
+eleventyComputed:
+  title: "{{ post.seoTitle or post.title }} — Elysium+ Network"
+  description: "{{ post.seoDescription or post.excerpt or post.title }}"
+---
+<section class="bg-paper">
+  <div class="max-w-3xl mx-auto px-5 sm:px-6 pt-10 pb-20">
+    <nav class="mono text-xs text-muted mb-8 uppercase tracking-wider">
+      <a href="/" class="hover:underline">Home</a> <span class="mx-1 opacity-40">/</span>
+      <a href="/blog/" class="hover:underline">Blog</a> <span class="mx-1 opacity-40">/</span>
+      <span class="text-ink/90">{{ post.title }}</span>
+    </nav>
+
+    {% if post.coverImage %}
+    <img src="{{ post.coverImage }}" alt="{{ post.title }}" class="max-h-[420px] object-cover w-full rounded-2xl border-2 border-ink mb-8">
+    {% endif %}
+
+    <div class="flex flex-wrap items-center gap-3">
+      {% if post.category %}<span class="tag">{{ post.category }}</span>{% endif %}
+      {% if post.authorName or post.publishedAt %}
+      <p class="mono text-xs text-muted uppercase tracking-wider">
+        {%- if post.authorName %}By {{ post.authorName }}{% endif -%}
+        {%- if post.authorName and post.publishedAt %} · {% endif -%}
+        {%- if post.publishedAt %}{{ post.publishedAt | readableDate }}{% endif -%}
+      </p>
+      {% endif %}
+    </div>
+
+    <h1 class="h-hero mt-5">{{ post.title }}</h1>
+
+    {% if post.excerpt %}
+    <p class="mt-6 text-lg text-muted leading-relaxed">{{ post.excerpt }}</p>
+    {% endif %}
+
+    <div class="post-body mt-10">
+      {{ post.bodyHtml | safe }}
+    </div>
+
+    <div class="mt-14 pt-8 border-t-2 border-ink">
+      <a href="/blog/" class="btn">{% icon "arrow", "w-4 h-4 rotate-180" %} Back to Blog</a>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Baseline styling for the rich-text body only — this project has no
+     @tailwindcss/typography plugin, so raw tags coming out of the blog
+     editor (h1-h3, p, ul, ol, li, blockquote, a, img, strong, em) need
+     some minimal, scoped rules to read well. Kept deliberately small and
+     matched to the site's existing type scale rather than inventing a
+     new visual language. */
+  .post-body{ font-size:1.05rem; line-height:1.75; }
+  .post-body h1, .post-body h2, .post-body h3{ font-family:"Bricolage Grotesque",system-ui,sans-serif; font-weight:800; letter-spacing:-0.02em; line-height:1.15; margin-top:1.6em; margin-bottom:.6em; }
+  .post-body h1{ font-size:2rem; }
+  .post-body h2{ font-size:1.6rem; }
+  .post-body h3{ font-size:1.3rem; }
+  .post-body p{ margin-top:1em; }
+  .post-body ul, .post-body ol{ margin-top:1em; padding-left:1.4em; }
+  .post-body ul{ list-style:disc; }
+  .post-body ol{ list-style:decimal; }
+  .post-body li{ margin-top:.4em; }
+  .post-body li + li{ margin-top:.4em; }
+  .post-body a{ text-decoration:underline; text-underline-offset:2px; font-weight:600; }
+  .post-body strong{ font-weight:700; }
+  .post-body em{ font-style:italic; }
+  .post-body blockquote{ margin-top:1.4em; padding-left:1.2em; border-left:3px solid var(--ink); opacity:.75; font-style:italic; }
+  .post-body img{ margin-top:1.4em; max-width:100%; height:auto; border-radius:.9rem; border:2px solid var(--ink); }
+  .post-body :first-child{ margin-top:0; }
+</style>

@@ -152,3 +152,23 @@ CREATE TABLE IF NOT EXISTS newsletter_campaigns (
   sent_at TEXT,
   recipient_count INTEGER NOT NULL DEFAULT 0
 );
+
+-- id (not slug) is the primary key, unlike branches, since a post's slug
+-- should be renameable later without breaking the row it refers to.
+CREATE TABLE IF NOT EXISTS blog_posts (
+  id TEXT PRIMARY KEY,
+  slug TEXT UNIQUE NOT NULL,
+  title TEXT NOT NULL,
+  excerpt TEXT,
+  body_html TEXT NOT NULL DEFAULT '',
+  cover_image TEXT,
+  author_name TEXT,
+  category TEXT,
+  status TEXT NOT NULL DEFAULT 'draft', -- 'draft' | 'published'
+  seo_title TEXT,
+  seo_description TEXT,
+  published_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_blog_posts_status ON blog_posts(status, published_at);

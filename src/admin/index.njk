@@ -11,9 +11,15 @@ permalink: /admin/
   <span class="tag" id="dashRoleTag" hidden></span>
 </div>
 
-<div class="card p-6 mb-6">
-  <p class="eyebrow" style="color:var(--blue-ink)">Newsletter</p>
-  <p class="mt-2 text-lg font-semibold" id="statsText">Loading subscriber stats…</p>
+<div class="grid gap-5 sm:grid-cols-2 mb-6">
+  <div class="card p-6">
+    <p class="eyebrow" style="color:var(--blue-ink)">Newsletter</p>
+    <p class="mt-2 text-lg font-semibold" id="statsText">Loading subscriber stats…</p>
+  </div>
+  <div class="card p-6">
+    <p class="eyebrow" style="color:var(--coral-ink)">Blog</p>
+    <p class="mt-2 text-lg font-semibold" id="blogStatsText">Loading post stats…</p>
+  </div>
 </div>
 
 <div class="card p-6 mb-10">
@@ -35,6 +41,10 @@ permalink: /admin/
   <a href="/admin/calls/" class="card p-6 hover:-translate-y-0.5 transition-transform">
     <h2 class="h-card">Calls</h2>
     <p class="mt-2 text-muted text-sm">Open calls for collaborators and projects.</p>
+  </a>
+  <a href="/admin/blog/" class="card p-6 hover:-translate-y-0.5 transition-transform">
+    <h2 class="h-card">Blog</h2>
+    <p class="mt-2 text-muted text-sm">Write and publish stories and announcements.</p>
   </a>
   <a href="/admin/faqs/" class="card p-6 hover:-translate-y-0.5 transition-transform">
     <h2 class="h-card">FAQs</h2>
@@ -74,6 +84,18 @@ permalink: /admin/
         return;
       }
       statsText.textContent = r.data.total + ' subscribers, ' + r.data.confirmed + ' confirmed';
+    });
+
+    var blogStatsText = document.getElementById('blogStatsText');
+    adminFetch('/api/admin/blog').then(function (r) {
+      if (!r.ok) {
+        blogStatsText.style.color = 'var(--coral-ink)';
+        blogStatsText.textContent = r.data.error || 'Could not load post stats.';
+        return;
+      }
+      var items = r.data.items || [];
+      var published = items.filter(function (p) { return p.status === 'published'; }).length;
+      blogStatsText.textContent = items.length + ' posts, ' + published + ' published';
     });
   });
 

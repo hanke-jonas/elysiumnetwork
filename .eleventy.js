@@ -40,6 +40,14 @@ module.exports = function (eleventyConfig) {
 
   eleventyConfig.addShortcode('year', () => String(new Date().getUTCFullYear()));
 
+  // e.g. {{ post.publishedAt | readableDate }} -> "30 July 2026"
+  eleventyConfig.addFilter('readableDate', function (value) {
+    if (!value) return '';
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return value;
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  });
+
   eleventyConfig.addPassthroughCopy('src/robots.txt');
   eleventyConfig.addPassthroughCopy('src/assets');
 

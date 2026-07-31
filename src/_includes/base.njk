@@ -74,6 +74,7 @@
       </div>
       <a href="/about/" class="nav-link{% if page.url == '/about/' %} active{% endif %}">About</a>
       <a href="/calls/" class="nav-link{% if page.url == '/calls/' %} active{% endif %}">Active calls</a>
+      <a href="/blog/" class="nav-link{% if page.url == '/blog/' or '/blog/' in page.url %} active{% endif %}">Blog</a>
       <a href="/support/" class="nav-link{% if page.url == '/support/' %} active{% endif %}">Support</a>
       <a href="/contact/" class="nav-link{% if page.url == '/contact/' %} active{% endif %}">Contact</a>
     </nav>
@@ -123,8 +124,9 @@
         </div>
       </details>
       <a href="/calls/" class="mmenu-link"><span class="idx">04</span> Active calls</a>
-      <a href="/support/" class="mmenu-link"><span class="idx">05</span> Support</a>
-      <a href="/contact/" class="mmenu-link"><span class="idx">06</span> Contact</a>
+      <a href="/blog/" class="mmenu-link"><span class="idx">05</span> Blog</a>
+      <a href="/support/" class="mmenu-link"><span class="idx">06</span> Support</a>
+      <a href="/contact/" class="mmenu-link"><span class="idx">07</span> Contact</a>
     </nav>
     <div class="mt-10 flex flex-wrap gap-3">
       <a href="{{ site.join_form }}" class="btn btn-accent">Join Us {% icon "arrow-ur", "w-4 h-4" %}</a>
@@ -177,6 +179,7 @@
         <ul class="space-y-2.5">
           <li><a href="/about/" class="text-paper/65 hover:text-paper transition">About</a></li>
           <li><a href="/calls/" class="text-paper/65 hover:text-paper transition">Active calls</a></li>
+          <li><a href="/blog/" class="text-paper/65 hover:text-paper transition">Blog</a></li>
           <li><a href="{{ site.hub }}" target="_blank" rel="noopener" class="text-paper/65 hover:text-paper transition inline-flex items-center gap-1.5">Opportunity portal <span class="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded" style="background:var(--blue);color:#191712">beta</span></a></li>
           <li><a href="/support/" class="text-paper/65 hover:text-paper transition">Support Us</a></li>
           <li><a href="{{ site.join_form }}" class="text-paper/65 hover:text-paper transition">Join Us</a></li>

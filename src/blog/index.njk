@@ -1,0 +1,66 @@
+---
+layout: base.njk
+title: "Blog — Elysium+ Network"
+description: "Stories, announcements and updates from across the Elysium+ Network."
+pagination:
+  data: blog
+  size: 9
+  alias: posts
+  generatePageOnEmptyData: true
+permalink: "{% if pagination.pageNumber > 0 %}/blog/page/{{ pagination.pageNumber + 1 }}/{% else %}/blog/{% endif %}"
+---
+{% set cardAccents = ["var(--blue)", "var(--coral)", "var(--sun)", "var(--mint)", "var(--plum)"] %}
+
+<section class="relative overflow-hidden bg-paper border-b-2 border-ink">
+  <div class="relative max-w-4xl mx-auto px-5 sm:px-6 pt-14 pb-16">
+    <p class="eyebrow" style="color:var(--plum-ink)">Blog</p>
+    <h1 class="h-hero mt-4">Stories from the <mark>network</mark></h1>
+    <p class="mt-6 text-lg text-muted max-w-2xl leading-relaxed">Announcements, project updates and stories from across the Elysium+ Network in Ukraine, Poland, Italy and Germany.</p>
+  </div>
+</section>
+
+<section class="bg-paper">
+  <div class="max-w-7xl mx-auto px-5 sm:px-6 py-16">
+    {% if posts.length == 0 %}
+    <div class="card p-10 text-center max-w-xl mx-auto">
+      <h2 class="h-card">No posts yet — check back soon.</h2>
+      <p class="mt-2 text-muted leading-relaxed">We're working on the first stories from across the network.</p>
+    </div>
+    {% else %}
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {% for post in posts %}
+      <a href="/blog/{{ post.slug }}/" class="card overflow-hidden reveal block group">
+        {% if post.coverImage %}
+        <img src="{{ post.coverImage }}" alt="" class="aspect-video w-full object-cover">
+        {% else %}
+        <div class="aspect-video w-full" style="background:{{ cardAccents[loop.index0 % cardAccents.length] }}"></div>
+        {% endif %}
+        <div class="p-6">
+          {% if post.category %}<span class="tag mb-3 inline-block">{{ post.category }}</span>{% endif %}
+          <h2 class="h-card group-hover:underline underline-offset-2">{{ post.title }}</h2>
+          {% if post.excerpt %}<p class="mt-2 text-muted leading-relaxed">{{ post.excerpt }}</p>{% endif %}
+          {% if post.authorName or post.publishedAt %}
+          <p class="mt-4 text-sm text-muted">{% if post.authorName %}{{ post.authorName }}{% endif %}{% if post.authorName and post.publishedAt %} · {% endif %}{% if post.publishedAt %}{{ post.publishedAt | readableDate }}{% endif %}</p>
+          {% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if pagination.href.previous or pagination.href.next %}
+    <div class="mt-14 flex items-center justify-between gap-4">
+      <div>
+        {% if pagination.href.previous %}
+        <a href="{{ pagination.href.previous }}" class="btn">{% icon "arrow", "w-4 h-4 rotate-180" %} Previous</a>
+        {% endif %}
+      </div>
+      <div>
+        {% if pagination.href.next %}
+        <a href="{{ pagination.href.next }}" class="btn btn-accent">Next {% icon "arrow", "w-4 h-4" %}</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</section>

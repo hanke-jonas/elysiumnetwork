@@ -13,6 +13,12 @@ function parseRow(row, jsonFields) {
   return out;
 }
 
+// D1 throws a plain Error whose message contains the SQLite error text —
+// there's no structured error code to switch on, so this is a string match.
+function isUniqueViolation(err) {
+  return String(err).includes('UNIQUE constraint failed');
+}
+
 export function makeListCreate(table, pk, fields, jsonFields = []) {
   async function onRequestGet({ env }) {
     const rows = await env.DB.prepare(`SELECT * FROM ${table} ORDER BY sort_order ASC`).all();
@@ -34,9 +40,14 @@ export function makeListCreate(table, pk, fields, jsonFields = []) {
       return v === undefined ? null : v;
     });
     const placeholders = cols.map(() => '?').join(', ');
-    await env.DB.prepare(`INSERT INTO ${table} (${cols.join(', ')}) VALUES (${placeholders})`)
-      .bind(...values)
-      .run();
+    try {
+      await env.DB.prepare(`INSERT INTO ${table} (${cols.join(', ')}) VALUES (${placeholders})`)
+        .bind(...values)
+        .run();
+    } catch (err) {
+      if (isUniqueViolation(err)) return badRequest(`A ${table.slice(0, -1)} with this ${pk} already exists`);
+      return json({ error: 'Unexpected server error', detail: String(err) }, { status: 500 });
+    }
     return json({ [pk]: id }, { status: 201 });
   }
 
@@ -62,7 +73,12 @@ export function makeUpdateDelete(table, pk, fields, jsonFields = []) {
     if (!sets.length) return badRequest('No fields to update');
     sets.push("updated_at = datetime('now')");
     values.push(params.id);
-    await env.DB.prepare(`UPDATE ${table} SET ${sets.join(', ')} WHERE ${pk} = ?`).bind(...values).run();
+    try {
+      await env.DB.prepare(`UPDATE ${table} SET ${sets.join(', ')} WHERE ${pk} = ?`).bind(...values).run();
+    } catch (err) {
+      if (isUniqueViolation(err)) return badRequest(`A ${table.slice(0, -1)} with this ${pk} already exists`);
+      return json({ error: 'Unexpected server error', detail: String(err) }, { status: 500 });
+    }
     return json({ ok: true });
   }
 
