@@ -1,0 +1,502 @@
+---
+layout: admin-base.njk
+title: "Events"
+permalink: /admin/events/
+---
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+
+<div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+  <div>
+    <p class="eyebrow" style="color:var(--coral-ink)">Admin</p>
+    <h1 class="h-sec mt-1">Events</h1>
+  </div>
+  <button id="addBtn" type="button" class="btn btn-accent">{% icon "plus", "w-4 h-4" %} Add event</button>
+</div>
+
+<div id="formCard" class="card p-6 mb-8" hidden>
+  <h2 class="h-card mb-4" id="formTitle">Add event</h2>
+  <form id="eventForm" class="flex flex-col gap-4">
+    <div>
+      <label class="form-label" for="f_title">Title</label>
+      <input class="input" type="text" id="f_title" name="title" required>
+    </div>
+    <div>
+      <label class="form-label" for="f_slug">Slug</label>
+      <input class="input" type="text" id="f_slug" name="slug" required>
+      <p class="text-xs text-muted mt-1">Used in the event's URL: /events/your-slug/</p>
+    </div>
+    <div>
+      <label class="form-label" for="f_description">Description</label>
+      <textarea class="input" id="f_description" name="description" rows="2"></textarea>
+      <p class="text-xs text-muted mt-1">Short summary shown on the events listing page</p>
+    </div>
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div>
+        <label class="form-label" for="f_location">Location</label>
+        <input class="input" type="text" id="f_location" name="location" placeholder="Chernihiv, Ukraine">
+      </div>
+      <div>
+        <label class="form-label" for="f_branch_slug">Branch</label>
+        <select class="input" id="f_branch_slug" name="branch_slug">
+          <option value="">— none —</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div>
+        <label class="form-label" for="f_start_date">Start date</label>
+        <input class="input" type="date" id="f_start_date" name="start_date" required>
+      </div>
+      <div>
+        <label class="form-label" for="f_end_date">End date</label>
+        <input class="input" type="date" id="f_end_date" name="end_date">
+        <p class="text-xs text-muted mt-1">Optional</p>
+      </div>
+    </div>
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div>
+        <label class="form-label" for="f_capacity">Capacity</label>
+        <input class="input" type="number" min="0" step="1" id="f_capacity" name="capacity">
+        <p class="text-xs text-muted mt-1">Leave blank for unlimited</p>
+      </div>
+      <div>
+        <label class="form-label" for="f_status">Status</label>
+        <select class="input" id="f_status" name="status">
+          <option value="draft">Draft</option>
+          <option value="published">Published</option>
+        </select>
+      </div>
+    </div>
+    <div>
+      <label class="form-label">Cover image</label>
+      <div id="imageDropzone" class="rounded-xl border-2 border-dashed p-4 text-center cursor-pointer transition" style="background:var(--paper-2);border-color:rgba(25,23,18,.3)">
+        <div id="imagePreviewWrap" hidden class="mb-2">
+          <img id="imagePreview" class="mx-auto max-h-28 rounded-lg border-2 border-ink object-cover" alt="">
+        </div>
+        <p class="text-xs text-muted" id="imageDropzoneText">Drag and drop an image here, or click to choose one</p>
+      </div>
+      <input type="file" id="f_cover_image_file" accept="image/*" style="display:none">
+      <input type="hidden" id="f_cover_image" name="cover_image">
+      <p id="imageUploadStatus" role="status" aria-live="polite" class="text-xs mt-1"></p>
+    </div>
+    <div>
+      <label class="form-label">Body</label>
+      <div class="card !p-0" style="overflow:hidden">
+        <div id="quillEditor" style="background:#fff;min-height:16rem"></div>
+      </div>
+    </div>
+    <p id="formStatus" role="status" aria-live="polite" class="text-sm"></p>
+    <div class="flex items-center gap-3">
+      <button type="submit" id="saveBtn" class="btn btn-accent">Create</button>
+      <button type="button" id="cancelBtn" class="btn">Cancel</button>
+    </div>
+  </form>
+</div>
+
+<div class="card overflow-x-auto">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Start date</th>
+        <th>Location</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="eventsTbody">
+      <tr><td colspan="5" class="text-muted">Loading…</td></tr>
+    </tbody>
+  </table>
+</div>
+<p id="tableStatus" role="status" aria-live="polite" class="mt-3 text-sm"></p>
+
+<div id="rsvpPanel" class="card p-6 mt-4" hidden>
+  <div class="flex items-center justify-between gap-4 mb-3">
+    <h3 class="h-card" id="rsvpPanelTitle">RSVPs</h3>
+    <button type="button" id="rsvpPanelClose" class="btn !py-1.5 !px-3 text-xs">Close</button>
+  </div>
+  <p id="rsvpPanelStatus" role="status" aria-live="polite" class="text-sm mb-2"></p>
+  <ul id="rsvpPanelList" class="flex flex-col gap-1 text-sm"></ul>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+<script>
+(function () {
+  var items = [];
+  var editingId = null;
+  var slugTouched = false;
+
+  var addBtn = document.getElementById('addBtn');
+  var formCard = document.getElementById('formCard');
+  var formTitle = document.getElementById('formTitle');
+  var form = document.getElementById('eventForm');
+  var saveBtn = document.getElementById('saveBtn');
+  var cancelBtn = document.getElementById('cancelBtn');
+  var formStatus = document.getElementById('formStatus');
+  var tableStatus = document.getElementById('tableStatus');
+  var tbody = document.getElementById('eventsTbody');
+
+  var f_title = document.getElementById('f_title');
+  var f_slug = document.getElementById('f_slug');
+  var f_description = document.getElementById('f_description');
+  var f_location = document.getElementById('f_location');
+  var f_branch_slug = document.getElementById('f_branch_slug');
+  var f_start_date = document.getElementById('f_start_date');
+  var f_end_date = document.getElementById('f_end_date');
+  var f_capacity = document.getElementById('f_capacity');
+  var f_cover_image = document.getElementById('f_cover_image');
+  var f_status = document.getElementById('f_status');
+
+  var rsvpPanel = document.getElementById('rsvpPanel');
+  var rsvpPanelTitle = document.getElementById('rsvpPanelTitle');
+  var rsvpPanelStatus = document.getElementById('rsvpPanelStatus');
+  var rsvpPanelList = document.getElementById('rsvpPanelList');
+  var rsvpPanelClose = document.getElementById('rsvpPanelClose');
+
+  var quill = new Quill('#quillEditor', { theme: 'snow', placeholder: 'Write the event details…' });
+
+  function slugify(text) {
+    return (text || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  f_title.addEventListener('input', function () {
+    if (!slugTouched) {
+      f_slug.value = slugify(f_title.value);
+    }
+  });
+
+  f_slug.addEventListener('input', function () {
+    slugTouched = true;
+  });
+
+  function setFormStatus(msg, isError) {
+    formStatus.textContent = msg || '';
+    formStatus.style.color = isError ? 'var(--coral-ink)' : '';
+  }
+
+  function setTableStatus(msg, isError) {
+    tableStatus.textContent = msg || '';
+    tableStatus.style.color = isError ? 'var(--coral-ink)' : '';
+  }
+
+  function setRsvpStatus(msg, isError) {
+    rsvpPanelStatus.textContent = msg || '';
+    rsvpPanelStatus.style.color = isError ? 'var(--coral-ink)' : '';
+  }
+
+  // Mirrors the readableDate Nunjucks filter (.eleventy.js) so dates in this
+  // client-rendered table match the rest of the site's formatting, e.g.
+  // "30 July 2026".
+  function readableDate(value) {
+    if (!value) return '—';
+    var d = new Date(value);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  // type="date" inputs need a plain "YYYY-MM-DD" value; the API may return
+  // either that or a full ISO datetime, so trim defensively.
+  function toDateInputValue(value) {
+    if (!value) return '';
+    return String(value).slice(0, 10);
+  }
+
+  function loadBranches() {
+    adminFetch('/api/admin/branches').then(function (r) {
+      if (!r.ok) return;
+      var branches = r.data.items || [];
+      branches.forEach(function (b) {
+        var opt = document.createElement('option');
+        opt.value = b.slug;
+        opt.textContent = (b.flag ? b.flag + ' ' : '') + (b.name || b.slug);
+        f_branch_slug.appendChild(opt);
+      });
+    });
+  }
+
+  function showForm(mode, evt) {
+    form.reset();
+    setFormStatus('');
+    slugTouched = false;
+    if (mode === 'edit' && evt) {
+      editingId = evt.id;
+      slugTouched = true;
+      formTitle.textContent = 'Edit event';
+      saveBtn.textContent = 'Save changes';
+      f_title.value = evt.title || '';
+      f_slug.value = evt.slug || '';
+      f_description.value = evt.description || '';
+      f_location.value = evt.location || '';
+      f_branch_slug.value = evt.branch_slug || '';
+      f_start_date.value = toDateInputValue(evt.start_date);
+      f_end_date.value = toDateInputValue(evt.end_date);
+      f_capacity.value = evt.capacity == null ? '' : evt.capacity;
+      f_cover_image.value = evt.cover_image || '';
+      setImagePreview(evt.cover_image || '');
+      f_status.value = evt.status || 'draft';
+      // Not a raw innerHTML assignment: that leaves Quill's internal Delta
+      // model out of sync with the DOM, and content Quill doesn't recognize
+      // as having come through its own API (e.g. list items) can silently
+      // vanish the moment any editing interaction triggers a re-render.
+      // dangerouslyPasteHTML parses the HTML the same way a real paste
+      // would, so the model and DOM agree from the start.
+      quill.setText('');
+      quill.clipboard.dangerouslyPasteHTML(evt.body_html || '');
+    } else {
+      editingId = null;
+      formTitle.textContent = 'Add event';
+      saveBtn.textContent = 'Create';
+      f_status.value = 'draft';
+      f_branch_slug.value = '';
+      quill.setText('');
+      setImagePreview('');
+    }
+    formCard.hidden = false;
+    formCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function hideForm() {
+    formCard.hidden = true;
+    form.reset();
+    editingId = null;
+    slugTouched = false;
+    quill.setText('');
+    setFormStatus('');
+    setImagePreview('');
+  }
+
+  function render() {
+    if (!items.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-muted">No events yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = '';
+    items.forEach(function (item) {
+      var tr = document.createElement('tr');
+
+      var tdTitle = document.createElement('td');
+      tdTitle.textContent = item.title;
+      tr.appendChild(tdTitle);
+
+      var tdStart = document.createElement('td');
+      tdStart.textContent = readableDate(item.start_date);
+      tr.appendChild(tdStart);
+
+      var tdLocation = document.createElement('td');
+      tdLocation.textContent = item.location || '—';
+      tr.appendChild(tdLocation);
+
+      var tdStatus = document.createElement('td');
+      var tag = document.createElement('span');
+      tag.className = 'tag';
+      tag.textContent = item.status;
+      tag.style.background = item.status === 'published' ? 'var(--mint)' : 'var(--paper-2)';
+      tdStatus.appendChild(tag);
+      tr.appendChild(tdStatus);
+
+      var tdActions = document.createElement('td');
+
+      var rsvpBtn = document.createElement('button');
+      rsvpBtn.type = 'button';
+      rsvpBtn.className = 'btn !py-1.5 !px-3 text-xs';
+      rsvpBtn.textContent = 'RSVPs';
+      rsvpBtn.addEventListener('click', function () { showRsvps(item.id, item.title); });
+
+      var editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'btn !py-1.5 !px-3 text-xs ml-2';
+      editBtn.textContent = 'Edit';
+      editBtn.addEventListener('click', function () { editEvent(item.id); });
+
+      var delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'btn !py-1.5 !px-3 text-xs ml-2';
+      delBtn.textContent = 'Delete';
+      delBtn.addEventListener('click', function () { deleteEvent(item.id, item.title, delBtn); });
+
+      tdActions.appendChild(rsvpBtn);
+      tdActions.appendChild(editBtn);
+      tdActions.appendChild(delBtn);
+      tr.appendChild(tdActions);
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  function load() {
+    setTableStatus('');
+    adminFetch('/api/admin/events').then(function (r) {
+      if (!r.ok) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Could not load events.</td></tr>';
+        setTableStatus(r.data && r.data.error ? r.data.error : 'Failed to load events.', true);
+        return;
+      }
+      items = r.data.items || [];
+      render();
+    });
+  }
+
+  function editEvent(id) {
+    setTableStatus('Loading event…');
+    adminFetch('/api/admin/events/' + id).then(function (r) {
+      if (!r.ok) {
+        setTableStatus(r.data && r.data.error ? r.data.error : 'Failed to load event.', true);
+        return;
+      }
+      setTableStatus('');
+      showForm('edit', r.data);
+    });
+  }
+
+  function deleteEvent(id, title, btn) {
+    if (!confirm('Delete "' + title + '"? This also removes all its RSVPs and cannot be undone.')) return;
+    btn.disabled = true;
+    setTableStatus('');
+    adminFetch('/api/admin/events/' + id, { method: 'DELETE' }).then(function (r) {
+      if (!r.ok) {
+        btn.disabled = false;
+        setTableStatus(r.data && r.data.error ? r.data.error : 'Failed to delete event.', true);
+        return;
+      }
+      load();
+    });
+  }
+
+  // RSVP names/emails come from public visitor sign-ups — build every node
+  // via createElement/textContent, never string-concatenated innerHTML, so a
+  // crafted name or email can't run script in a signed-in staff session.
+  function showRsvps(id, title) {
+    rsvpPanelTitle.textContent = 'RSVPs — ' + title;
+    rsvpPanelList.innerHTML = '';
+    setRsvpStatus('Loading…', false);
+    rsvpPanel.hidden = false;
+    rsvpPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    adminFetch('/api/admin/events/' + id + '/rsvps').then(function (r) {
+      if (!r.ok) {
+        setRsvpStatus(r.data && r.data.error ? r.data.error : 'Failed to load RSVPs.', true);
+        return;
+      }
+      var list = r.data.items || [];
+      if (!list.length) {
+        setRsvpStatus('No RSVPs yet.', false);
+        return;
+      }
+      setRsvpStatus(r.data.total + ' people RSVP’d:', false);
+      list.forEach(function (p) {
+        var li = document.createElement('li');
+        var nameEl = document.createElement('strong');
+        nameEl.textContent = p.name;
+        li.appendChild(nameEl);
+        li.appendChild(document.createTextNode(' (' + p.email + ')'));
+        rsvpPanelList.appendChild(li);
+      });
+    });
+  }
+
+  rsvpPanelClose.addEventListener('click', function () {
+    rsvpPanel.hidden = true;
+  });
+
+  var imageDropzone = document.getElementById('imageDropzone');
+  var imageFileInput = document.getElementById('f_cover_image_file');
+  var imagePreview = document.getElementById('imagePreview');
+  var imagePreviewWrap = document.getElementById('imagePreviewWrap');
+  var imageDropzoneText = document.getElementById('imageDropzoneText');
+  var imageUploadStatus = document.getElementById('imageUploadStatus');
+
+  function setImagePreview(url) {
+    if (url) {
+      imagePreview.src = url;
+      imagePreviewWrap.hidden = false;
+      imageDropzoneText.textContent = 'Drag a new image to replace it, or click to choose one';
+    } else {
+      imagePreviewWrap.hidden = true;
+      imageDropzoneText.textContent = 'Drag and drop an image here, or click to choose one';
+    }
+  }
+
+  function uploadImage(file) {
+    if (!file) return;
+    imageUploadStatus.style.color = '';
+    imageUploadStatus.textContent = 'Uploading…';
+    var formData = new FormData();
+    formData.append('file', file);
+    adminFetch('/api/admin/upload', { method: 'POST', body: formData }).then(function (r) {
+      if (!r.ok) {
+        imageUploadStatus.style.color = 'var(--coral-ink)';
+        imageUploadStatus.textContent = (r.data && r.data.error) || 'Upload failed.';
+        return;
+      }
+      f_cover_image.value = r.data.url;
+      setImagePreview(r.data.url);
+      imageUploadStatus.textContent = 'Uploaded.';
+    });
+  }
+
+  imageDropzone.addEventListener('click', function () { imageFileInput.click(); });
+  imageFileInput.addEventListener('change', function () { uploadImage(imageFileInput.files[0]); });
+  imageDropzone.addEventListener('dragover', function (e) {
+    e.preventDefault();
+    imageDropzone.style.borderColor = 'var(--blue-ink)';
+  });
+  imageDropzone.addEventListener('dragleave', function () {
+    imageDropzone.style.borderColor = 'rgba(25,23,18,.3)';
+  });
+  imageDropzone.addEventListener('drop', function (e) {
+    e.preventDefault();
+    imageDropzone.style.borderColor = 'rgba(25,23,18,.3)';
+    uploadImage(e.dataTransfer.files[0]);
+  });
+
+  addBtn.addEventListener('click', function () { showForm('create'); });
+  cancelBtn.addEventListener('click', hideForm);
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    var capacityRaw = f_capacity.value.trim();
+
+    var body = {
+      slug: f_slug.value.trim(),
+      title: f_title.value.trim(),
+      description: f_description.value.trim(),
+      bodyHtml: quill.root.innerHTML,
+      coverImage: f_cover_image.value.trim(),
+      location: f_location.value.trim(),
+      branchSlug: f_branch_slug.value || null,
+      startDate: f_start_date.value,
+      endDate: f_end_date.value || null,
+      capacity: capacityRaw === '' ? null : Number(capacityRaw),
+      status: f_status.value
+    };
+
+    saveBtn.disabled = true;
+    setFormStatus('Saving…', false);
+
+    var req = editingId
+      ? adminFetch('/api/admin/events/' + editingId, { method: 'PUT', body: JSON.stringify(body) })
+      : adminFetch('/api/admin/events', { method: 'POST', body: JSON.stringify(body) });
+
+    req.then(function (r) {
+      saveBtn.disabled = false;
+      if (!r.ok) {
+        setFormStatus(r.data && r.data.error ? r.data.error : 'Something went wrong.', true);
+        return;
+      }
+      hideForm();
+      setTableStatus('Saved.');
+      load();
+    });
+  });
+
+  document.addEventListener('admin:ready', function () {
+    loadBranches();
+    load();
+  });
+})();
+</script>

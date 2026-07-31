@@ -1,0 +1,345 @@
+---
+layout: admin-base.njk
+title: "Resources"
+permalink: /admin/resources/
+---
+<div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+  <div>
+    <p class="eyebrow" style="color:var(--coral-ink)">Admin</p>
+    <h1 class="h-sec mt-1">Resources</h1>
+  </div>
+  <button id="addBtn" type="button" class="btn btn-accent">{% icon "plus", "w-4 h-4" %} Add resource</button>
+</div>
+
+<div id="formCard" class="card p-6 mb-8" hidden>
+  <h2 class="h-card mb-4" id="formTitle">Add resource</h2>
+  <form id="resourceForm" class="flex flex-col gap-4">
+    <div>
+      <label class="form-label" for="f_title">Title</label>
+      <input class="input" type="text" id="f_title" name="title" required>
+    </div>
+    <div>
+      <label class="form-label" for="f_description">Description</label>
+      <textarea class="input" id="f_description" name="description" rows="3"></textarea>
+    </div>
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div>
+        <label class="form-label" for="f_category">Category</label>
+        <input class="input" type="text" id="f_category" name="category">
+        <p class="text-xs text-muted mt-1">e.g. Annual Report, Toolkit, Guide</p>
+      </div>
+      <div>
+        <label class="form-label" for="f_sort_order">Sort order</label>
+        <input class="input" type="number" id="f_sort_order" name="sort_order" value="0">
+      </div>
+    </div>
+    <div>
+      <label class="form-label">File</label>
+      <div id="fileDropzone" class="rounded-xl border-2 border-dashed p-6 text-center cursor-pointer transition" style="background:var(--paper-2);border-color:rgba(25,23,18,.3)">
+        <p class="text-sm text-muted" id="fileDropzoneText">Drag and drop a PDF here, or click to choose one</p>
+      </div>
+      <input type="file" id="f_file_input" accept="application/pdf" style="display:none">
+      <input type="hidden" id="f_file_url" name="fileUrl">
+      <input type="hidden" id="f_file_type" name="fileType" value="pdf">
+      <p id="fileUploadStatus" role="status" aria-live="polite" class="text-xs mt-1"></p>
+    </div>
+    <div>
+      <label class="form-label" for="f_status">Status</label>
+      <select class="input" id="f_status" name="status">
+        <option value="draft">Draft</option>
+        <option value="published">Published</option>
+      </select>
+    </div>
+    <p id="formStatus" role="status" aria-live="polite" class="text-sm"></p>
+    <div class="flex items-center gap-3">
+      <button type="submit" id="saveBtn" class="btn btn-accent">Create</button>
+      <button type="button" id="cancelBtn" class="btn">Cancel</button>
+    </div>
+  </form>
+</div>
+
+<div class="card overflow-x-auto">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Category</th>
+        <th>Status</th>
+        <th></th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="resourcesTbody">
+      <tr><td colspan="5" class="text-muted">Loading…</td></tr>
+    </tbody>
+  </table>
+</div>
+<p id="tableStatus" role="status" aria-live="polite" class="mt-3 text-sm"></p>
+
+<script>
+(function () {
+  var items = [];
+  var editingId = null;
+
+  var addBtn = document.getElementById('addBtn');
+  var formCard = document.getElementById('formCard');
+  var formTitle = document.getElementById('formTitle');
+  var form = document.getElementById('resourceForm');
+  var saveBtn = document.getElementById('saveBtn');
+  var cancelBtn = document.getElementById('cancelBtn');
+  var formStatus = document.getElementById('formStatus');
+  var tableStatus = document.getElementById('tableStatus');
+  var tbody = document.getElementById('resourcesTbody');
+
+  var f_title = document.getElementById('f_title');
+  var f_description = document.getElementById('f_description');
+  var f_category = document.getElementById('f_category');
+  var f_sort_order = document.getElementById('f_sort_order');
+  var f_file_url = document.getElementById('f_file_url');
+  var f_file_type = document.getElementById('f_file_type');
+  var f_status = document.getElementById('f_status');
+
+  function setFormStatus(msg, isError) {
+    formStatus.textContent = msg || '';
+    formStatus.style.color = isError ? 'var(--coral-ink)' : '';
+  }
+
+  function setTableStatus(msg, isError) {
+    tableStatus.textContent = msg || '';
+    tableStatus.style.color = isError ? 'var(--coral-ink)' : '';
+  }
+
+  function showForm(mode, item) {
+    form.reset();
+    setFormStatus('');
+    if (mode === 'edit' && item) {
+      editingId = item.id;
+      formTitle.textContent = 'Edit resource';
+      saveBtn.textContent = 'Save changes';
+      f_title.value = item.title || '';
+      f_description.value = item.description || '';
+      f_category.value = item.category || '';
+      f_sort_order.value = item.sort_order || 0;
+      f_file_url.value = item.file_url || '';
+      f_file_type.value = item.file_type || 'pdf';
+      f_status.value = item.status || 'draft';
+      setFileDropzoneForUrl(item.file_url || '');
+    } else {
+      editingId = null;
+      formTitle.textContent = 'Add resource';
+      saveBtn.textContent = 'Create';
+      f_sort_order.value = 0;
+      f_file_url.value = '';
+      f_file_type.value = 'pdf';
+      f_status.value = 'draft';
+      setFileDropzoneText('Drag and drop a PDF here, or click to choose one');
+    }
+    formCard.hidden = false;
+    formCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function hideForm() {
+    formCard.hidden = true;
+    form.reset();
+    editingId = null;
+    setFormStatus('');
+    setFileDropzoneText('Drag and drop a PDF here, or click to choose one');
+  }
+
+  function render() {
+    if (!items.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-muted">No resources yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = '';
+    items.forEach(function (item) {
+      var tr = document.createElement('tr');
+
+      var tdTitle = document.createElement('td');
+      tdTitle.textContent = item.title;
+      tr.appendChild(tdTitle);
+
+      var tdCategory = document.createElement('td');
+      tdCategory.textContent = item.category || '—';
+      tr.appendChild(tdCategory);
+
+      var tdStatus = document.createElement('td');
+      var tag = document.createElement('span');
+      tag.className = 'tag';
+      tag.textContent = item.status;
+      tag.style.background = item.status === 'published' ? 'var(--mint)' : 'var(--paper-2)';
+      tdStatus.appendChild(tag);
+      tr.appendChild(tdStatus);
+
+      var tdDownload = document.createElement('td');
+      if (item.file_url) {
+        var downloadLink = document.createElement('a');
+        downloadLink.href = item.file_url;
+        downloadLink.target = '_blank';
+        downloadLink.rel = 'noopener';
+        downloadLink.className = 'btn !py-1.5 !px-3 text-xs';
+        downloadLink.textContent = 'Download';
+        tdDownload.appendChild(downloadLink);
+      } else {
+        tdDownload.textContent = '—';
+      }
+      tr.appendChild(tdDownload);
+
+      var tdActions = document.createElement('td');
+      var editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'btn !py-1.5 !px-3 text-xs';
+      editBtn.textContent = 'Edit';
+      editBtn.addEventListener('click', function () { editResource(item.id); });
+
+      var delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'btn !py-1.5 !px-3 text-xs ml-2';
+      delBtn.textContent = 'Delete';
+      delBtn.addEventListener('click', function () { deleteResource(item.id, item.title, delBtn); });
+
+      tdActions.appendChild(editBtn);
+      tdActions.appendChild(delBtn);
+      tr.appendChild(tdActions);
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  function load() {
+    setTableStatus('');
+    adminFetch('/api/admin/resources').then(function (r) {
+      if (!r.ok) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Could not load resources.</td></tr>';
+        setTableStatus(r.data && r.data.error ? r.data.error : 'Failed to load resources.', true);
+        return;
+      }
+      items = r.data.items || [];
+      render();
+    });
+  }
+
+  function editResource(id) {
+    setTableStatus('Loading resource…');
+    adminFetch('/api/admin/resources/' + id).then(function (r) {
+      if (!r.ok) {
+        setTableStatus(r.data && r.data.error ? r.data.error : 'Failed to load resource.', true);
+        return;
+      }
+      setTableStatus('');
+      showForm('edit', r.data);
+    });
+  }
+
+  function deleteResource(id, title, btn) {
+    if (!confirm('Delete "' + title + '"? This cannot be undone.')) return;
+    btn.disabled = true;
+    setTableStatus('');
+    adminFetch('/api/admin/resources/' + id, { method: 'DELETE' }).then(function (r) {
+      if (!r.ok) {
+        btn.disabled = false;
+        setTableStatus(r.data && r.data.error ? r.data.error : 'Failed to delete resource.', true);
+        return;
+      }
+      load();
+    });
+  }
+
+  var fileDropzone = document.getElementById('fileDropzone');
+  var fileInput = document.getElementById('f_file_input');
+  var fileDropzoneText = document.getElementById('fileDropzoneText');
+  var fileUploadStatus = document.getElementById('fileUploadStatus');
+
+  function setFileDropzoneText(text) {
+    fileDropzoneText.textContent = text;
+  }
+
+  function setFileDropzoneForUrl(url) {
+    if (url) {
+      var filename = url.split('/').pop();
+      setFileDropzoneText('Current file: ' + filename + ' — drag a new one to replace it');
+    } else {
+      setFileDropzoneText('Drag and drop a PDF here, or click to choose one');
+    }
+  }
+
+  function uploadFile(file) {
+    if (!file) return;
+    fileUploadStatus.style.color = '';
+    fileUploadStatus.textContent = 'Uploading…';
+    var formData = new FormData();
+    formData.append('file', file);
+    adminFetch('/api/admin/upload', { method: 'POST', body: formData }).then(function (r) {
+      if (!r.ok) {
+        fileUploadStatus.style.color = 'var(--coral-ink)';
+        fileUploadStatus.textContent = (r.data && r.data.error) || 'Upload failed.';
+        return;
+      }
+      f_file_url.value = r.data.url;
+      f_file_type.value = 'pdf';
+      var filename = r.data.filename || r.data.url.split('/').pop();
+      setFileDropzoneText('Uploaded: ' + filename + ' — drag a new file to replace it');
+      fileUploadStatus.textContent = 'Uploaded.';
+    });
+  }
+
+  fileDropzone.addEventListener('click', function () { fileInput.click(); });
+  fileInput.addEventListener('change', function () { uploadFile(fileInput.files[0]); });
+  fileDropzone.addEventListener('dragover', function (e) {
+    e.preventDefault();
+    fileDropzone.style.borderColor = 'var(--blue-ink)';
+  });
+  fileDropzone.addEventListener('dragleave', function () {
+    fileDropzone.style.borderColor = 'rgba(25,23,18,.3)';
+  });
+  fileDropzone.addEventListener('drop', function (e) {
+    e.preventDefault();
+    fileDropzone.style.borderColor = 'rgba(25,23,18,.3)';
+    uploadFile(e.dataTransfer.files[0]);
+  });
+
+  addBtn.addEventListener('click', function () { showForm('create'); });
+  cancelBtn.addEventListener('click', hideForm);
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    if (!f_file_url.value.trim()) {
+      setFormStatus('Please upload a PDF file before saving.', true);
+      return;
+    }
+
+    var body = {
+      title: f_title.value.trim(),
+      description: f_description.value.trim(),
+      category: f_category.value.trim(),
+      fileUrl: f_file_url.value.trim(),
+      fileType: 'pdf',
+      status: f_status.value,
+      sortOrder: Number(f_sort_order.value) || 0
+    };
+
+    saveBtn.disabled = true;
+    setFormStatus('Saving…', false);
+
+    var req = editingId
+      ? adminFetch('/api/admin/resources/' + editingId, { method: 'PUT', body: JSON.stringify(body) })
+      : adminFetch('/api/admin/resources', { method: 'POST', body: JSON.stringify(body) });
+
+    req.then(function (r) {
+      saveBtn.disabled = false;
+      if (!r.ok) {
+        setFormStatus(r.data && r.data.error ? r.data.error : 'Something went wrong.', true);
+        return;
+      }
+      hideForm();
+      setTableStatus('Saved.');
+      load();
+    });
+  });
+
+  document.addEventListener('admin:ready', function () {
+    load();
+  });
+})();
+</script>

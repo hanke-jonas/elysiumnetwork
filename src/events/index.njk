@@ -1,0 +1,50 @@
+---
+layout: base.njk
+title: "Events — Elysium+ Network"
+description: "Upcoming exchanges, trainings and gatherings across the Elysium+ Network."
+permalink: /events/
+---
+
+<section class="relative overflow-hidden bg-paper border-b-2 border-ink">
+  <div class="relative max-w-4xl mx-auto px-5 sm:px-6 pt-14 pb-16">
+    <p class="eyebrow" style="color:var(--mint-ink)">Events</p>
+    <h1 class="h-hero mt-4">Join us <mark class="m-mint">in person</mark></h1>
+    <p class="mt-6 text-lg text-muted max-w-2xl leading-relaxed">Exchanges, trainings and gatherings happening across the network in Ukraine, Poland, Italy and Germany.</p>
+  </div>
+</section>
+
+<section class="bg-paper">
+  <div class="max-w-4xl mx-auto px-5 sm:px-6 py-16">
+    {% if events.length == 0 %}
+    <div class="card p-10 text-center max-w-xl mx-auto">
+      <h2 class="h-card">No upcoming events right now — check back soon.</h2>
+    </div>
+    {% else %}
+    <div class="space-y-6">
+      {% for e in events %}
+      <div class="card !rounded-2xl overflow-hidden reveal">
+        <div class="p-7 sm:p-8 flex flex-col sm:flex-row sm:items-start gap-6">
+          <div class="shrink-0 inline-flex items-center gap-2 rounded-full border-2 border-ink px-4 py-2" style="background:var(--sun)">
+            <span class="font-display font-bold text-sm whitespace-nowrap">{{ e.startDate | readableDate }}</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h2 class="h-card">
+              <a href="/events/{{ e.slug }}/" class="hover:underline underline-offset-2">{{ e.title }}</a>
+            </h2>
+            {% if e.location %}
+            <p class="mt-2 text-sm text-muted inline-flex items-center gap-1.5">{% icon "pin", "w-4 h-4" %} {{ e.location }}</p>
+            {% endif %}
+            {% if e.description %}
+            <p class="mt-3 leading-relaxed">{{ e.description }}</p>
+            {% endif %}
+            <div class="mt-6">
+              <a href="/events/{{ e.slug }}/" class="btn btn-accent">View details {% icon "arrow", "w-4 h-4" %}</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</section>

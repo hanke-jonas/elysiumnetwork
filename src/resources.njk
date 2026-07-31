@@ -1,0 +1,41 @@
+---
+layout: base.njk
+title: Resources — Elysium+ Network
+description: Annual reports, toolkits and guides from the Elysium+ Network, free to download.
+permalink: /resources/
+---
+
+<section class="relative overflow-hidden bg-paper border-b-2 border-ink">
+  <div class="relative max-w-4xl mx-auto px-5 sm:px-6 pt-14 pb-16">
+    <p class="eyebrow" style="color:var(--blue-ink)">Resources</p>
+    <h1 class="h-hero mt-4">Reports, toolkits <mark>and guides</mark></h1>
+    <p class="mt-6 text-lg text-muted max-w-2xl leading-relaxed">Annual reports, toolkits and guides from across the Elysium+ Network — free to download and share.</p>
+  </div>
+</section>
+
+<section class="bg-paper">
+  <div class="max-w-4xl mx-auto px-5 sm:px-6 py-16">
+    {% if resources.length == 0 %}
+    <div class="card p-10 text-center max-w-xl mx-auto">
+      <h2 class="h-card">Nothing here yet — check back soon.</h2>
+    </div>
+    {% else %}
+    <div class="space-y-6">
+      {% for r in resources %}
+      <div class="card !rounded-2xl p-7 sm:p-8 reveal">
+        <div class="sm:flex sm:items-center sm:justify-between sm:gap-6">
+          <div class="flex-1 min-w-0">
+            {% if r.category %}<span class="tag mb-3 inline-block">{{ r.category }}</span>{% endif %}
+            <h2 class="h-card">{{ r.title }}</h2>
+            {% if r.description %}<p class="mt-2 text-muted leading-relaxed">{{ r.description }}</p>{% endif %}
+          </div>
+          <div class="mt-6 sm:mt-0 shrink-0">
+            <a href="{{ r.fileUrl }}" target="_blank" rel="noopener" class="btn btn-accent">Download {% icon "arrow", "w-4 h-4" %}</a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</section>

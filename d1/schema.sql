@@ -172,3 +172,49 @@ CREATE TABLE IF NOT EXISTS blog_posts (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_blog_posts_status ON blog_posts(status, published_at);
+
+-- Downloadable resources (annual reports, toolkits, guides) — file_url
+-- points at an /uploads/<key> path from the same R2-backed upload endpoint
+-- team photos and blog covers use.
+CREATE TABLE IF NOT EXISTS resources (
+  id TEXT PRIMARY KEY,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  title TEXT NOT NULL,
+  description TEXT,
+  file_url TEXT NOT NULL,
+  file_type TEXT, -- e.g. 'pdf' — mainly for the download-icon/label in the UI
+  category TEXT,
+  status TEXT NOT NULL DEFAULT 'draft', -- 'draft' | 'published'
+  published_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Real events with a date, distinct from the informal "Active Calls" list —
+-- calls stay a static open/closed listing; events get a real date, location
+-- and RSVP tracking against a public account.
+CREATE TABLE IF NOT EXISTS events (
+  id TEXT PRIMARY KEY,
+  slug TEXT UNIQUE NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  body_html TEXT NOT NULL DEFAULT '',
+  cover_image TEXT,
+  location TEXT,
+  branch_slug TEXT REFERENCES branches(slug),
+  start_date TEXT NOT NULL, -- ISO date/datetime
+  end_date TEXT,
+  capacity INTEGER, -- NULL = unlimited
+  status TEXT NOT NULL DEFAULT 'draft', -- 'draft' | 'published'
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_events_status ON events(status, start_date);
+
+CREATE TABLE IF NOT EXISTS event_rsvps (
+  id TEXT PRIMARY KEY,
+  event_id TEXT NOT NULL REFERENCES events(id),
+  user_id TEXT NOT NULL REFERENCES public_users(id),
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(event_id, user_id)
+);
