@@ -49,6 +49,8 @@
   </div>
 </div>
 
+<div class="scroll-progress" id="scrollProgress"></div>
+
 <header class="navbar" id="navbar">
   <div class="max-w-[1400px] mx-auto px-5 sm:px-8 h-[4.5rem] flex items-center justify-between gap-6">
     <a href="/" class="flex items-center gap-2.5 shrink-0">
@@ -305,6 +307,66 @@
 
   var io=new IntersectionObserver(function(es){es.forEach(function(x){if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target);}});},{threshold:0.12});
   document.querySelectorAll('.reveal').forEach(function(el){io.observe(el);});
+
+  (function(){
+    var bar = document.getElementById('scrollProgress');
+    if (!bar) return;
+    var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function update(){
+      var h = document.documentElement;
+      var scrollable = h.scrollHeight - h.clientHeight;
+      var pct = scrollable > 0 ? (h.scrollTop / scrollable) * 100 : 0;
+      bar.style.width = pct + '%';
+    }
+    if (!reduceMotion) {
+      window.addEventListener('scroll', update, {passive:true});
+      window.addEventListener('resize', update, {passive:true});
+      update();
+    }
+  })();
+
+  (function(){
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var els = document.querySelectorAll('.count-up');
+    if (!els.length) return;
+    function animate(el){
+      var text = el.textContent.trim();
+      var match = text.match(/^(\d[\d,]*)(.*)$/);
+      if (!match) return;
+      var target = parseInt(match[1].replace(/,/g,''), 10);
+      var suffix = match[2];
+      var duration = 1300;
+      var start = null;
+      function step(ts){
+        if (!start) start = ts;
+        var progress = Math.min((ts - start) / duration, 1);
+        var eased = 1 - Math.pow(1 - progress, 3);
+        el.textContent = Math.floor(eased * target) + suffix;
+        if (progress < 1) requestAnimationFrame(step);
+        else el.textContent = target + suffix;
+      }
+      requestAnimationFrame(step);
+    }
+    var countIo = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if (entry.isIntersecting) { animate(entry.target); countIo.unobserve(entry.target); }
+      });
+    }, {threshold:0.6});
+    els.forEach(function(el){ countIo.observe(el); });
+  })();
+
+  (function(){
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    document.querySelectorAll('.magnetic').forEach(function(btn){
+      btn.addEventListener('mousemove', function(e){
+        var rect = btn.getBoundingClientRect();
+        var x = (e.clientX - rect.left - rect.width / 2) * 0.2;
+        var y = (e.clientY - rect.top - rect.height / 2) * 0.2;
+        btn.style.transform = 'translate(' + (x - 2) + 'px,' + (y - 2) + 'px)';
+      });
+      btn.addEventListener('mouseleave', function(){ btn.style.transform = ''; });
+    });
+  })();
 
   var newsletterForm = document.getElementById('newsletterForm');
   if (newsletterForm) {

@@ -11,13 +11,13 @@ permalink: /
       <h1 class="h-hero mt-6 reveal reveal-d1">Young people move.<br>Europe <mark>changes.</mark></h1>
       <p class="mt-7 text-lg sm:text-xl text-muted max-w-xl leading-relaxed reveal reveal-d2">Elysium+ sends young people across Ukraine, Poland, Italy and Germany through fully funded exchanges, training and non-formal education — built on inclusion, democracy and solidarity.</p>
       <div class="mt-9 flex flex-wrap gap-3 reveal reveal-d3">
-        <a href="{{ site.join_form }}" class="btn btn-accent">Join a project {% icon "arrow-ur", "w-4 h-4" %}</a>
-        <a href="/calls/" class="btn">See active calls {% icon "arrow", "w-4 h-4" %}</a>
+        <a href="{{ site.join_form }}" class="btn btn-accent magnetic">Join a project {% icon "arrow-ur", "w-4 h-4" %}</a>
+        <a href="/calls/" class="btn magnetic">See active calls {% icon "arrow", "w-4 h-4" %}</a>
       </div>
     </div>
-    <div class="lg:col-span-4 flex justify-center reveal reveal-d2">
+    <div class="lg:col-span-4 flex justify-center reveal reveal-d2" id="heroParallax">
       <div class="relative">
-        <img src="{{ site.logo_hero }}" alt="Elysium+" width="320" height="320" class="w-48 sm:w-64 drop-shadow-[6px_10px_0_rgba(25,23,18,.15)]" style="transform:rotate(-4deg)">
+        <img src="{{ site.logo_hero }}" alt="Elysium+" width="320" height="320" class="w-48 sm:w-64 drop-shadow-[6px_10px_0_rgba(25,23,18,.15)]" id="heroHeart" style="transform:rotate(-4deg)">
         <span class="font-hand text-2xl absolute -bottom-3 -right-2 rotate-6" style="color:var(--coral)">that's us! ↴</span>
       </div>
     </div>
@@ -29,7 +29,7 @@ permalink: /
       {% set spal = ["var(--blue)","var(--coral)","var(--sun)","var(--mint)"] %}
       {% for s in stats %}
       <div class="px-5 sm:px-8 py-7 reveal reveal-d{{ loop.index }}">
-        <p class="num text-3xl sm:text-4xl font-bold" style="color:{{ spal[loop.index0] }}">{{ s[0] }}</p>
+        <p class="num count-up text-3xl sm:text-4xl font-bold" style="color:{{ spal[loop.index0] }}">{{ s[0] }}</p>
         <p class="mt-1 text-xs sm:text-sm text-paper/70 leading-snug">{{ s[1] }}</p>
       </div>
       {% endfor %}
@@ -133,9 +133,27 @@ permalink: /
       <h2 class="h-sec">Be part of the change</h2>
       <p class="mt-4 text-ink/85 text-lg max-w-2xl mx-auto leading-relaxed">Join a project, volunteer your skills, or support our work. There's a place for you in Elysium+.</p>
       <div class="mt-8 flex flex-wrap gap-3 justify-center">
-        <a href="{{ site.join_form }}" class="btn btn-ink">Join Us {% icon "arrow-ur", "w-4 h-4" %}</a>
-        <a href="/support/" class="btn">Support the network</a>
+        <a href="{{ site.join_form }}" class="btn btn-ink magnetic">Join Us {% icon "arrow-ur", "w-4 h-4" %}</a>
+        <a href="/support/" class="btn magnetic">Support the network</a>
       </div>
     </div>
   </div>
 </section>
+
+<script>
+  (function(){
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var zone = document.getElementById('heroParallax');
+    var heart = document.getElementById('heroHeart');
+    if (!zone || !heart) return;
+    zone.addEventListener('mousemove', function(e){
+      var rect = zone.getBoundingClientRect();
+      var x = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2);
+      var y = (e.clientY - rect.top - rect.height / 2) / (rect.height / 2);
+      heart.style.transform = 'rotate(-4deg) translate(' + (x * 10) + 'px,' + (y * 10) + 'px)';
+    });
+    zone.addEventListener('mouseleave', function(){
+      heart.style.transform = 'rotate(-4deg)';
+    });
+  })();
+</script>
