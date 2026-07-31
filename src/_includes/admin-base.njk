@@ -59,7 +59,12 @@
   window.adminFetch = function (url, opts) {
     opts = opts || {};
     opts.credentials = 'include';
-    opts.headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+    // A FormData body (file uploads) needs the browser to set its own
+    // Content-Type with the correct multipart boundary — forcing
+    // application/json here would silently break every upload.
+    opts.headers = opts.body instanceof FormData
+      ? (opts.headers || {})
+      : Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
     return fetch(url, opts).then(function (res) {
       if (res.status === 401) {
         location.href = '/admin/login/?next=' + encodeURIComponent(location.pathname);
@@ -80,7 +85,14 @@
         window.__staff = data.user;
         document.getElementById('adminWhoami').textContent = data.user.name + ' · ' + data.user.role;
         if (data.user.role === 'owner') document.getElementById('staffNavLink').hidden = false;
-        document.getElementById('adminGate').hidden = true;
+        // Not the `hidden` attribute: this element also carries Tailwind's
+        // `grid` utility (display:grid), which has equal CSS specificity to
+        // the browser's built-in [hidden]{display:none} rule and — since
+        // Tailwind's stylesheet loads after the UA stylesheet — wins the
+        // tie, so `hidden` alone silently never actually hides it. Confirmed
+        // live: the gate stayed rendered at min-h-screen height with the
+        // real dashboard pushed down below it, needing a scroll to reach.
+        document.getElementById('adminGate').style.display = 'none';
         document.getElementById('adminApp').hidden = false;
         document.dispatchEvent(new CustomEvent('admin:ready', { detail: data.user }));
       })

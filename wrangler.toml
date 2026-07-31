@@ -10,3 +10,10 @@ compatibility_date = "2024-09-01"
 binding = "DB"
 database_name = "elysium-network"
 database_id = "85c9189a-8eb9-43e2-a39e-bd272b90b2cf"
+
+# Uploaded images (team photos, blog cover images) — served back out via
+# functions/uploads/[[path]].js rather than R2's own public dev URL, so
+# every image stays on elysium.ngo's own domain.
+[[r2_buckets]]
+binding = "UPLOADS"
+bucket_name = "elysium-uploads"

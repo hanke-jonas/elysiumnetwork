@@ -32,9 +32,16 @@ permalink: /admin/blog/
     </div>
     <div class="grid sm:grid-cols-2 gap-4">
       <div>
-        <label class="form-label" for="f_cover_image">Cover image</label>
-        <input class="input" type="text" id="f_cover_image" name="cover_image">
-        <p class="text-xs text-muted mt-1">Full URL or a path like /assets/blog/my-image.jpg — paste a hosted image URL, there's no upload here yet</p>
+        <label class="form-label">Cover image</label>
+        <div id="imageDropzone" class="rounded-xl border-2 border-dashed p-4 text-center cursor-pointer transition" style="background:var(--paper-2);border-color:rgba(25,23,18,.3)">
+          <div id="imagePreviewWrap" hidden class="mb-2">
+            <img id="imagePreview" class="mx-auto max-h-28 rounded-lg border-2 border-ink object-cover" alt="">
+          </div>
+          <p class="text-xs text-muted" id="imageDropzoneText">Drag and drop an image here, or click to choose one</p>
+        </div>
+        <input type="file" id="f_cover_image_file" accept="image/*" style="display:none">
+        <input type="hidden" id="f_cover_image" name="cover_image">
+        <p id="imageUploadStatus" role="status" aria-live="polite" class="text-xs mt-1"></p>
       </div>
       <div>
         <label class="form-label" for="f_author_name">Author name</label>
@@ -166,6 +173,7 @@ permalink: /admin/blog/
       f_slug.value = post.slug || '';
       f_excerpt.value = post.excerpt || '';
       f_cover_image.value = post.cover_image || '';
+      setImagePreview(post.cover_image || '');
       f_author_name.value = post.author_name || '';
       f_category.value = post.category || '';
       f_status.value = post.status || 'draft';
@@ -185,6 +193,7 @@ permalink: /admin/blog/
       saveBtn.textContent = 'Create';
       f_status.value = 'draft';
       quill.setText('');
+      setImagePreview('');
     }
     formCard.hidden = false;
     formCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -197,6 +206,7 @@ permalink: /admin/blog/
     slugTouched = false;
     quill.setText('');
     setFormStatus('');
+    setImagePreview('');
   }
 
   function formatDate(value) {
@@ -294,6 +304,57 @@ permalink: /admin/blog/
       load();
     });
   }
+
+  var imageDropzone = document.getElementById('imageDropzone');
+  var imageFileInput = document.getElementById('f_cover_image_file');
+  var imagePreview = document.getElementById('imagePreview');
+  var imagePreviewWrap = document.getElementById('imagePreviewWrap');
+  var imageDropzoneText = document.getElementById('imageDropzoneText');
+  var imageUploadStatus = document.getElementById('imageUploadStatus');
+
+  function setImagePreview(url) {
+    if (url) {
+      imagePreview.src = url;
+      imagePreviewWrap.hidden = false;
+      imageDropzoneText.textContent = 'Drag a new image to replace it, or click to choose one';
+    } else {
+      imagePreviewWrap.hidden = true;
+      imageDropzoneText.textContent = 'Drag and drop an image here, or click to choose one';
+    }
+  }
+
+  function uploadImage(file) {
+    if (!file) return;
+    imageUploadStatus.style.color = '';
+    imageUploadStatus.textContent = 'Uploading…';
+    var formData = new FormData();
+    formData.append('file', file);
+    adminFetch('/api/admin/upload', { method: 'POST', body: formData }).then(function (r) {
+      if (!r.ok) {
+        imageUploadStatus.style.color = 'var(--coral-ink)';
+        imageUploadStatus.textContent = (r.data && r.data.error) || 'Upload failed.';
+        return;
+      }
+      f_cover_image.value = r.data.url;
+      setImagePreview(r.data.url);
+      imageUploadStatus.textContent = 'Uploaded.';
+    });
+  }
+
+  imageDropzone.addEventListener('click', function () { imageFileInput.click(); });
+  imageFileInput.addEventListener('change', function () { uploadImage(imageFileInput.files[0]); });
+  imageDropzone.addEventListener('dragover', function (e) {
+    e.preventDefault();
+    imageDropzone.style.borderColor = 'var(--blue-ink)';
+  });
+  imageDropzone.addEventListener('dragleave', function () {
+    imageDropzone.style.borderColor = 'rgba(25,23,18,.3)';
+  });
+  imageDropzone.addEventListener('drop', function (e) {
+    e.preventDefault();
+    imageDropzone.style.borderColor = 'rgba(25,23,18,.3)';
+    uploadImage(e.dataTransfer.files[0]);
+  });
 
   addBtn.addEventListener('click', function () { showForm('create'); });
   cancelBtn.addEventListener('click', hideForm);
