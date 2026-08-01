@@ -46,6 +46,15 @@ eleventyComputed:
       </div>
       {% endif %}
 
+      {% if b.slug == 'germany' %}
+      <div class="mt-6 rounded-2xl border-2 border-dashed border-ink p-5" style="background:{{ accent }}18">
+        <span class="stamp" style="border-color:{{ accent }}">Coming up</span>
+        <h3 class="font-display text-xl font-bold mt-3">Roma Voices: Media against discrimination</h3>
+        <p class="mt-2 leading-relaxed">An Erasmus+ youth exchange in Bucharest exploring discrimination and racism against Sinti and Roma communities through critical media literacy — participants will produce their own podcasts, videos and social media campaigns as counter-narratives.</p>
+        <p class="mt-2 text-sm font-bold">Currently in the works — first exchange planned for summer 2027. Stay tuned.</p>
+      </div>
+      {% endif %}
+
       <h3 class="font-display text-2xl font-bold mt-12 mb-4">Focus areas</h3>
       <div class="flex flex-wrap gap-2.5">
         {% for f in b.focus %}
@@ -62,6 +71,7 @@ eleventyComputed:
           </div>
           <h4 class="font-display text-lg font-bold mt-4">{{ p.name }}</h4>
           <p class="text-sm text-muted mt-0.5">{{ p.role }}</p>
+          {% if p.bio %}<p class="text-sm mt-3 leading-relaxed">{{ p.bio }}</p>{% endif %}
           <a href="mailto:{{ p.email }}" class="mt-3 inline-flex items-center gap-1.5 text-sm font-bold hover:gap-2.5 transition-all">{% icon "mail", "w-4 h-4" %} {{ p.email }}</a>
         </div>
         {% endfor %}
