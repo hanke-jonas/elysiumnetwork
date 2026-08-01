@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS calls (
   sort_order INTEGER NOT NULL DEFAULT 0,
   title TEXT NOT NULL,
   branch_slug TEXT REFERENCES branches(slug),
-  is_open INTEGER NOT NULL DEFAULT 1,
+  status TEXT NOT NULL DEFAULT 'closed', -- 'open' | 'closed' | 'coming_up'
   deadline_label TEXT,
   summary TEXT,
   link TEXT,

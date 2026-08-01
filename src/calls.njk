@@ -28,22 +28,28 @@ permalink: /calls/
       </div>
     </a>
 
+    {% set statusMeta = {
+      open: { label: "Open", bg: "var(--mint)", dot: "bg-white" },
+      coming_up: { label: "Coming up", bg: "var(--sun)", dot: "bg-ink/70" },
+      closed: { label: "Closed", bg: "var(--paper-2)", dot: "bg-ink/30" }
+    } %}
     {% for c in calls %}
     {% for cb in site.branches %}{% if cb.slug == c.branchSlug %}
+    {% set sm = statusMeta[c.status] or statusMeta.closed %}
     <div class="card !rounded-2xl overflow-hidden reveal">
       <div class="h-1.5 border-b-2 border-ink" style="background:{{ cb.accent }}"></div>
       <div class="p-7 sm:p-8">
         <div class="flex flex-wrap items-center gap-3 mb-4">
           <span class="tag" style="background:{{ cb.accent }}33">{{ cb.flag }} {{ cb.name }}</span>
-          <span class="tag" style="{% if c.open %}background:var(--mint);color:var(--ink){% endif %}">
-            <span class="w-1.5 h-1.5 rounded-full {% if c.open %}bg-white{% else %}bg-ink/30{% endif %}"></span>{{ "Open" if c.open else "Closed" }}
+          <span class="tag" style="background:{{ sm.bg }}">
+            <span class="w-1.5 h-1.5 rounded-full {{ sm.dot }}"></span>{{ sm.label }}
           </span>
         </div>
         <h2 class="h-card text-2xl">{{ c.title }}</h2>
         <p class="mt-3 leading-relaxed">{{ c.summary }}</p>
         <div class="mt-6 flex flex-wrap items-center gap-4">
-          <a href="{{ c.link }}" target="_blank" rel="noopener" class="btn {% if c.open %}btn-accent{% endif %}">{{ c.linkLabel }} {% icon "arrow", "w-4 h-4" %}</a>
-          {% if c.open %}
+          <a href="{{ c.link }}" target="_blank" rel="noopener" class="btn {% if c.status == 'open' %}btn-accent{% endif %}">{{ c.linkLabel }} {% icon "arrow", "w-4 h-4" %}</a>
+          {% if c.status == 'open' %}
           <button type="button" class="btn express-interest-btn" data-call-id="{{ c.id }}">I'm interested</button>
           {% endif %}
           <span class="text-sm text-muted">{{ c.deadline }}</span>

@@ -32,11 +32,13 @@ permalink: /admin/calls/
       <label class="form-label" for="callDeadlineLabel">Deadline label</label>
       <input class="input" type="text" id="callDeadlineLabel" name="deadline_label" placeholder="Applications close 10 July 2026">
     </div>
-    <div class="flex items-end pb-2">
-      <label class="flex items-center gap-2 text-sm font-bold">
-        <input class="w-4 h-4" type="checkbox" id="callIsOpen" name="is_open">
-        Open for applications
-      </label>
+    <div>
+      <label class="form-label" for="callStatus">Status</label>
+      <select class="input" id="callStatus" name="status">
+        <option value="open">Open</option>
+        <option value="closed">Closed</option>
+        <option value="coming_up">Coming up</option>
+      </select>
     </div>
     <div class="sm:col-span-2">
       <label class="form-label" for="callSummary">Summary</label>
@@ -96,7 +98,7 @@ document.addEventListener('admin:ready', function () {
 
   var sortOrderInput = document.getElementById('callSortOrder');
   var titleInput = document.getElementById('callTitle');
-  var isOpenInput = document.getElementById('callIsOpen');
+  var statusSelect = document.getElementById('callStatus');
   var deadlineInput = document.getElementById('callDeadlineLabel');
   var summaryInput = document.getElementById('callSummary');
   var linkInput = document.getElementById('callLink');
@@ -149,9 +151,12 @@ document.addEventListener('admin:ready', function () {
       var tdStatus = document.createElement('td');
       var tag = document.createElement('span');
       tag.className = 'tag';
-      if (c.is_open) {
+      if (c.status === 'open') {
         tag.style.background = 'var(--mint)';
         tag.textContent = 'Open';
+      } else if (c.status === 'coming_up') {
+        tag.style.background = 'var(--sun)';
+        tag.textContent = 'Coming up';
       } else {
         tag.style.background = 'var(--paper-2)';
         tag.textContent = 'Closed';
@@ -223,7 +228,7 @@ document.addEventListener('admin:ready', function () {
     sortOrderInput.value = c.sort_order != null ? c.sort_order : '';
     titleInput.value = c.title || '';
     branchSelect.value = c.branch_slug || '';
-    isOpenInput.checked = !!c.is_open;
+    statusSelect.value = c.status || 'closed';
     deadlineInput.value = c.deadline_label || '';
     summaryInput.value = c.summary || '';
     linkInput.value = c.link || '';
@@ -265,7 +270,7 @@ document.addEventListener('admin:ready', function () {
       sort_order: Number(sortOrderInput.value) || 0,
       title: title,
       branch_slug: branchSelect.value,
-      is_open: isOpenInput.checked ? 1 : 0,
+      status: statusSelect.value,
       deadline_label: deadlineInput.value.trim(),
       summary: summaryInput.value.trim(),
       link: linkInput.value.trim(),
