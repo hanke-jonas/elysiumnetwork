@@ -14,6 +14,16 @@ const fallback = [
     link: 'https://hub.elysium.ngo/dots',
     linkLabel: 'Project page',
   },
+  {
+    id: 'call-2',
+    title: 'Roma Voices: Media against discrimination',
+    branchSlug: 'germany',
+    open: false,
+    deadline: 'Coming summer 2027',
+    summary: 'An Erasmus+ youth exchange in Bucharest exploring discrimination and racism against Sinti and Roma communities through critical media literacy — participants will produce their own podcasts, videos and social media campaigns as counter-narratives. Currently in the works — stay tuned.',
+    link: '/germany/',
+    linkLabel: 'Learn more',
+  },
 ];
 
 module.exports = async function () {
