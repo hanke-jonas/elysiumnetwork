@@ -101,9 +101,10 @@
       <div class="nav-item-drop relative">
         <button class="nav-link nav-drop-btn inline-flex items-center gap-1.5" aria-haspopup="true" aria-expanded="false">About {% icon "chevron", "w-3.5 h-3.5" %}</button>
         <div class="nav-drop">
+          <a href="/commitments/" style="background:var(--plum-ink)11">{% icon "venus", "w-4 h-4 shrink-0" %}<span class="flex-1 min-w-0"><span class="block font-semibold">Equity Workplan</span><span class="block text-[11px] opacity-60">Feminist &amp; queer-inclusive, in practice</span></span></a>
           <a href="/about/">{% icon "id", "w-4 h-4 shrink-0" %}<span class="flex-1 min-w-0"><span class="block font-semibold">About Us</span></span></a>
           <a href="/blog/">{% icon "monitor", "w-4 h-4 shrink-0" %}<span class="flex-1 min-w-0"><span class="block font-semibold">Blog</span></span></a>
-          <a href="/standards/">{% icon "venus", "w-4 h-4 shrink-0" %}<span class="flex-1 min-w-0"><span class="block font-semibold">Values &amp; Standards</span></span></a>
+          <a href="/standards/">{% icon "id", "w-4 h-4 shrink-0" %}<span class="flex-1 min-w-0"><span class="block font-semibold">Values &amp; Standards</span></span></a>
         </div>
       </div>
     </nav>
@@ -182,6 +183,10 @@
           {% icon "chevron", "w-7 h-7 shrink-0 self-center group-open:rotate-180 transition-transform" %}
         </summary>
         <div class="mmenu-sub grid gap-3">
+          <a href="/commitments/" class="flex items-center gap-3 rounded-xl border-2 border-ink bg-white px-4 py-3.5 active:translate-y-0.5 transition">
+            <span class="w-10 h-10 rounded-lg grid place-items-center border-2 border-ink shrink-0" style="background:var(--plum)">{% icon "venus", "w-4 h-4" %}</span>
+            <span class="min-w-0"><span class="block font-display font-bold leading-tight">Equity Workplan</span><span class="block text-xs opacity-60 leading-tight mt-0.5">Feminist &amp; queer-inclusive</span></span>
+          </a>
           <a href="/about/" class="flex items-center gap-3 rounded-xl border-2 border-ink bg-white px-4 py-3.5 active:translate-y-0.5 transition">
             <span class="w-10 h-10 rounded-lg grid place-items-center border-2 border-ink shrink-0" style="background:var(--paper-2)">{% icon "id", "w-4 h-4" %}</span>
             <span class="font-display font-bold">About Us</span>
@@ -191,7 +196,7 @@
             <span class="font-display font-bold">Blog</span>
           </a>
           <a href="/standards/" class="flex items-center gap-3 rounded-xl border-2 border-ink bg-white px-4 py-3.5 active:translate-y-0.5 transition">
-            <span class="w-10 h-10 rounded-lg grid place-items-center border-2 border-ink shrink-0" style="background:var(--plum)">{% icon "venus", "w-4 h-4" %}</span>
+            <span class="w-10 h-10 rounded-lg grid place-items-center border-2 border-ink shrink-0" style="background:var(--paper-2)">{% icon "id", "w-4 h-4" %}</span>
             <span class="font-display font-bold">Values &amp; Standards</span>
           </a>
         </div>
@@ -225,7 +230,7 @@
           </span>
           <span class="wordmark-stripe"></span>
         </a>
-        <p class="mt-4 max-w-sm text-paper/65 leading-relaxed">{{ site.tagline }}. A European youth network rooted in Ukraine, working across Poland, Italy and Germany.</p>
+        <p class="mt-4 max-w-sm text-paper/65 leading-relaxed">{{ site.tagline }}. A feminist, queer-inclusive European youth network rooted in Ukraine, working across Poland, Italy and Germany.</p>
         <div class="mt-6 flex flex-wrap gap-2.5">
           {% for s in site.socials %}
           <a href="{{ s.url }}" target="_blank" rel="noopener" class="w-10 h-10 grid place-items-center rounded-lg border-2 border-paper/25 hover:border-blue hover:text-blue transition" aria-label="{{ s.label }}">{% icon s.icon, "w-5 h-5" %}</a>
@@ -266,9 +271,10 @@
       <div class="md:col-span-3">
         <p class="eyebrow text-paper/60 mb-4">Legal</p>
         <ul class="space-y-2.5">
+          <li><a href="/commitments/" class="text-paper/65 hover:text-paper transition font-semibold">Equity Workplan</a></li>
+          <li><a href="/standards/" class="text-paper/65 hover:text-paper transition">Values &amp; Standards</a></li>
           <li><a href="/privacy/" class="text-paper/65 hover:text-paper transition">Privacy Policy</a></li>
           <li><button type="button" onclick="openCookiePrefs()" class="text-paper/65 hover:text-paper transition text-left">Cookie preferences</button></li>
-          <li><a href="/standards/" class="text-paper/65 hover:text-paper transition">Values &amp; Standards</a></li>
           <li><a href="/contact/" class="text-paper/65 hover:text-paper transition">Contact</a></li>
         </ul>
       </div>

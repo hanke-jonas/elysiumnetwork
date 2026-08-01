@@ -1,0 +1,46 @@
+---
+layout: base.njk
+title: Our Equity Workplan — Elysium+ Network
+description: Elysium+ is a feminist, queer-inclusive youth network. Here is what that commitment looks like in concrete practice, and how to reach us if we fall short.
+permalink: /commitments/
+---
+<section class="relative overflow-hidden border-b-2 border-ink">
+  <div class="relative max-w-4xl mx-auto px-5 sm:px-6 pt-14 pb-8">
+    <div class="pride-stripe reveal" aria-hidden="true"></div>
+    <p class="eyebrow mt-8" style="color:var(--plum-ink)">Our commitment, in practice</p>
+    <h1 class="h-hero mt-4 reveal reveal-d1">We are a <mark class="m-plum">feminist</mark>, <mark class="m-mint">queer-inclusive</mark> network.</h1>
+    <p class="mt-6 text-lg sm:text-xl text-muted max-w-2xl leading-relaxed reveal reveal-d2">That's not a slogan on a page — it's a working list of commitments we hold ourselves to, across every branch and every project. This is our equity workplan: what we actually do, and how to reach us directly if we fall short of it.</p>
+    <div class="mt-7 flex flex-wrap gap-2.5 reveal reveal-d3">
+      <span class="tag" style="background:var(--plum);border-color:var(--ink)">{% icon "venus", "w-3.5 h-3.5" %} Feminist</span>
+      <span class="tag" style="background:var(--mint);border-color:var(--ink)">{% icon "heart", "w-3.5 h-3.5" %} Queer-inclusive</span>
+      <span class="tag" style="background:var(--sun);border-color:var(--ink)">{% icon "id", "w-3.5 h-3.5" %} Anti-discrimination by policy</span>
+    </div>
+  </div>
+</section>
+
+<section class="bg-paper">
+  <div class="max-w-4xl mx-auto px-5 sm:px-6 py-16 space-y-5">
+    {% set items = [
+      { icon: "venus", col: "var(--plum)", title: "Leadership, not just participation", text: "We're committed to gender-balanced leadership across every branch. When a facilitator, trainer or project-lead role opens up, women, girls and gender-diverse young people are actively encouraged to step into it — not just invited to attend." },
+      { icon: "heart", col: "var(--mint)", title: "A safe space, enforced", text: "Every Elysium+ activity runs under our Values & Standards, which name gender identity, sexual orientation and gender expression explicitly as protected grounds. Homophobia, transphobia and sexism are treated as standards violations, with the same seriousness as any other breach — never as a lesser issue." },
+      { icon: "id", col: "var(--sun)", title: "Language and forms that include", text: "Registration forms ask for the name and pronouns someone actually goes by, not a binary checkbox. Our non-formal education sessions carry content on gender and LGBTQ+ awareness as a standing part of the curriculum, not an optional extra bolted on for appearances." },
+      { icon: "mail", col: "var(--coral)", title: "A reporting channel that works", text: "Concerns about discrimination — including transphobia, homophobia or sexism — can be raised directly and confidentially at " + site.contact_email + ". They go to network coordination, not just whoever was most affected having to handle it alone." },
+      { icon: "globe", col: "var(--blue)", title: "Partners who meet the same bar", text: "We raise our standards on inclusion with venues, host organisations and partners before confirming a project together — not after something has already gone wrong." },
+      { icon: "spark", col: "var(--plum)", title: "Always a work in progress", text: "This workplan will keep evolving as our practice does. If you've taken part in an Elysium+ project and something here didn't hold up in reality, tell us — email us, or reach any branch directly. We would rather hear it from you than not know." }
+    ] %}
+    {% for it in items %}
+    <div class="card !rounded-xl p-6 sm:p-7 flex gap-5 reveal">
+      <div class="w-12 h-12 rounded-lg grid place-items-center border-2 border-ink shrink-0" style="background:{{ it.col }}">{% icon it.icon, "w-5 h-5" %}</div>
+      <div>
+        <h2 class="font-display text-xl font-bold">{{ it.title }}</h2>
+        <p class="mt-2 leading-relaxed">{{ it.text }}</p>
+      </div>
+    </div>
+    {% endfor %}
+
+    <div class="rounded-xl border-2 border-ink p-6 sm:p-7 mt-4 flex flex-wrap items-center justify-between gap-4" style="background:var(--paper-2)">
+      <p class="leading-relaxed max-w-xl">This workplan sits alongside our full Values &amp; Standards — the code every member, partner and participant agrees to.</p>
+      <a href="/standards/" class="btn btn-accent shrink-0">Read our full standards {% icon "arrow", "w-4 h-4" %}</a>
+    </div>
+  </div>
+</section>
