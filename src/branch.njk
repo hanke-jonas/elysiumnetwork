@@ -58,7 +58,13 @@ eleventyComputed:
       <h3 class="font-display text-2xl font-bold mt-12 mb-4">Focus areas</h3>
       <div class="flex flex-wrap gap-2.5">
         {% for f in b.focus %}
-        <span class="tag" style="background:{{ accent }}22">{{ f }}</span>
+        {# Equality-related focus areas get a plum border regardless of the
+           branch's own accent color — the one place a value overrides the
+           per-branch color-coding, signalling that equality isn't any one
+           branch's issue, it's the network's. #}
+        {% set fLower = f | lower %}
+        {% set isEquality = "inclusion" in fLower or "equality" in fLower or "rights" in fLower %}
+        <span class="tag" style="background:{{ accent }}22{% if isEquality %};border-color:var(--plum){% endif %}">{{ f }}</span>
         {% endfor %}
       </div>
 

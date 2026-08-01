@@ -60,6 +60,8 @@
   mark.m-blue::before{ background:var(--blue); }
   mark.m-coral::before{ background:var(--coral); }
   mark.m-mint::before{ background:var(--mint); }
+  mark.m-plum::before{ background:var(--plum); }
+  mark.m-sun::before{ background:var(--sun); }
 
   .reveal{ opacity:0; transform:translateY(16px) scale(.98) rotate(-1deg); transition:opacity .55s cubic-bezier(.2,.8,.2,1), transform .55s cubic-bezier(.2,.8,.2,1); }
   .reveal.in{ opacity:1; transform:none; }
@@ -67,6 +69,36 @@
 
   .marquee{ overflow:hidden; white-space:nowrap; } .marquee-track{ display:inline-flex; animation:marq 30s linear infinite; } .marquee:hover .marquee-track{ animation-play-state:paused; }
   @keyframes marq{ to{ transform:translateX(-50%); } }
+  /* Small reward for actually stopping to read the ticker once it's paused
+     on hover — each heart glyph gets its own cycling-color pulse instead of
+     sitting static. */
+  .marquee-track .tick-heart{ display:inline-block; transition:transform .2s ease; }
+  .marquee-track .tick-heart:hover{ transform:scale(1.5); animation:tick-heart-cycle 1.8s linear infinite; }
+  @keyframes tick-heart-cycle{
+    0%,100%{ color:var(--blue); } 25%{ color:var(--coral); } 50%{ color:var(--sun); } 75%{ color:var(--mint); }
+  }
+
+  /* Wordmark tricolor: purple/white/green were the suffragette movement's
+     own colours (dignity, purity, hope) — paper-2 stands in for white here
+     so it still sits on the site's cream background. A quiet signal, not a
+     banner: shows up under the "Elysium+" mark everywhere without needing
+     a caption, and the header instance carries a title tooltip for anyone
+     who hovers or focuses it. */
+  .wordmark-stripe{ display:block; height:3px; margin-top:.2rem; border-radius:2px;
+    background:linear-gradient(90deg, var(--plum) 0 33%, var(--paper-2) 33% 66%, var(--mint) 66% 100%); }
+  footer .wordmark-stripe{ background:linear-gradient(90deg, var(--plum) 0 33%, rgba(247,241,226,.3) 33% 66%, var(--mint) 66% 100%); }
+
+  /* Easter-egg toast: one shared element reused by every hidden interaction
+     (keyboard sequence, logo-burst, etc.) rather than a bespoke popup per
+     egg. */
+  .egg-toast{ position:fixed; left:50%; bottom:1.5rem; transform:translate(-50%,10px); z-index:150;
+    opacity:0; visibility:hidden; transition:opacity .3s ease, transform .3s ease, visibility .3s;
+    pointer-events:none; text-align:center; }
+  .egg-toast.show{ opacity:1; visibility:visible; transform:translate(-50%,0); }
+  @media (prefers-reduced-motion: reduce){
+    .egg-toast{ transition:opacity .15s linear; transform:translate(-50%,0); }
+    .marquee-track .tick-heart:hover{ animation:none; color:var(--plum); }
+  }
 
   .ticker-bar{ position:relative; z-index:60; border-bottom:2px solid var(--ink); background:var(--ink); color:var(--paper); }
   .ticker-bar::after{ content:''; position:absolute; top:0; right:0; bottom:0; width:2.5rem; pointer-events:none; background:linear-gradient(to right, transparent, var(--ink)); }

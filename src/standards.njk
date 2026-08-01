@@ -5,7 +5,7 @@ description: The ten principles that guide Elysium+ and the expectations we hold
 permalink: /standards/
 ---
 {% set standards = [
-  ["Equality and Respect", "Every person in Elysium+ is treated with the same respect and dignity. We do not tolerate discrimination of any kind — whether based on nationality, gender, identity, orientation, disability, beliefs or social background. Everyone has the right to participate and contribute on equal terms."],
+  ["Equality and Respect", "Every person in Elysium+ is treated with the same respect and dignity. We do not tolerate discrimination of any kind — whether based on nationality, gender, identity, orientation, disability, beliefs or social background. Everyone has the right to participate and contribute on equal terms. This includes a clear feminist commitment to gender equality — closing the gaps in leadership, opportunity and voice that still exist across our sector, starting inside our own organisation."],
   ["Inclusion as a Core Principle", "Elysium+ is a place where differences are not only accepted but valued. We work to ensure that every individual feels welcomed and able to take part, regardless of their experience, background or personal circumstances. Inclusion is not a formality; it is part of our daily practice."],
   ["Overcoming Language Barriers", "English is our main working language so people from different countries can understand one another. Not everyone speaks at the same level, so we communicate clearly, avoid unnecessary jargon, support those who are learning and adapt when needed. No one should feel excluded because of language."],
   ["Open Dialogue and Friendly Communication", "We expect everyone to communicate with kindness, patience and openness. Ideas should be heard without judgment, and discussions must stay constructive. Disagreement is natural, but it is always expressed respectfully. Our goal is an atmosphere where everyone feels free to speak, suggest, ask and share."],
@@ -30,10 +30,18 @@ permalink: /standards/
 <section class="bg-paper">
   <div class="max-w-4xl mx-auto px-5 sm:px-6 py-16 space-y-4">
     {% for s in standards %}
+    {# Principle #1 (Equality and Respect) is always plum regardless of
+       position in the cycle — plum is this site's consistent marker for
+       equality/gender-equity, not just whatever color the modulo lands on. #}
     <div class="card !rounded-xl p-6 sm:p-7 flex gap-5 reveal">
-      <div class="font-display text-3xl font-extrabold leading-none shrink-0 w-10" style="color:{{ pal[loop.index0 % 5] }}">{% if loop.index < 10 %}0{% endif %}{{ loop.index }}</div>
+      <div class="font-display text-3xl font-extrabold leading-none shrink-0 w-10" style="color:{{ 'var(--plum-ink)' if loop.index0 == 0 else pal[loop.index0 % 5] }}">{% if loop.index < 10 %}0{% endif %}{{ loop.index }}</div>
       <div>
-        <h2 class="font-display text-xl font-bold">{{ s[0] }}</h2>
+        <h2 class="font-display text-xl font-bold inline-flex items-center gap-2">
+          {{ s[0] }}
+          {% if loop.index0 == 0 %}
+          <span class="inline-grid place-items-center w-6 h-6 rounded-full border-2 border-ink shrink-0" style="background:var(--plum)" title="equality, always">{% icon "venus", "w-3.5 h-3.5" %}</span>
+          {% endif %}
+        </h2>
         <p class="mt-2 leading-relaxed">{{ s[1] }}</p>
       </div>
     </div>

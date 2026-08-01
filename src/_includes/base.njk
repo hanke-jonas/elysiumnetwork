@@ -65,14 +65,17 @@
 
 <header class="navbar" id="navbar">
   <div class="max-w-[1400px] mx-auto px-5 sm:px-8 h-[4.5rem] flex items-center justify-between gap-6">
-    <a href="/" class="flex items-center gap-2.5 shrink-0">
-      <img src="{{ site.logo_small }}" alt="Elysium+" width="128" height="128" class="h-10 w-10 object-contain">
-      <span class="font-display text-xl font-extrabold tracking-tight hidden sm:inline">Elysium<span style="color:var(--coral)">+</span></span>
+    <a href="/" id="wordmarkLink" class="flex flex-col shrink-0 group">
+      <span class="flex items-center gap-2.5">
+        <img src="{{ site.logo_small }}" alt="Elysium+" width="128" height="128" class="h-10 w-10 object-contain">
+        <span class="font-display text-xl font-extrabold tracking-tight hidden sm:inline">Elysium<span style="color:var(--coral)">+</span></span>
+      </span>
+      <span class="wordmark-stripe hidden sm:block" title="purple, white &amp; green — the suffragette colours, still ours"></span>
     </a>
     <nav class="hidden lg:flex items-center gap-8">
       <a href="/" class="nav-link{% if page.url == '/' %} active{% endif %}">Home</a>
       <div class="nav-item-drop relative">
-        <button class="nav-link inline-flex items-center gap-1.5" aria-haspopup="true" aria-expanded="false" id="navDropBtn">Network {% icon "chevron", "w-3.5 h-3.5" %}</button>
+        <button class="nav-link nav-drop-btn inline-flex items-center gap-1.5" aria-haspopup="true" aria-expanded="false">Network {% icon "chevron", "w-3.5 h-3.5" %}</button>
         <div class="nav-drop">
           {% for b in site.branches %}
           <a href="/{{ b.slug }}/">
@@ -86,16 +89,29 @@
           {% endfor %}
         </div>
       </div>
-      <a href="/about/" class="nav-link{% if page.url == '/about/' %} active{% endif %}">About</a>
-      <a href="/calls/" class="nav-link{% if page.url == '/calls/' %} active{% endif %}">Active calls</a>
-      <a href="/blog/" class="nav-link{% if page.url == '/blog/' or '/blog/' in page.url %} active{% endif %}">Blog</a>
-      <a href="/support/" class="nav-link{% if page.url == '/support/' %} active{% endif %}">Support</a>
-      <a href="/contact/" class="nav-link{% if page.url == '/contact/' %} active{% endif %}">Contact</a>
+      <div class="nav-item-drop relative">
+        <button class="nav-link nav-drop-btn inline-flex items-center gap-1.5" aria-haspopup="true" aria-expanded="false">Get Involved {% icon "chevron", "w-3.5 h-3.5" %}</button>
+        <div class="nav-drop">
+          <a href="/calls/">{% icon "compass", "w-4 h-4 shrink-0" %}<span class="flex-1 min-w-0"><span class="block font-semibold">Active calls</span></span></a>
+          <a href="/events/">{% icon "calendar", "w-4 h-4 shrink-0" %}<span class="flex-1 min-w-0"><span class="block font-semibold">Events</span></span></a>
+          <a href="/resources/">{% icon "box", "w-4 h-4 shrink-0" %}<span class="flex-1 min-w-0"><span class="block font-semibold">Resources</span></span></a>
+          <a href="/support/">{% icon "heart", "w-4 h-4 shrink-0" %}<span class="flex-1 min-w-0"><span class="block font-semibold">Support Us</span></span></a>
+        </div>
+      </div>
+      <div class="nav-item-drop relative">
+        <button class="nav-link nav-drop-btn inline-flex items-center gap-1.5" aria-haspopup="true" aria-expanded="false">About {% icon "chevron", "w-3.5 h-3.5" %}</button>
+        <div class="nav-drop">
+          <a href="/about/">{% icon "id", "w-4 h-4 shrink-0" %}<span class="flex-1 min-w-0"><span class="block font-semibold">About Us</span></span></a>
+          <a href="/blog/">{% icon "monitor", "w-4 h-4 shrink-0" %}<span class="flex-1 min-w-0"><span class="block font-semibold">Blog</span></span></a>
+          <a href="/standards/">{% icon "venus", "w-4 h-4 shrink-0" %}<span class="flex-1 min-w-0"><span class="block font-semibold">Values &amp; Standards</span></span></a>
+        </div>
+      </div>
     </nav>
     <div class="hidden lg:flex items-center gap-3">
       <button class="search-trigger" onclick="openSearch(this)" aria-label="Search the site">
         {% icon "search", "w-4 h-4" %}<span class="label">Search</span><span class="kbd">/</span>
       </button>
+      <a href="/contact/" class="nav-link{% if page.url == '/contact/' %} active{% endif %}">Contact</a>
       <a href="/account/login/" id="accountLink" class="nav-link">Log in</a>
       <a href="{{ site.join_form }}" class="btn btn-accent">Join Us {% icon "arrow-ur", "w-4 h-4" %}</a>
     </div>
@@ -118,10 +134,9 @@
     </div>
     <nav class="mt-10">
       <a href="/" class="mmenu-link"><span class="idx">01</span> Home</a>
-      <a href="/about/" class="mmenu-link"><span class="idx">02</span> About</a>
       <details class="group">
         <summary class="mmenu-link list-none cursor-pointer justify-between">
-          <span class="flex items-baseline gap-4"><span class="idx">03</span> Network</span>
+          <span class="flex items-baseline gap-4"><span class="idx">02</span> Network</span>
           {% icon "chevron", "w-7 h-7 shrink-0 self-center group-open:rotate-180 transition-transform" %}
         </summary>
         <div class="mmenu-sub grid grid-cols-2 gap-3">
@@ -137,19 +152,61 @@
           {% endfor %}
         </div>
       </details>
-      <a href="/calls/" class="mmenu-link"><span class="idx">04</span> Active calls</a>
-      <a href="/blog/" class="mmenu-link"><span class="idx">05</span> Blog</a>
-      <a href="/support/" class="mmenu-link"><span class="idx">06</span> Support</a>
-      <a href="/contact/" class="mmenu-link"><span class="idx">07</span> Contact</a>
+      <details class="group">
+        <summary class="mmenu-link list-none cursor-pointer justify-between">
+          <span class="flex items-baseline gap-4"><span class="idx">03</span> Get Involved</span>
+          {% icon "chevron", "w-7 h-7 shrink-0 self-center group-open:rotate-180 transition-transform" %}
+        </summary>
+        <div class="mmenu-sub grid gap-3">
+          <a href="/calls/" class="flex items-center gap-3 rounded-xl border-2 border-ink bg-white px-4 py-3.5 active:translate-y-0.5 transition">
+            <span class="w-10 h-10 rounded-lg grid place-items-center border-2 border-ink shrink-0" style="background:var(--paper-2)">{% icon "compass", "w-4 h-4" %}</span>
+            <span class="font-display font-bold">Active calls</span>
+          </a>
+          <a href="/events/" class="flex items-center gap-3 rounded-xl border-2 border-ink bg-white px-4 py-3.5 active:translate-y-0.5 transition">
+            <span class="w-10 h-10 rounded-lg grid place-items-center border-2 border-ink shrink-0" style="background:var(--paper-2)">{% icon "calendar", "w-4 h-4" %}</span>
+            <span class="font-display font-bold">Events</span>
+          </a>
+          <a href="/resources/" class="flex items-center gap-3 rounded-xl border-2 border-ink bg-white px-4 py-3.5 active:translate-y-0.5 transition">
+            <span class="w-10 h-10 rounded-lg grid place-items-center border-2 border-ink shrink-0" style="background:var(--paper-2)">{% icon "box", "w-4 h-4" %}</span>
+            <span class="font-display font-bold">Resources</span>
+          </a>
+          <a href="/support/" class="flex items-center gap-3 rounded-xl border-2 border-ink bg-white px-4 py-3.5 active:translate-y-0.5 transition">
+            <span class="w-10 h-10 rounded-lg grid place-items-center border-2 border-ink shrink-0" style="background:var(--paper-2)">{% icon "heart", "w-4 h-4" %}</span>
+            <span class="font-display font-bold">Support Us</span>
+          </a>
+        </div>
+      </details>
+      <details class="group">
+        <summary class="mmenu-link list-none cursor-pointer justify-between">
+          <span class="flex items-baseline gap-4"><span class="idx">04</span> About</span>
+          {% icon "chevron", "w-7 h-7 shrink-0 self-center group-open:rotate-180 transition-transform" %}
+        </summary>
+        <div class="mmenu-sub grid gap-3">
+          <a href="/about/" class="flex items-center gap-3 rounded-xl border-2 border-ink bg-white px-4 py-3.5 active:translate-y-0.5 transition">
+            <span class="w-10 h-10 rounded-lg grid place-items-center border-2 border-ink shrink-0" style="background:var(--paper-2)">{% icon "id", "w-4 h-4" %}</span>
+            <span class="font-display font-bold">About Us</span>
+          </a>
+          <a href="/blog/" class="flex items-center gap-3 rounded-xl border-2 border-ink bg-white px-4 py-3.5 active:translate-y-0.5 transition">
+            <span class="w-10 h-10 rounded-lg grid place-items-center border-2 border-ink shrink-0" style="background:var(--paper-2)">{% icon "monitor", "w-4 h-4" %}</span>
+            <span class="font-display font-bold">Blog</span>
+          </a>
+          <a href="/standards/" class="flex items-center gap-3 rounded-xl border-2 border-ink bg-white px-4 py-3.5 active:translate-y-0.5 transition">
+            <span class="w-10 h-10 rounded-lg grid place-items-center border-2 border-ink shrink-0" style="background:var(--plum)">{% icon "venus", "w-4 h-4" %}</span>
+            <span class="font-display font-bold">Values &amp; Standards</span>
+          </a>
+        </div>
+      </details>
     </nav>
     <div class="mt-10 flex flex-wrap gap-3">
       <a href="{{ site.join_form }}" class="btn btn-accent">Join Us {% icon "arrow-ur", "w-4 h-4" %}</a>
       <a href="/account/login/" id="accountLinkMobile" class="btn">Log in</a>
-      <a href="/standards/" class="btn">Standards</a>
+      <a href="/contact/" class="btn">Contact</a>
       <a href="/privacy/" class="btn">Privacy</a>
     </div>
   </div>
 </div>
+
+<div id="eggToast" class="egg-toast" role="status" aria-live="polite"></div>
 
 <!--SEARCH-CONTENT-START-->
 <main id="main-content">
@@ -161,9 +218,12 @@
   <div class="max-w-[1400px] mx-auto px-5 sm:px-8 py-16 sm:py-20">
     <div class="grid gap-10 md:grid-cols-12">
       <div class="md:col-span-4">
-        <a href="/" class="inline-flex items-center gap-2.5">
-          <img src="{{ site.logo_small }}" alt="Elysium+" width="128" height="128" class="h-9 w-9 object-contain">
-          <span class="font-display text-2xl font-extrabold tracking-tight">Elysium<span style="color:var(--coral)">+</span></span>
+        <a href="/" class="inline-flex flex-col">
+          <span class="inline-flex items-center gap-2.5">
+            <img src="{{ site.logo_small }}" alt="Elysium+" width="128" height="128" class="h-9 w-9 object-contain">
+            <span class="font-display text-2xl font-extrabold tracking-tight">Elysium<span style="color:var(--coral)">+</span></span>
+          </span>
+          <span class="wordmark-stripe"></span>
         </a>
         <p class="mt-4 max-w-sm text-paper/65 leading-relaxed">{{ site.tagline }}. A European youth network rooted in Ukraine, working across Poland, Italy and Germany.</p>
         <div class="mt-6 flex flex-wrap gap-2.5">
@@ -282,43 +342,106 @@
   document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeMMenu(); });
 
   (function(){
-    var wrap = document.querySelector('.nav-item-drop');
-    var btn = document.getElementById('navDropBtn');
-    if (!wrap || !btn) return;
-    function closeDrop(){ wrap.classList.remove('open'); btn.setAttribute('aria-expanded','false'); }
-    function openDrop(){ wrap.classList.add('open'); btn.setAttribute('aria-expanded','true'); }
-    btn.addEventListener('click', function(e){
-      e.stopPropagation();
-      if (wrap.classList.contains('open')) closeDrop(); else openDrop();
-    });
-    document.addEventListener('click', function(e){ if (!wrap.contains(e.target)) closeDrop(); });
-    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeDrop(); });
-    // The panel is also revealed purely via CSS :focus-within (so Tab alone
-    // opens it), but aria-expanded was only ever flipped by the click
-    // handler above — this keeps the announced state in sync with what
-    // keyboard users actually see.
-    wrap.addEventListener('focusin', function(){ btn.setAttribute('aria-expanded', 'true'); });
-    wrap.addEventListener('focusout', function(e){
-      if (!wrap.contains(e.relatedTarget)) btn.setAttribute('aria-expanded', wrap.classList.contains('open') ? 'true' : 'false');
+    // Generalized over every `.nav-item-drop` (Network, Get Involved,
+    // About, ...) instead of a single hardcoded id — each gets its own
+    // independent open/close state via its own trigger button.
+    document.querySelectorAll('.nav-item-drop').forEach(function(wrap){
+      var btn = wrap.querySelector('.nav-drop-btn');
+      if (!btn) return;
+      function closeDrop(){ wrap.classList.remove('open'); btn.setAttribute('aria-expanded','false'); }
+      function openDrop(){ wrap.classList.add('open'); btn.setAttribute('aria-expanded','true'); }
+      btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        var wasOpen = wrap.classList.contains('open');
+        // stopPropagation above means the document-level "click outside"
+        // listener never sees this click, so without this, opening one
+        // dropdown wouldn't close a different one that's already open.
+        document.querySelectorAll('.nav-item-drop.open').forEach(function(openWrap){
+          if (openWrap !== wrap) {
+            openWrap.classList.remove('open');
+            var openBtn = openWrap.querySelector('.nav-drop-btn');
+            if (openBtn) openBtn.setAttribute('aria-expanded', 'false');
+          }
+        });
+        if (wasOpen) closeDrop(); else openDrop();
+      });
+      document.addEventListener('click', function(e){ if (!wrap.contains(e.target)) closeDrop(); });
+      document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeDrop(); });
+      // The panel is also revealed purely via CSS :focus-within (so Tab alone
+      // opens it), but aria-expanded was only ever flipped by the click
+      // handler above — this keeps the announced state in sync with what
+      // keyboard users actually see.
+      wrap.addEventListener('focusin', function(){ btn.setAttribute('aria-expanded', 'true'); });
+      wrap.addEventListener('focusout', function(e){
+        if (!wrap.contains(e.relatedTarget)) btn.setAttribute('aria-expanded', wrap.classList.contains('open') ? 'true' : 'false');
+      });
     });
   })();
+
+  // Shared heart-spawn helper — the mousemove cursor trail below uses it
+  // directly; exposed on window so other pages (e.g. the homepage's hero
+  // illustration) can reuse the exact same visual for their own moments
+  // instead of drawing a second heart asset.
+  window.elysiumSpawnHeart = function(x, y){
+    var colors = ['#7C93D6','#FF6B54','#FFC93C','#59B37B','#B478D9'];
+    var el = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    el.setAttribute('viewBox','0 0 24 24');
+    el.className.baseVal = 'heart-cursor';
+    el.style.left = x+'px'; el.style.top = y+'px';
+    el.style.setProperty('--r', (Math.random()*40-20)+'deg');
+    var c = colors[Math.floor(Math.random()*colors.length)];
+    el.innerHTML = '<path fill="'+c+'" stroke="#191712" stroke-width="1" d="M12 21.35 10.55 20.03C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>';
+    document.body.appendChild(el);
+    setTimeout(function(){ el.remove(); }, 750);
+  };
 
   (function(){
     if (window.matchMedia('(pointer:coarse)').matches) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    var last = 0, colors=['#7C93D6','#FF6B54','#FFC93C','#59B37B','#B478D9'];
+    var last = 0;
     window.addEventListener('mousemove', function(e){
       var now = Date.now(); if (now - last < 60) return; last = now;
-      var el = document.createElementNS('http://www.w3.org/2000/svg','svg');
-      el.setAttribute('viewBox','0 0 24 24');
-      el.className.baseVal = 'heart-cursor';
-      el.style.left = e.clientX+'px'; el.style.top = e.clientY+'px';
-      el.style.setProperty('--r', (Math.random()*40-20)+'deg');
-      var c = colors[Math.floor(Math.random()*colors.length)];
-      el.innerHTML = '<path fill="'+c+'" stroke="#191712" stroke-width="1" d="M12 21.35 10.55 20.03C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>';
-      document.body.appendChild(el);
-      setTimeout(function(){ el.remove(); }, 750);
+      window.elysiumSpawnHeart(e.clientX, e.clientY);
     }, {passive:true});
+  })();
+
+  // Shared toast for hidden interactions below (and reusable from other
+  // pages via window.elysiumShowEggToast) — one element, one animation,
+  // rather than a bespoke popup per easter egg.
+  window.elysiumShowEggToast = function(html){
+    var toast = document.getElementById('eggToast');
+    if (!toast) return;
+    toast.innerHTML = html;
+    toast.classList.add('show');
+    clearTimeout(toast._hideTimer);
+    toast._hideTimer = setTimeout(function(){ toast.classList.remove('show'); }, 4000);
+  };
+
+  // A small hello for anyone curious enough to open devtools.
+  console.log(
+    '%cEQUAL ACCESS. NO EXCEPTIONS.%c\n"Feminism is for everybody." — bell hooks\nBuilt by a youth network, for a youth network. Something to fix? contact@elysium.ngo',
+    'background:#B478D9;color:#191712;font-weight:800;padding:5px 10px;border-radius:3px;font-family:monospace;font-size:13px',
+    'font-family:monospace;font-size:12px;color:#5B5748'
+  );
+
+  // Typed sequence "1848" — the Seneca Falls Convention, a founding meeting
+  // of the modern women's rights movement. Ignored while typing in a real
+  // form field, same guard the mmenu/search Escape handlers rely on.
+  (function(){
+    var buf = '';
+    document.addEventListener('keydown', function(e){
+      var tag = (e.target && e.target.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || (e.target && e.target.isContentEditable)) return;
+      if (e.key >= '0' && e.key <= '9' && e.key.length === 1) {
+        buf = (buf + e.key).slice(-4);
+        if (buf === '1848') {
+          window.elysiumShowEggToast('<span class="stamp" style="border-color:var(--plum);color:var(--plum-ink);background:#fff">Seneca Falls · 1848 — a founding meeting of the modern women’s rights movement</span>');
+          buf = '';
+        }
+      } else if (e.key !== 'Shift') {
+        buf = '';
+      }
+    });
   })();
 
   var io=new IntersectionObserver(function(es){es.forEach(function(x){if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target);}});},{threshold:0.12});

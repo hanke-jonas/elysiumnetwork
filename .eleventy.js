@@ -27,6 +27,7 @@ const ICONS = {
   compass: '<circle cx="12" cy="12" r="9"/><path d="m14.5 9.5-2 5-5 2 2-5z"/>',
   box: '<path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
   calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  venus: '<circle cx="12" cy="9" r="6"/><path d="M12 15v7M8.5 19h7"/>',
 };
 
 module.exports = function (eleventyConfig) {

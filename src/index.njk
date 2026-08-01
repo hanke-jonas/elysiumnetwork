@@ -41,7 +41,7 @@ permalink: /
   <div class="marquee">
     <div class="marquee-track mono text-sm font-bold uppercase tracking-wider text-ink">
       {% set ticks = ["Chernihiv 51.50°N","Mińsk Mazowiecki 52.18°N","San Pietro Val Lemina 44.92°N","Leipzig 51.34°N","Erasmus+","DiscoverEU","Non-formal education","Youth mobility","Inclusion","Solidarity"] %}
-      {% for r in range(0, 2) %}{% for t in ticks %}<span class="px-6 inline-flex items-center gap-6">{{ t }}<span class="opacity-50">♥</span></span>{% endfor %}{% endfor %}
+      {% for r in range(0, 2) %}{% for t in ticks %}<span class="px-6 inline-flex items-center gap-6">{{ t }}<span class="opacity-50 tick-heart">♥</span></span>{% endfor %}{% endfor %}
     </div>
   </div>
 </div>
@@ -131,13 +131,23 @@ permalink: /
       <a href="/standards/" class="btn">Read our full standards {% icon "arrow", "w-4 h-4" %}</a>
     </div>
     <div class="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-      {% set vpal = ["var(--coral)","var(--blue)","var(--sun)","var(--mint)"] %}
+      {# "Freedom & equality" (always the first entry) is fixed to plum rather
+         than following the color-cycle — plum is this site's consistent
+         marker for equality/gender-equity specifically, cutting across
+         whichever position a value happens to render in. #}
+      {% set vpal = ["var(--plum)","var(--blue)","var(--sun)","var(--mint)"] %}
       {% for v in site.values_short %}
-      <button type="button" class="card p-6 reveal reveal-d{{ loop.index }} w-full text-left detail-trigger" data-detail-title="{{ v[0] }}" data-detail-body="{{ v[2] }}" data-detail-accent="{{ vpal[loop.index0] }}" data-detail-cta-href="/standards/" data-detail-cta-label="Read our full standards">
+      <button type="button" class="card p-6 reveal reveal-d{{ loop.index }} w-full text-left detail-trigger relative" data-detail-title="{{ v[0] }}" data-detail-body="{{ v[2] }}" data-detail-accent="{{ vpal[loop.index0] }}" data-detail-cta-href="/standards/" data-detail-cta-label="Read our full standards">
+        {% if loop.index0 == 0 %}
+        <span class="absolute top-4 right-4 w-7 h-7 rounded-full border-2 border-ink grid place-items-center" style="background:var(--plum)" title="equality, always">{% icon "venus", "w-4 h-4" %}</span>
+        {% endif %}
         <span class="block w-8 h-1.5 rounded-full mb-4 border border-ink" style="background:{{ vpal[loop.index0] }}"></span>
         <h3 class="h-card">{{ v[0] }}</h3>
         <p class="mt-2 text-muted leading-relaxed">{{ v[1] }}</p>
         <span class="mt-3 inline-flex items-center gap-1.5 text-sm font-bold opacity-60">Learn more {% icon "arrow-ur", "w-3.5 h-3.5" %}</span>
+        {% if loop.index0 == 0 %}
+        <span class="font-hand text-lg absolute -bottom-2 -right-1 rotate-6 pointer-events-none" style="color:var(--plum-ink)">no exceptions.</span>
+        {% endif %}
       </button>
       {% endfor %}
     </div>
@@ -194,6 +204,43 @@ permalink: /
     });
     zone.addEventListener('mouseleave', function(){
       heart.style.transform = 'rotate(-4deg)';
+    });
+  })();
+
+  // Click the hero heart 8 times within ~2.5s — a nod to 8 March,
+  // International Women's Day — for a burst of the site's own heart-cursor
+  // hearts plus a small stamp toast. Kept separate from the parallax IIFE
+  // above (which exits entirely under prefers-reduced-motion) since the
+  // toast itself isn't motion and should still appear either way; only the
+  // burst animation is skipped for reduced-motion.
+  (function(){
+    var heart = document.getElementById('heroHeart');
+    // Not gated on window.elysiumShowEggToast existing yet: this page's own
+    // inline scripts run (in document order) before base.njk's later
+    // script block defines it, so checking at setup time would always bail
+    // out. Checked instead at click time, by which point everything has
+    // long since loaded.
+    if (!heart) return;
+    var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var count = 0, resetTimer = null;
+    heart.addEventListener('click', function(){
+      count++;
+      clearTimeout(resetTimer);
+      resetTimer = setTimeout(function(){ count = 0; }, 2500);
+      if (count < 8) return;
+      count = 0;
+      if (!reduceMotion && window.elysiumSpawnHeart) {
+        var rect = heart.getBoundingClientRect();
+        var cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+        for (var i = 0; i < 12; i++) {
+          (function(i){
+            setTimeout(function(){
+              window.elysiumSpawnHeart(cx + (Math.random() * 160 - 80), cy + (Math.random() * 80 - 40));
+            }, i * 30);
+          })(i);
+        }
+      }
+      window.elysiumShowEggToast('<span class="stamp" style="border-color:var(--coral);color:var(--coral-ink);background:#fff">08 · International Women’s Day is the 8th of March</span>');
     });
   })();
 </script>
