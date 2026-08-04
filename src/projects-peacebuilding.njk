@@ -29,21 +29,33 @@ permalink: /projects/peacebuilding/
       <p class="text-lg leading-relaxed">This project is still taking shape — that's deliberate. Rather than write the concept alone and invite partners in afterwards, we're building the partnership first, so the young people and organisations actually doing the work help shape what it looks like. We already have a partner organisation in Kenya helping form the idea, and we're now looking for more: educational institutions, youth NGOs, community organisations and youth-led initiatives, from Europe or Sub-Saharan Africa, all welcome.</p>
       <p class="mt-4 leading-relaxed">Erasmus+'s funding rules mean a single project can only draw partners from one region outside Europe — so this one is built specifically around Sub-Saharan Africa, alongside European partner organisations. The exact activities (a youth exchange, training courses, or a longer capacity-building programme) will take shape together with confirmed partners as the concept note comes together.</p>
 
-      <div class="mt-8 rounded-2xl border-2 border-ink p-5 flex gap-4" style="background:var(--sun)22">
+      <div class="mt-8 rounded-2xl border-2 border-ink p-5 flex gap-4" style="background:#FFC93C22">
         <span class="text-2xl">🕊️</span>
         <p class="leading-relaxed">Nothing here is confirmed funding yet — this is a genuine call for partners ahead of a call that hasn't opened. The timeline above is our best estimate based on this action's usual yearly pattern, not an official date.</p>
       </div>
 
       <h3 class="font-display text-2xl font-bold mt-12 mb-4">Who we're looking for</h3>
-      <p class="leading-relaxed">Any organisation working with young people — schools, NGOs, community groups, youth-led initiatives — based in one of the eligible countries below.</p>
-      <div class="mt-6 grid sm:grid-cols-2 gap-5">
-        <div class="card p-5">
-          <p class="eyebrow" style="color:var(--blue-ink)">🇪🇺 Europe</p>
-          <p class="mt-2 text-sm leading-relaxed text-muted">Austria, Belgium, Bulgaria, Croatia, Cyprus, Czechia, Denmark, Estonia, Finland, France, Germany, Greece, Hungary, Iceland, Ireland, Italy, Latvia, Liechtenstein, Lithuania, Luxembourg, Malta, Netherlands, North Macedonia, Norway, Poland, Portugal, Romania, Serbia, Slovakia, Slovenia, Spain, Sweden, Türkiye</p>
+      <p class="leading-relaxed">Any organisation working with young people — schools, NGOs, community groups, youth-led initiatives — based in one of the eligible countries below. This is the official Erasmus+ "Region 9" list, exactly as defined for this call.</p>
+
+      {% set europeCountries = ["Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", "Czechia", "Denmark", "Estonia", "Finland", "France", "Germany", "Greece", "Hungary", "Iceland", "Ireland", "Italy", "Latvia", "Liechtenstein", "Lithuania", "Luxembourg", "Malta", "Netherlands", "North Macedonia", "Norway", "Poland", "Portugal", "Romania", "Serbia", "Slovakia", "Slovenia", "Spain", "Sweden", "Türkiye"] %}
+      {% set ssaCountries = ["Angola", "Benin", "Botswana", "Burkina Faso", "Burundi", "Cabo Verde", "Cameroon", "Central African Republic", "Chad", "Comoros", "Congo", "Congo - Democratic Republic of the", "Côte d'Ivoire", "Djibouti", "Equatorial Guinea", "Eritrea", "Eswatini", "Ethiopia", "Gabon", "Gambia", "Ghana", "Guinea", "Guinea-Bissau", "Kenya", "Lesotho", "Liberia", "Madagascar", "Malawi", "Mali", "Mauritania", "Mauritius", "Mozambique", "Namibia", "Niger", "Nigeria", "Rwanda", "Sao Tome and Principe", "Senegal", "Seychelles", "Sierra Leone", "Somalia", "South Africa", "South Sudan", "Sudan", "Tanzania", "Togo", "Uganda", "Zambia", "Zimbabwe"] %}
+
+      <div class="mt-6 space-y-6">
+        <div class="card p-5 sm:p-6">
+          <p class="eyebrow" style="color:var(--blue-ink)">🇪🇺 Europe — {{ europeCountries.length }} countries</p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            {% for c in europeCountries %}
+            <span class="tag" style="background:#7C93D622">{{ c }}</span>
+            {% endfor %}
+          </div>
         </div>
-        <div class="card p-5">
-          <p class="eyebrow" style="color:var(--mint-ink)">🌍 Sub-Saharan Africa</p>
-          <p class="mt-2 text-sm leading-relaxed text-muted">Angola, Benin, Botswana, Burkina Faso, Burundi, Cabo Verde, Cameroon, Central African Republic, Chad, Comoros, Congo, Côte d'Ivoire, DR Congo, Djibouti, Equatorial Guinea, Eritrea, Eswatini, Ethiopia, Gabon, Gambia, Ghana, Guinea, Guinea-Bissau, Kenya, Lesotho, Liberia, Madagascar, Malawi, Mali, Mauritania, Mauritius, Mozambique, Namibia, Niger, Nigeria, Rwanda, São Tomé and Príncipe, Senegal, Seychelles, Sierra Leone, Somalia, South Africa, South Sudan, Sudan, Tanzania, Togo, Uganda, Zambia, Zimbabwe</p>
+        <div class="card p-5 sm:p-6">
+          <p class="eyebrow" style="color:var(--mint-ink)">🌍 Sub-Saharan Africa (Region 9) — {{ ssaCountries.length }} countries</p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            {% for c in ssaCountries %}
+            <span class="tag" style="background:#59B37B22">{{ c }}</span>
+            {% endfor %}
+          </div>
         </div>
       </div>
 
