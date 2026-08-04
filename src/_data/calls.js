@@ -15,6 +15,16 @@ const fallback = [
     linkLabel: 'Project page',
   },
   {
+    id: 'call-3',
+    title: 'Call for Partners: Youth Peacebuilding Partnership',
+    branchSlug: 'germany',
+    status: 'coming_up',
+    deadline: 'Partner search open now · Erasmus+ call expected ~Nov 2026',
+    summary: 'For organisations, not individual applicants: Astra is preparing an Erasmus+ Capacity Building application on youth-led peacebuilding with partners in Sub-Saharan Africa and Europe, and is looking for more partner organisations to help shape it before the call opens.',
+    link: '/projects/peacebuilding/',
+    linkLabel: 'Learn more & apply as a partner',
+  },
+  {
     id: 'call-2',
     title: 'Roma Voices: Media against discrimination',
     branchSlug: 'germany',
