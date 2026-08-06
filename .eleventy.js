@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { execSync } = require('child_process');
 const site = require('./src/_data/site.js');
 
@@ -74,6 +75,22 @@ module.exports = function (eleventyConfig) {
   // that this config file has no visibility into.
   eleventyConfig.on('eleventy.before', () => {
     execSync('npx tailwindcss -i ./src/styles/main.css -o ./src/assets/tailwind.css --minify', { stdio: 'inherit' });
+  });
+
+  // Cache-Control on /assets/tailwind.css is 4h with no content hash in the
+  // URL (Cloudflare's default browser TTL) — without this, anyone who
+  // loaded the site in the last 4 hours keeps the pre-deploy CSS bundle
+  // while getting post-deploy HTML, so newly-added utility classes (e.g. a
+  // template switching to grid-cols-3) silently don't exist yet on their
+  // end. Query string changes with the compiled file's content, so it's a
+  // new URL — and a cache miss — on every deploy that actually changes CSS.
+  eleventyConfig.addGlobalData('cssVersion', () => {
+    try {
+      const css = fs.readFileSync(path.join(__dirname, 'src/assets/tailwind.css'));
+      return crypto.createHash('md5').update(css).digest('hex').slice(0, 10);
+    } catch {
+      return Date.now().toString(36);
+    }
   });
 
   // Full-text search index, built from the final rendered HTML (results is
