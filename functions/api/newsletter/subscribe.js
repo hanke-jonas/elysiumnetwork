@@ -34,11 +34,12 @@ export async function onRequestPost({ request, env }) {
       html: `<p>Please confirm your subscription to the Elysium+ Network newsletter.</p><p><a href="${confirmUrl}">Confirm subscription</a></p>`,
     });
   } catch (err) {
-    // 500, not 502 — Cloudflare's edge reserves 502 (and 521-530) for real
-    // origin-connectivity failures and appears to replace the response body
-    // with its own generic error page for those specific codes, even when a
-    // Worker returns one deliberately.
-    return json({ error: 'Could not send confirmation email', detail: String(err) }, { status: 500 });
+    // Newsletter signup is in beta while email sending is still being set
+    // up — the subscriber row above is already saved (status 'pending'),
+    // so a failed confirmation email shouldn't read as a failed signup to
+    // the visitor. Logged, not surfaced, same as the welcome email in
+    // api/auth/signup.js; confirmation emails go out once this is fixed.
+    console.warn(`Newsletter confirmation email failed to send to ${email}: ${err}`);
   }
 
   return json({ ok: true, alreadySubscribed: false });

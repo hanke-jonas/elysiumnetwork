@@ -24,9 +24,9 @@ permalink: /
   </div>
 
   <div class="border-t-2 border-ink bg-ink">
-    <div class="max-w-[1400px] mx-auto px-5 sm:px-8 grid grid-cols-2 sm:grid-cols-4 divide-x-2 divide-white/15">
-      {% set stats = [["4","countries"],["20+","Erasmus+ projects joined"],["40+","countries visited by our founders"],["2020","founded as a school initiative"]] %}
-      {% set spal = ["var(--blue)","var(--coral)","var(--sun)","var(--mint)"] %}
+    <div class="max-w-[1400px] mx-auto px-5 sm:px-8 grid grid-cols-3 divide-x-2 divide-white/15">
+      {% set stats = [["4","countries"],["20+","Erasmus+ projects joined"],["2020","founded as a school initiative"]] %}
+      {% set spal = ["var(--blue)","var(--coral)","var(--sun)"] %}
       {% for s in stats %}
       <div class="px-5 sm:px-8 py-7 reveal reveal-d{{ loop.index }}">
         <p class="num count-up text-3xl sm:text-4xl font-bold" style="color:{{ spal[loop.index0] }}">{{ s[0] }}</p>

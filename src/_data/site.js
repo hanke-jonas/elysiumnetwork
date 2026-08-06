@@ -148,7 +148,7 @@ const fallback = {
     // centre in the source photo. Tuned per photo instead of one blanket value.
     { name: 'Anton Rubanenko', role: 'Founder & Project Manager',
       image: '/assets/team/anton-rubanenko.jpg', focalY: '10%',
-      bio: 'Founder of Elysium+ and a youth activist focused on democracy, human rights and cultural exchange. He has joined more than 20 Erasmus+ projects and visited 40+ countries, building the partnerships that empower young people across Europe.' },
+      bio: 'Founder of Elysium+ and a youth activist focused on democracy, human rights and cultural exchange. He has joined more than 20 Erasmus+ projects, building the partnerships that empower young people across Europe.' },
     { name: 'Jonas Hanke', role: 'Co-founder & IT Specialist',
       image: '/assets/team/jonas-hanke.jpg', focalY: '48%',
       bio: "Co-founder with a passion for travel, media and cultural discovery, and managing director of the German branch, Astra. Inspired by brutalist architecture, he connects culture, design and youth engagement — and keeps the network's digital infrastructure running." },

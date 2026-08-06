@@ -199,6 +199,17 @@ const globeMat = new THREE.MeshLambertMaterial({ vertexColors: true });
 const globe = new THREE.Mesh(sphereGeo, globeMat);
 world.add(globe);
 
+// Face Europe on first load instead of whatever longitude happens to sit at
+// the sphere's raw lon=0 origin (the Americas, as built) — this is a
+// European youth network, so that's what a first-time visitor should see
+// before autoRotate carries it onward. Same "rotate world so this point
+// faces the camera" math as focusOn() below, just run once at startup.
+{
+  const initialFacing = llToVec3(15, 50, 1).normalize();
+  const cameraDir = camera.position.clone().normalize();
+  world.quaternion.setFromUnitVectors(initialFacing, cameraDir);
+}
+
 // A flat "roadmap" style (light land, light water, thin borders) — like
 // Google Maps' default view, not a satellite photo. Drawn as plain vector
 // polygons straight from the same country data used for the outlines below,

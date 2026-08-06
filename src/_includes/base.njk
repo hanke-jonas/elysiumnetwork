@@ -237,13 +237,14 @@
           {% endfor %}
         </div>
         <form id="newsletterForm" class="mt-8 max-w-sm" novalidate>
-          <p class="eyebrow text-paper/60 mb-3">Get updates</p>
+          <p class="eyebrow text-paper/60 mb-3 inline-flex items-center gap-2">Get updates <span class="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded" style="background:var(--sun);color:#191712">Beta</span></p>
           <div class="flex gap-2">
             <label for="newsletterEmail" class="sr-only">Email address</label>
             <input id="newsletterEmail" type="email" name="email" required autocomplete="email" placeholder="you@example.com"
               class="flex-1 min-w-0 rounded-lg bg-paper/10 border-2 border-paper/25 px-3 py-2 text-sm text-paper placeholder:text-paper/40 focus:outline-none focus:border-blue">
             <button type="submit" class="btn btn-accent shrink-0 !py-2 !px-4 text-sm">Subscribe</button>
           </div>
+          <p class="mt-2 text-xs text-paper/50 leading-relaxed">We're still finishing setup on confirmation emails, so yours may take a little while to arrive — your subscription is saved either way.</p>
           <p id="newsletterMsg" class="mt-2 text-sm text-paper/65" role="status" aria-live="polite"></p>
         </form>
       </div>
