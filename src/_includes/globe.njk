@@ -199,6 +199,63 @@ const globeMat = new THREE.MeshLambertMaterial({ vertexColors: true });
 const globe = new THREE.Mesh(sphereGeo, globeMat);
 world.add(globe);
 
+// Star field + atmosphere glow — the two things that make a globe read as
+// "floating in space" like reference sites (e.g. earth3dmap.com), without
+// touching an image texture at all. Those references get their look from a
+// photographic equirectangular texture, which is exactly the approach
+// already tried and ruled out above (paintVertexColors' comment) after
+// exhaustive elimination testing against a confirmed equator-seam artifact
+// on this renderer. Stars are plain points, the glow is a procedural
+// Fresnel shader — neither samples a UV-mapped texture, so neither can
+// reproduce that bug.
+{
+  const starCount = IS_MOBILE ? 600 : 1600;
+  const starPos = new Float32Array(starCount * 3);
+  for (let i = 0; i < starCount; i++) {
+    // Rejection-sample points outside the globe's own radius so none of
+    // them render inside/behind it, on a shell far enough out (4–9) to sit
+    // clearly behind the globe at every allowed camera zoom (max 4.5).
+    let x, y, z, d;
+    do {
+      x = (Math.random() * 2 - 1); y = (Math.random() * 2 - 1); z = (Math.random() * 2 - 1);
+      d = Math.sqrt(x * x + y * y + z * z);
+    } while (d === 0 || d > 1);
+    const r = 4 + Math.random() * 5;
+    starPos[i * 3] = (x / d) * r;
+    starPos[i * 3 + 1] = (y / d) * r;
+    starPos[i * 3 + 2] = (z / d) * r;
+  }
+  const starGeo = new THREE.BufferGeometry();
+  starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+  const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.02, sizeAttenuation: true, transparent: true, opacity: 0.8 });
+  scene.add(new THREE.Points(starGeo, starMat));
+
+  const glowGeo = new THREE.SphereGeometry(1.12, IS_MOBILE ? 32 : 48, IS_MOBILE ? 32 : 48);
+  const glowMat = new THREE.ShaderMaterial({
+    uniforms: { glowColor: { value: new THREE.Color(0x7C93D6) } },
+    vertexShader: `
+      varying vec3 vNormal;
+      void main() {
+        vNormal = normalize(normalMatrix * normal);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      varying vec3 vNormal;
+      uniform vec3 glowColor;
+      void main() {
+        float intensity = pow(0.68 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 3.0);
+        gl_FragColor = vec4(glowColor, intensity);
+      }
+    `,
+    side: THREE.BackSide,
+    blending: THREE.AdditiveBlending,
+    transparent: true,
+    depthWrite: false,
+  });
+  scene.add(new THREE.Mesh(glowGeo, glowMat));
+}
+
 // Face Europe on first load instead of whatever longitude happens to sit at
 // the sphere's raw lon=0 origin (the Americas, as built) — this is a
 // European youth network, so that's what a first-time visitor should see
