@@ -130,44 +130,27 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, IS_MOBILE ? 1 : 2));
 host.appendChild(renderer.domElement);
 
 
-// Per-vertex lon/lat, matching llToVec3's own convention (inverse of it).
-function vertexLonLat(x, y, z) {
-  const radius = Math.sqrt(x * x + y * y + z * z) || 1;
-  const phi = Math.acos(Math.max(-1, Math.min(1, y / radius)));
-  const theta = Math.atan2(z, -x);
-  const lon = (theta < 0 ? theta + 2 * Math.PI : theta) * 180 / Math.PI - 180;
-  const lat = 90 - phi * 180 / Math.PI;
-  return [lon, lat];
-}
-
-// Colours the sphere's fill with a per-vertex attribute sampled from a 2D
-// map canvas, instead of the obvious approach of wrapping the canvas on as
-// a texture. A UV-mapped equirectangular texture on a sphere reproducibly
-// rendered a faint but distinct band exactly at the equator on this
-// hardware/driver combination — confirmed (by process of elimination
-// against every other texture/material/lighting/geometry/sampling
-// parameter Three.js exposes, including supersampling and explicit
-// smoothing of the source data) to be specific to texture sampling itself.
-// Fill resolution is tied to sphere segment count rather than texture
-// pixels, so it stays intentionally soft — crisp per-country boundaries
-// come from the separate vector-line border pass below instead, which
-// isn't resolution-limited.
-function paintVertexColors(geometry, sourceCanvas) {
-  const w = sourceCanvas.width, h = sourceCanvas.height;
-  const data = sourceCanvas.getContext('2d').getImageData(0, 0, w, h).data;
-  const pos = geometry.attributes.position;
-  const colors = geometry.attributes.color || new THREE.BufferAttribute(new Float32Array(pos.count * 3), 3);
-  const c = new THREE.Color();
-  for (let i = 0; i < pos.count; i++) {
-    const [lon, lat] = vertexLonLat(pos.getX(i), pos.getY(i), pos.getZ(i));
-    const px = Math.min(w - 1, Math.max(0, Math.floor((lon + 180) / 360 * w)));
-    const py = Math.min(h - 1, Math.max(0, Math.floor((90 - lat) / 180 * h)));
-    const di = (py * w + px) * 4;
-    c.setRGB(data[di] / 255, data[di + 1] / 255, data[di + 2] / 255, THREE.SRGBColorSpace);
-    colors.setXYZ(i, c.r, c.g, c.b);
-  }
-  colors.needsUpdate = true;
-  geometry.setAttribute('color', colors);
+// A previous version of this file painted per-vertex colours from a 2D map
+// canvas instead of wrapping it on as a texture, because a UV-mapped
+// equirectangular texture reproducibly rendered a faint band at the equator
+// on the hardware/driver combination tested at the time (with antialiasing
+// still on). This version wraps real photographic Earth textures again,
+// deliberately, with the two changes that differ from that earlier attempt:
+// antialiasing is off at the renderer level (below — it independently fixed
+// a related seam on the flat-colour version) and every texture is set to
+// ClampToEdgeWrapping so nothing samples across the antimeridian wrap. If
+// the equator artifact reappears despite that, the fix is to revert this
+// block to vertex-colour painting (see git history) — not to keep tuning
+// texture parameters indefinitely.
+const textureLoader = new THREE.TextureLoader();
+textureLoader.crossOrigin = 'anonymous';
+const TEX_BASE = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/textures/planets/';
+function loadEarthTexture(file, isColor) {
+  const tex = textureLoader.load(TEX_BASE + file);
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  if (isColor) tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
 }
 
 // Everything spinnable lives in one group, so focusing on a marker can rotate
@@ -176,28 +159,46 @@ const world = new THREE.Group();
 scene.add(world);
 
 const sphereGeo = new THREE.SphereGeometry(1, IS_MOBILE ? 48 : 96, IS_MOBILE ? 48 : 96);
-// Solid ocean colour on every vertex until the real map data resolves.
-{
-  const posCount = sphereGeo.attributes.position.count;
-  const initial = new Float32Array(posCount * 3);
-  const oceanLinear = new THREE.Color().setRGB(0x1F / 255, 0x3B / 255, 0x66 / 255, THREE.SRGBColorSpace);
-  for (let i = 0; i < posCount; i++) oceanLinear.toArray(initial, i * 3);
-  sphereGeo.setAttribute('color', new THREE.BufferAttribute(initial, 3));
-}
-// Lambert (soft per-pixel lighting, no specular). Tried switching this to an
-// unlit MeshBasicMaterial for a flatter, more map-like look — that actually
-// unmasked a faint version of the same vertex-color artifact that this
-// lighting gradient was incidentally hiding, so keeping Lambert here is
-// deliberate, not an oversight. vertexColors reads the per-vertex attribute
-// above/below instead of a texture map — see paintVertexColors() for why.
 const ambientLight = new THREE.AmbientLight(0xffffff, .85);
 scene.add(ambientLight);
 const sun = new THREE.DirectionalLight(0xffffff, 1.1);
 sun.position.set(3, 2, 4);
 scene.add(sun);
-const globeMat = new THREE.MeshLambertMaterial({ vertexColors: true });
+// Phong (not Lambert) specifically because it's the material that supports
+// specularMap — without it oceans and land would reflect light identically,
+// which is most of what makes a lit photo-textured sphere look flat/plastic
+// instead of like water.
+const globeMat = new THREE.MeshPhongMaterial({
+  map: loadEarthTexture('earth_atmos_2048.jpg', true),
+  specularMap: loadEarthTexture('earth_specular_2048.jpg', false),
+  normalMap: loadEarthTexture('earth_normal_2048.jpg', false),
+  normalScale: new THREE.Vector2(0.6, 0.6),
+  specular: new THREE.Color(0x333333),
+  shininess: 12,
+});
 const globe = new THREE.Mesh(sphereGeo, globeMat);
 world.add(globe);
+
+// Translucent cloud shell, independently and slowly rotated in the render
+// loop below — the one thing that reads as "alive" on an otherwise static
+// photo texture.
+const cloudsMat = new THREE.MeshLambertMaterial({
+  map: loadEarthTexture('earth_clouds_1024.png', false),
+  transparent: true,
+  opacity: 0.5,
+  depthWrite: false,
+});
+const clouds = new THREE.Mesh(new THREE.SphereGeometry(1.01, IS_MOBILE ? 32 : 64, IS_MOBILE ? 32 : 64), cloudsMat);
+world.add(clouds);
+
+// Branch countries no longer get their accent fill baked into the globe's
+// own colour (that colour now comes from the photo texture, not a canvas).
+// Instead a second, very slightly larger transparent sphere carries just
+// the four accent-tinted country shapes, sitting visually on top of the
+// real texture — filled in once the country data resolves, below.
+const highlightMat = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false });
+const highlightMesh = new THREE.Mesh(new THREE.SphereGeometry(1.002, IS_MOBILE ? 48 : 96, IS_MOBILE ? 48 : 96), highlightMat);
+world.add(highlightMesh);
 
 // Star field + atmosphere glow — the two things that make a globe read as
 // "floating in space" like reference sites (e.g. earth3dmap.com), without
@@ -267,20 +268,7 @@ world.add(globe);
   world.quaternion.setFromUnitVectors(initialFacing, cameraDir);
 }
 
-// A flat "night globe" style (deep sea, light land, warm borders) against
-// the card's own near-black background — like Google Maps' default view,
-// not a satellite photo. Drawn as plain vector polygons straight from the
-// same country data used for the outlines below, so there's no image to
-// load and no pixel-reading involved anywhere: the previous satellite-photo
-// pipeline needed a cross-origin image fetch plus a canvas pixel read just
-// to mask two countries out, which was by far the heaviest and most
-// failure-prone part of the whole component. This has neither, on any
-// device. Land was originally a near-white that matched the card's own
-// (then light) background almost exactly, so land silently disappeared
-// into its own container — the ink-dark card background above and this
-// palette are chosen together for contrast against each other, not just
-// against ocean.
-const MAP_OCEAN = '#1F3B66', MAP_LAND = '#F7F1E2', MAP_BORDER = '#B7AA8C';
+const MAP_BORDER = '#B7AA8C';
 
 // world-atlas's Russia feature (id 643, fully excluded below) merges in the
 // Crimean peninsula as one of its polygons rather than counting it under
@@ -303,11 +291,13 @@ function findCrimeaPolygon(geo) {
   return null;
 }
 
-function buildRoadmapCanvas(geo, branchIds, crimea) {
+// Just the four branch countries, accent-tinted, on an otherwise fully
+// transparent canvas — everywhere else the real photo texture underneath
+// shows through untouched. Applied as the map on highlightMesh above.
+function buildBranchHighlightCanvas(geo, branchIds, crimea) {
   const W = 2048, H = 1024;
   const c = document.createElement('canvas'); c.width = W; c.height = H;
   const ctx = c.getContext('2d');
-  ctx.fillStyle = MAP_OCEAN; ctx.fillRect(0, 0, W, H);
 
   function toPx(lon, lat) { return [(lon + 180) / 360 * W, (90 - lat) / 180 * H]; }
   function addRings(path, polys) {
@@ -322,23 +312,6 @@ function buildRoadmapCanvas(geo, branchIds, crimea) {
     });
   }
 
-  // Non-branch land is batched into one path and filled once — one draw call
-  // instead of ~170, and no per-country stroke at all (only branch countries
-  // get an outline, added below), since this canvas is just a colour lookup
-  // now rather than a texture, so a crisp per-country border here wouldn't
-  // even be visible at vertex-color resolution.
-  const landPath = new Path2D();
-  geo.features.forEach(function(f) {
-    const id = String(f.id);
-    if (EXCLUDED_IDS.indexOf(id) !== -1 || !f.geometry || branchIds[id]) return;
-    const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : (f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : []);
-    addRings(landPath, polys);
-  });
-  ctx.fillStyle = MAP_LAND;
-  ctx.fill(landPath);
-
-  // Branch countries are drawn individually since each needs its own accent
-  // fill and outline.
   geo.features.forEach(function(f) {
     const id = String(f.id);
     const branch = branchIds[id];
@@ -347,12 +320,10 @@ function buildRoadmapCanvas(geo, branchIds, crimea) {
     if (id === '804' && crimea) polys.push(crimea);
     const path = new Path2D();
     addRings(path, polys);
-    ctx.globalAlpha = 0.4;
+    ctx.globalAlpha = 0.45;
     ctx.fillStyle = branch.accent;
     ctx.fill(path);
     ctx.globalAlpha = 1;
-    ctx.strokeStyle = MAP_BORDER; ctx.lineWidth = 1.5;
-    ctx.stroke(path);
   });
 
   return c;
@@ -390,6 +361,7 @@ new IntersectionObserver(function(entries){ inView = entries[0].isIntersecting; 
   requestAnimationFrame(loop);
   if (!inView) return;
   controls.update();
+  clouds.rotation.y += 0.0006;
   renderer.render(scene, camera);
 })();
 
@@ -421,7 +393,10 @@ fetch(IS_MOBILE
     const geo = topojson.feature(worldData, worldData.objects.countries);
     const crimea = findCrimeaPolygon(geo);
 
-    paintVertexColors(sphereGeo, buildRoadmapCanvas(geo, branchIds, crimea));
+    const highlightTex = new THREE.CanvasTexture(buildBranchHighlightCanvas(geo, branchIds, crimea));
+    highlightTex.colorSpace = THREE.SRGBColorSpace;
+    highlightMat.map = highlightTex;
+    highlightMat.needsUpdate = true;
 
     // Crisp per-country borders, like Google Maps' political layer — drawn
     // as real vector lines rather than baked into the (comparatively low-
