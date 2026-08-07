@@ -20,7 +20,7 @@
     </div>
 
     <div class="lg:col-span-8 order-1 lg:order-2">
-      <div class="relative rounded-2xl border-2 border-ink overflow-hidden" style="background:var(--paper-2)">
+      <div class="relative rounded-2xl border-2 border-ink overflow-hidden" style="background:var(--ink)">
         <div id="globeHost" class="globe-host" style="touch-action:pan-y;cursor:grab;" aria-hidden="true"></div>
         <div id="globeTip" class="pointer-events-none absolute z-20 hidden">
           <div class="rounded-lg bg-ink text-paper shadow-2xl px-3.5 py-2.5 min-w-[150px]">
@@ -180,7 +180,7 @@ const sphereGeo = new THREE.SphereGeometry(1, IS_MOBILE ? 48 : 96, IS_MOBILE ? 4
 {
   const posCount = sphereGeo.attributes.position.count;
   const initial = new Float32Array(posCount * 3);
-  const oceanLinear = new THREE.Color().setRGB(0xAA / 255, 0xDA / 255, 0xFF / 255, THREE.SRGBColorSpace);
+  const oceanLinear = new THREE.Color().setRGB(0x1F / 255, 0x3B / 255, 0x66 / 255, THREE.SRGBColorSpace);
   for (let i = 0; i < posCount; i++) oceanLinear.toArray(initial, i * 3);
   sphereGeo.setAttribute('color', new THREE.BufferAttribute(initial, 3));
 }
@@ -210,15 +210,20 @@ world.add(globe);
   world.quaternion.setFromUnitVectors(initialFacing, cameraDir);
 }
 
-// A flat "roadmap" style (light land, light water, thin borders) — like
-// Google Maps' default view, not a satellite photo. Drawn as plain vector
-// polygons straight from the same country data used for the outlines below,
-// so there's no image to load and no pixel-reading involved anywhere: the
-// previous satellite-photo pipeline needed a cross-origin image fetch plus
-// a canvas pixel read just to mask two countries out, which was by far the
-// heaviest and most failure-prone part of the whole component. This has
-// neither, on any device.
-const MAP_OCEAN = '#AADAFF', MAP_LAND = '#F2EFE9', MAP_BORDER = '#9CA3AF';
+// A flat "night globe" style (deep sea, light land, warm borders) against
+// the card's own near-black background — like Google Maps' default view,
+// not a satellite photo. Drawn as plain vector polygons straight from the
+// same country data used for the outlines below, so there's no image to
+// load and no pixel-reading involved anywhere: the previous satellite-photo
+// pipeline needed a cross-origin image fetch plus a canvas pixel read just
+// to mask two countries out, which was by far the heaviest and most
+// failure-prone part of the whole component. This has neither, on any
+// device. Land was originally a near-white that matched the card's own
+// (then light) background almost exactly, so land silently disappeared
+// into its own container — the ink-dark card background above and this
+// palette are chosen together for contrast against each other, not just
+// against ocean.
+const MAP_OCEAN = '#1F3B66', MAP_LAND = '#F7F1E2', MAP_BORDER = '#B7AA8C';
 
 // world-atlas's Russia feature (id 643, fully excluded below) merges in the
 // Crimean peninsula as one of its polygons rather than counting it under
@@ -347,7 +352,13 @@ BRANCHES.forEach(function(b){
 // One fetch now drives everything — the colours, the outlines, and the
 // marker positions — since there's no separate image-loading step left to
 // decouple from. Much less that can go wrong than the old two-chain setup.
-fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+// 50m has noticeably finer coastlines/borders than 110m (same open Natural
+// Earth data, just a more detailed cut of it) — kept to desktop only since
+// it's ~7x heavier to fetch and parse, in line with phones already getting
+// the deliberately lighter build elsewhere in this file.
+fetch(IS_MOBILE
+  ? 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
+  : 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json')
   .then(r => r.json())
   .then(function(worldData){
     const geo = topojson.feature(worldData, worldData.objects.countries);
@@ -377,7 +388,7 @@ fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
         });
       });
     });
-    const borderMat = new THREE.LineBasicMaterial({ color: 0x6b7280, transparent: true, opacity: 0.55 });
+    const borderMat = new THREE.LineBasicMaterial({ color: 0xB7AA8C, transparent: true, opacity: 0.75 });
     world.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(borderPts), borderMat));
 
     geo.features.forEach(function(f){
