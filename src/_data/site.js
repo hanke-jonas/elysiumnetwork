@@ -64,6 +64,7 @@ const fallback = {
       country: 'Ukraine', city: 'Chernihiv',
       oid: 'E10407340', type: 'Civil Organisation (NGO)',
       status: 'Founding organisation', accent: '#FFD23F',
+      esc: { role: 'Support organisation', validUntil: '31 Dec 2027', url: 'https://youth.europa.eu/volunteering/organisation/83450_en' },
       tagline: 'Where the network began.',
       about: 'Elysium+ began as a school initiative in 2020 and grew into a registered NGO in Ukraine in 2025. From the start the mission has stayed the same: to promote European values, intercultural dialogue, civic engagement and personal development among young people. As the founding organisation of the network, it runs workshops on European values, human rights and democratic engagement, non-formal peer-learning sessions on ecological sustainability and digital literacy, and online programmes that reach rural youth and internally displaced communities. Its awareness campaigns on democratic governance and European integration have engaged young people across the country — and it acts as the sending organisation for the wider network.',
       focus: ['Youth awareness & civic participation', 'Non-formal education programmes', 'Digital engagement & European cooperation', 'Support for displaced & rural youth', 'Peacebuilding & democratic participation'],
@@ -192,7 +193,12 @@ module.exports = async function () {
     fetchLive('/api/admin/faqs'),
   ]);
 
-  const branches = branchRows
+  // esc has no admin UI/D1 column yet (same category as mission/values/etc.
+  // above) so it can't come from branchRows — merged back in by slug from
+  // fallback regardless of which source built the rest of the branch, same
+  // as every other still-hardcoded-only field.
+  const escBySlug = Object.fromEntries(fallback.branches.filter((b) => b.esc).map((b) => [b.slug, b.esc]));
+  const branches = (branchRows
     ? branchRows.map((r) => ({
         tz: r.tz, lat: r.lat, lon: r.lon,
         slug: r.slug, flag: r.flag, iso_n3: r.iso_n3,
@@ -204,7 +210,8 @@ module.exports = async function () {
         people: r.people_json || [],
         email: r.email, phone: r.phone, address: r.address, website: r.website,
       }))
-    : fallback.branches;
+    : fallback.branches
+  ).map((b) => (escBySlug[b.slug] ? { ...b, esc: escBySlug[b.slug] } : b));
 
   return {
     ...fallback,

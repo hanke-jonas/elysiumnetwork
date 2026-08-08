@@ -23,6 +23,13 @@ eleventyComputed:
     <h1 class="h-hero mt-5">{{ b.name }}</h1>
     <p class="mt-2 text-lg text-muted font-display font-semibold">{{ b.name_native }}</p>
     <p class="mt-5 text-xl max-w-2xl leading-relaxed">{{ b.tagline }}</p>
+    {% if b.esc %}
+    <a href="{{ b.esc.url }}" target="_blank" rel="noopener" class="mt-5 inline-flex items-center gap-2.5 rounded-xl border-2 border-ink bg-white px-4 py-2.5 hover:-translate-y-0.5 transition">
+      <span class="w-2 h-2 rounded-full border border-ink" style="background:var(--mint)"></span>
+      <span class="text-sm font-bold">Accredited European Solidarity Corps {{ b.esc.role }}</span>
+      {% icon "arrow-ur", "w-3.5 h-3.5 opacity-60" %}
+    </a>
+    {% endif %}
     <div class="mt-8 inline-flex items-center gap-3 rounded-xl border-2 border-ink bg-white px-5 py-3">
       <span class="w-2.5 h-2.5 rounded-full border border-ink" style="background:{{ accent }}"></span>
       <span class="mono text-sm text-muted">Local time</span>
@@ -43,6 +50,16 @@ eleventyComputed:
         <span class="text-2xl">🚧</span>
         <p class="leading-relaxed">Astra is still being set up. A dedicated site is on the way at
           <a href="{{ b.website }}" target="_blank" rel="noopener" class="font-bold underline underline-offset-2">astra.ngo</a>. In the meantime, reach the German branch through the network.</p>
+      </div>
+      {% endif %}
+
+      {% if b.slug == 'ukraine' %}
+      <div class="mt-6 rounded-2xl border-2 border-ink p-5 flex gap-4" style="background:#C0392B14">
+        <span class="text-2xl">⚠️</span>
+        <div>
+          <p class="leading-relaxed">Since February 2022, Russia's invasion has occupied, besieged and bombed this region.</p>
+          <a href="/against-the-war/" class="mt-2 inline-flex items-center gap-1.5 font-bold hover:gap-2.5 transition-all">A sourced account of what happened here {% icon "arrow", "w-4 h-4" %}</a>
+        </div>
       </div>
       {% endif %}
 
@@ -102,6 +119,12 @@ eleventyComputed:
               <span class="mt-0.5 opacity-45">{% icon "pin", "w-5 h-5" %}</span>
               <div class="min-w-0"><dt class="eyebrow opacity-70">Type</dt><dd class="leading-snug break-words">{{ b.type }}</dd></div>
             </div>
+            {% if b.esc %}
+            <div class="flex gap-3">
+              <span class="mt-0.5 opacity-45">{% icon "id", "w-5 h-5" %}</span>
+              <div class="min-w-0"><dt class="eyebrow opacity-70">ESC accreditation</dt><dd class="leading-snug break-words">{{ b.esc.role }} · valid until {{ b.esc.validUntil }} — <a href="{{ b.esc.url }}" target="_blank" rel="noopener" class="font-bold underline underline-offset-2">verify on the EU Youth Portal</a></dd></div>
+            </div>
+            {% endif %}
             <div class="flex gap-3">
               <span class="mt-0.5 opacity-45">{% icon "pin", "w-5 h-5" %}</span>
               <div class="min-w-0"><dt class="eyebrow opacity-70">Location</dt><dd class="leading-snug break-words">{{ b.address }}</dd></div>

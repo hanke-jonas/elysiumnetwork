@@ -7,7 +7,12 @@ permalink: /
 <section class="relative overflow-hidden border-b-2 border-ink">
   <div class="max-w-[1400px] mx-auto px-5 sm:px-8 pt-14 sm:pt-20 pb-14 grid lg:grid-cols-12 gap-8 items-center">
     <div class="lg:col-span-8">
-      <div class="stamp reveal" style="border-color:var(--coral);color:var(--coral)">est. {{ site.founded_year }} · Chernihiv, Ukraine</div>
+      <div class="flex flex-wrap gap-2.5">
+        <div class="stamp reveal" style="border-color:var(--coral);color:var(--coral)">est. {{ site.founded_year }} · Chernihiv, Ukraine</div>
+        {% for br in site.branches %}{% if br.slug == 'ukraine' and br.esc %}
+        <a href="{{ br.esc.url }}" target="_blank" rel="noopener" class="stamp reveal" style="border-color:var(--mint);color:var(--mint-ink)">Accredited ESC {{ br.esc.role }}</a>
+        {% endif %}{% endfor %}
+      </div>
       <h1 class="h-hero mt-6 reveal reveal-d1">Young people move.<br>Europe <mark>changes.</mark></h1>
       <p class="mt-7 text-lg sm:text-xl text-muted max-w-xl leading-relaxed reveal reveal-d2">Elysium+ sends young people across Ukraine, Poland, Italy and Germany through fully funded exchanges, training and non-formal education — built on inclusion, democracy and solidarity.</p>
       <div class="mt-9 flex flex-wrap gap-3 reveal reveal-d3">

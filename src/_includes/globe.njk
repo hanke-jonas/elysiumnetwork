@@ -3,7 +3,7 @@
     <div class="lg:col-span-4 order-2 lg:order-1">
       <p class="eyebrow" style="color:var(--coral-ink)">Live &amp; interactive</p>
       <h2 class="h-sec mt-3">One network, <mark class="m-blue">four countries</mark></h2>
-      <p class="mt-5 text-muted leading-relaxed">Drag the globe to spin it, scroll to zoom. Click any of the four lit-up countries to spin there and open its page.</p>
+      <p class="mt-5 text-muted leading-relaxed">Drag the globe to spin it, scroll to zoom. Click any of the four lit-up countries to spin there and open its page — or click Russia, marked in red, to see what its invasion has done to our home region.</p>
 
       <div class="mt-7 space-y-2.5">
         {% for b in site.branches %}
@@ -32,7 +32,7 @@
         <div id="globeConfirm" class="hidden absolute z-30 left-0 right-0 mx-auto bottom-6 card p-5 w-[min(90%,20rem)] text-center" role="dialog" aria-modal="true" aria-labelledby="gc-name">
           <span id="gc-flag" class="text-3xl leading-none"></span>
           <p id="gc-name" class="font-display text-lg font-bold mt-2"></p>
-          <p class="text-sm text-muted mt-1">Open this branch's page?</p>
+          <p class="text-sm text-muted mt-1">Open this page?</p>
           <div class="mt-4 flex flex-wrap gap-2 justify-center">
             <button id="gc-open" class="btn btn-accent">Open page {% icon "arrow-ur", "w-4 h-4" %}</button>
             <button id="gc-cancel" class="btn">Stay here</button>
@@ -269,6 +269,14 @@ world.add(highlightMesh);
 }
 
 const MAP_BORDER = '#B7AA8C';
+// Russia is excluded from the generic "every other country" border pass
+// (see EXCLUDED_IDS/globe_excluded in site.js) but gets its own explicit
+// treatment below instead of no treatment at all — a red fill, a red
+// outline, and a marker of its own that behaves exactly like a branch
+// marker (hover tooltip, click-to-focus, then a confirm dialog) but leads
+// to /against-the-war/ instead of a branch page.
+const RUSSIA_ID = '643';
+const WARN_RED = '#C0392B';
 
 // world-atlas's Russia feature (id 643, fully excluded below) merges in the
 // Crimean peninsula as one of its polygons rather than counting it under
@@ -326,6 +334,17 @@ function buildBranchHighlightCanvas(geo, branchIds, crimea) {
     ctx.globalAlpha = 1;
   });
 
+  const russia = geo.features.find(function(f) { return String(f.id) === RUSSIA_ID; });
+  if (russia && russia.geometry) {
+    const polys = russia.geometry.type === 'Polygon' ? [russia.geometry.coordinates] : (russia.geometry.type === 'MultiPolygon' ? russia.geometry.coordinates : []);
+    const path = new Path2D();
+    addRings(path, polys);
+    ctx.globalAlpha = 0.4;
+    ctx.fillStyle = WARN_RED;
+    ctx.fill(path);
+    ctx.globalAlpha = 1;
+  }
+
   return c;
 }
 
@@ -339,7 +358,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 renderer.domElement.style.touchAction = 'pan-y';
 controls.enablePan = false;
 controls.minDistance = 1.7; controls.maxDistance = 4.5;
-controls.autoRotate = true; controls.autoRotateSpeed = 0.6;
+controls.autoRotate = true; controls.autoRotateSpeed = 2;
 controls.enableDamping = true; controls.dampingFactor = .08;
 
 function resize() {
@@ -378,6 +397,19 @@ BRANCHES.forEach(function(b){
   markers.push(sp);
 });
 
+// Same marker/hover/click/confirm machinery as a branch, just pointed at
+// /against-the-war/ instead of a branch page — see focusOn()/showConfirm()
+// below, which are generic over marker.userData and don't know or care
+// whether a marker is a branch or this.
+{
+  const warnMat = new THREE.SpriteMaterial({ map: dotTexture(WARN_RED), depthTest: true });
+  const warnSp = new THREE.Sprite(warnMat);
+  warnSp.scale.set(0.13, 0.13, 1);
+  warnSp.userData = { kind: 'warning', id: RUSSIA_ID, name: 'Russia — state sponsor of terrorism', slug: 'against-the-war', flag: '⚠️' };
+  world.add(warnSp);
+  markers.push(warnSp);
+}
+
 // One fetch now drives everything — the colours, the outlines, and the
 // marker positions — since there's no separate image-loading step left to
 // decouple from. Much less that can go wrong than the old two-chain setup.
@@ -398,30 +430,32 @@ fetch(IS_MOBILE
     highlightMat.map = highlightTex;
     highlightMat.needsUpdate = true;
 
-    // Crisp per-country borders, like Google Maps' political layer — drawn
-    // as real vector lines rather than baked into the (comparatively low-
-    // resolution, vertex-color-limited) fill, so every country reads
-    // clearly regardless of fill softness. Batched into a single
-    // LineSegments/BufferGeometry (one draw call for ~170 countries)
-    // instead of one object per ring.
-    const borderPts = [];
-    const borderStep = IS_MOBILE ? 2 : 1; // thin out points on phones
-    geo.features.forEach(function(f){
-      const id = String(f.id);
-      if (EXCLUDED_IDS.indexOf(id) !== -1 || !f.geometry) return;
-      const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : (f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : []);
-      if (id === '804' && crimea) polys.push(crimea);
-      polys.forEach(function(poly){
-        poly.forEach(function(ring){
-          for (let k = 0; k < ring.length - borderStep; k += borderStep) {
-            borderPts.push(llToVec3(ring[k][0], ring[k][1], 1.006));
-            borderPts.push(llToVec3(ring[k + borderStep][0], ring[k + borderStep][1], 1.006));
-          }
+    // A thin border line on every one of ~170 countries was designed for
+    // the old flat vertex-colour "roadmap" style — layered on top of a real
+    // photo texture it reads as visual clutter instead of a clean globe, so
+    // it's gone. Only the countries actually meant to draw the eye (the
+    // four branches, Russia) get an outline now, below.
+
+    // Russia gets its own explicit red outline and marker (Belarus stays
+    // excluded with no special treatment — only Russia was asked for here).
+    {
+      const russia = geo.features.find(function(f){ return String(f.id) === RUSSIA_ID; });
+      if (russia && russia.geometry) {
+        const polys = russia.geometry.type === 'Polygon' ? [russia.geometry.coordinates] : (russia.geometry.type === 'MultiPolygon' ? russia.geometry.coordinates : []);
+        const warnOutline = new THREE.LineBasicMaterial({ color: new THREE.Color(WARN_RED), transparent: true, opacity: 1 });
+        [1.015, 1.018].forEach(function(r){
+          polys.forEach(function(poly){
+            poly.forEach(function(ring){
+              const pts = ring.map(function(c){ return llToVec3(c[0], c[1], r); });
+              world.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts), warnOutline));
+            });
+          });
         });
-      });
-    });
-    const borderMat = new THREE.LineBasicMaterial({ color: 0xB7AA8C, transparent: true, opacity: 0.75 });
-    world.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(borderPts), borderMat));
+        const centroid = featureCentroid(russia.geometry);
+        const rsp = markers.find(m => m.userData.id === RUSSIA_ID);
+        if (rsp) rsp.position.copy(llToVec3(centroid[0], centroid[1], 1.05));
+      }
+    }
 
     geo.features.forEach(function(f){
       const id = String(f.id);
@@ -493,7 +527,7 @@ renderer.domElement.addEventListener('pointermove', function(e){
   const tip = document.getElementById('globeTip');
   if (hit) {
     renderer.domElement.style.cursor = 'pointer';
-    document.getElementById('gtip-name').textContent = '📍 ' + hit.object.userData.name;
+    document.getElementById('gtip-name').textContent = (hit.object.userData.flag || '📍') + ' ' + hit.object.userData.name;
     document.getElementById('gtip-hint').textContent = 'Click to focus';
     tip.classList.remove('hidden');
     tip.style.left = Math.min(e.clientX - host.getBoundingClientRect().left + 14, host.clientWidth - 170) + 'px';
