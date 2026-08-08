@@ -29,6 +29,7 @@
           </div>
         </div>
         <div class="absolute top-4 left-4 eyebrow bg-paper border-2 border-ink px-2.5 py-1 rounded-full">Drag to rotate</div>
+        <button type="button" id="globeSpinToggle" class="absolute top-4 right-4 z-20 eyebrow bg-paper border-2 border-ink px-2.5 py-1 rounded-full inline-flex items-center gap-1.5" aria-pressed="false">{% icon "spark", "w-3 h-3" %} Spin globe</button>
         <div id="globeConfirm" class="hidden absolute z-30 left-0 right-0 mx-auto bottom-6 card p-5 w-[min(90%,20rem)] text-center" role="dialog" aria-modal="true" aria-labelledby="gc-name">
           <span id="gc-flag" class="text-3xl leading-none"></span>
           <p id="gc-name" class="font-display text-lg font-bold mt-2"></p>
@@ -308,12 +309,24 @@ function buildBranchHighlightCanvas(geo, branchIds, crimea) {
   const ctx = c.getContext('2d');
 
   function toPx(lon, lat) { return [(lon + 180) / 360 * W, (90 - lat) / 180 * H]; }
+  // Russia's ring(s) cross the antimeridian (Chukotka sits past lon 180),
+  // where consecutive ring points jump from lon≈180 to lon≈-180 — a small
+  // step in reality, but on this flat equirectangular canvas that's a jump
+  // from x≈W to x≈0. A plain lineTo between them draws a long spurious
+  // line straight across the whole canvas, and filling that path colours
+  // most of the map, not just Russia. Starting a new subpath instead of
+  // lineTo whenever a ring's longitude jumps by more than 180° in one step
+  // splits the ring at the seam into separate closed pieces, each tracing
+  // only real coastline points.
   function addRings(path, polys) {
     polys.forEach(function(poly) {
       poly.forEach(function(ring) {
+        let prevLon = null;
         ring.forEach(function(pt, i) {
           const [x, y] = toPx(pt[0], pt[1]);
-          if (i === 0) path.moveTo(x, y); else path.lineTo(x, y);
+          const crossesSeam = prevLon !== null && Math.abs(pt[0] - prevLon) > 180;
+          if (i === 0 || crossesSeam) path.moveTo(x, y); else path.lineTo(x, y);
+          prevLon = pt[0];
         });
         path.closePath();
       });
@@ -358,7 +371,21 @@ const controls = new OrbitControls(camera, renderer.domElement);
 renderer.domElement.style.touchAction = 'pan-y';
 controls.enablePan = false;
 controls.minDistance = 1.7; controls.maxDistance = 4.5;
-controls.autoRotate = true; controls.autoRotateSpeed = 2;
+// Off by default and centred on Europe until a visitor explicitly asks for
+// motion — a globe that keeps drifting away from the region this network is
+// actually about was more confusing than helpful. #globeSpinToggle below is
+// the only thing that turns this on; dismissConfirm() restores whatever the
+// visitor last chose rather than forcing it back on.
+let rotationEnabled = false;
+controls.autoRotate = rotationEnabled; controls.autoRotateSpeed = 2;
+const spinToggle = document.getElementById('globeSpinToggle');
+function setRotation(on) {
+  rotationEnabled = on;
+  controls.autoRotate = on;
+  spinToggle.setAttribute('aria-pressed', String(on));
+  spinToggle.textContent = on ? '⏸ Stop spinning' : '▶ Spin globe';
+}
+spinToggle.addEventListener('click', function(){ setRotation(!rotationEnabled); });
 controls.enableDamping = true; controls.dampingFactor = .08;
 
 function resize() {
@@ -569,15 +596,14 @@ function focusOn(marker) {
   spinAnim = requestAnimationFrame(step);
 }
 
-// Centralised so every dismiss path (Stay here, Escape, outside click) always
-// resumes autoRotate — previously only focusOn() ever turned it off, and
-// nothing ever turned it back on, permanently freezing the globe after the
-// first marker/chip click of a page view.
+// Centralised so every dismiss path (Stay here, Escape, outside click)
+// always restores rotation to whatever the visitor last chose via
+// #globeSpinToggle — not force it back on regardless of that choice.
 function dismissConfirm() {
   const panel = document.getElementById('globeConfirm');
   if (panel.classList.contains('hidden')) return;
   panel.classList.add('hidden');
-  controls.autoRotate = true;
+  controls.autoRotate = rotationEnabled;
 }
 
 function showConfirm(data) {
