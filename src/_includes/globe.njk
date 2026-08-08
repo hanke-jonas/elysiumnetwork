@@ -260,13 +260,28 @@ world.add(highlightMesh);
 
 // Face Europe on first load instead of whatever longitude happens to sit at
 // the sphere's raw lon=0 origin (the Americas, as built) — this is a
-// European youth network, so that's what a first-time visitor should see
-// before autoRotate carries it onward. Same "rotate world so this point
-// faces the camera" math as focusOn() below, just run once at startup.
+// European youth network, so that's what a first-time visitor should see.
+// Same "rotate world so this point faces the camera" math as focusOn()
+// below, but that alone only constrains ONE point (Europe) to face the
+// camera — it leaves the sphere free to spin around that point-to-camera
+// axis at an arbitrary angle, which in practice left the globe's own north
+// pole tilted well off to one side rather than pointing up on screen (most
+// noticeable now that the globe sits static by default instead of auto-
+// rotating). A second correction rotation, around the camera-facing axis
+// only, brings the pole back to vertical without disturbing which point
+// faces the camera.
 {
-  const initialFacing = llToVec3(15, 50, 1).normalize();
   const cameraDir = camera.position.clone().normalize();
-  world.quaternion.setFromUnitVectors(initialFacing, cameraDir);
+  const initialFacing = llToVec3(15, 50, 1).normalize();
+  const q1 = new THREE.Quaternion().setFromUnitVectors(initialFacing, cameraDir);
+
+  const poleAfterQ1 = new THREE.Vector3(0, 1, 0).applyQuaternion(q1);
+  const poleOnScreen = poleAfterQ1.clone().sub(cameraDir.clone().multiplyScalar(poleAfterQ1.dot(cameraDir)));
+  const desiredUp = camera.up.clone();
+  const desiredUpOnScreen = desiredUp.clone().sub(cameraDir.clone().multiplyScalar(desiredUp.dot(cameraDir)));
+  const q2 = new THREE.Quaternion().setFromUnitVectors(poleOnScreen.normalize(), desiredUpOnScreen.normalize());
+
+  world.quaternion.copy(q2.multiply(q1));
 }
 
 const MAP_BORDER = '#B7AA8C';
