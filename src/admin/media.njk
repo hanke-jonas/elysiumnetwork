@@ -1,0 +1,171 @@
+---
+layout: admin-base.njk
+title: "Media Library"
+permalink: /admin/media/
+---
+<div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+  <div>
+    <p class="eyebrow" style="color:var(--coral-ink)">Admin</p>
+    <h1 class="h-sec mt-1">Media library</h1>
+    <p class="text-sm text-muted mt-1">Every image and file here is available to use anywhere on the org site.</p>
+  </div>
+  <div class="flex gap-2">
+    <button id="newFolderBtn" type="button" class="btn">{% icon "plus", "w-4 h-4" %} New folder</button>
+    <button id="uploadBtn" type="button" class="btn btn-accent">{% icon "box", "w-4 h-4" %} Upload files</button>
+  </div>
+</div>
+
+<input type="file" id="fileInput" multiple accept="image/*,application/pdf" style="display:none">
+
+<nav id="breadcrumb" class="mono text-xs text-muted mb-5 uppercase tracking-wider"></nav>
+
+<div id="dropzone" class="rounded-2xl border-2 border-dashed p-4 mb-6 text-center text-sm text-muted transition" style="background:var(--paper-2);border-color:rgba(25,23,18,.3)">
+  Drag files here, or use "Upload files" above
+</div>
+
+<p id="status" role="status" aria-live="polite" class="text-sm mb-4"></p>
+
+<div id="grid" class="grid gap-4" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))"></div>
+
+<script>
+(function () {
+  var grid = document.getElementById('grid');
+  var breadcrumb = document.getElementById('breadcrumb');
+  var status = document.getElementById('status');
+  var dropzone = document.getElementById('dropzone');
+  var fileInput = document.getElementById('fileInput');
+  var prefix = '';
+
+  function setStatus(msg, isError) {
+    status.textContent = msg || '';
+    status.style.color = isError ? 'var(--coral-ink)' : '';
+  }
+
+  function humanSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  function renderBreadcrumb() {
+    var parts = prefix ? prefix.replace(/\/$/, '').split('/') : [];
+    var html = '<a href="#" data-nav="" class="hover:underline">Media library</a>';
+    var acc = '';
+    parts.forEach(function (part) {
+      acc += part + '/';
+      html += ' <span class="mx-1 opacity-40">/</span> <a href="#" data-nav="' + acc + '" class="hover:underline">' + part + '</a>';
+    });
+    breadcrumb.innerHTML = html;
+    breadcrumb.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function (e) {
+        e.preventDefault();
+        load(a.getAttribute('data-nav'));
+      });
+    });
+  }
+
+  function copyToClipboard(text, btn) {
+    navigator.clipboard.writeText(location.origin + text).then(function () {
+      var orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(function () { btn.textContent = orig; }, 1200);
+    });
+  }
+
+  function isImage(name) { return /\.(jpe?g|png|webp|gif|svg)$/i.test(name); }
+
+  function render(data) {
+    grid.innerHTML = '';
+
+    data.folders.forEach(function (name) {
+      var card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'card p-4 text-left hover:-translate-y-0.5 transition';
+      card.innerHTML = '<div class="text-3xl mb-2">📁</div><p class="font-semibold text-sm truncate">' + name + '</p>';
+      card.addEventListener('click', function () { load(prefix + name + '/'); });
+      grid.appendChild(card);
+    });
+
+    data.files.forEach(function (f) {
+      var card = document.createElement('div');
+      card.className = 'card p-3 flex flex-col gap-2';
+      var preview = isImage(f.name)
+        ? '<img src="' + f.url + '" alt="" class="w-full h-24 object-cover rounded-lg border-2 border-ink">'
+        : '<div class="w-full h-24 grid place-items-center rounded-lg border-2 border-ink text-3xl" style="background:var(--paper-2)">📄</div>';
+      card.innerHTML = preview +
+        '<p class="text-xs font-semibold truncate" title="' + f.name + '">' + f.name + '</p>' +
+        '<p class="text-[11px] text-muted">' + humanSize(f.size) + '</p>' +
+        '<div class="flex gap-1.5">' +
+          '<button type="button" class="btn !py-1 !px-2 text-xs flex-1" data-copy="' + f.url + '">Copy URL</button>' +
+          '<button type="button" class="btn !py-1 !px-2 text-xs" data-del="' + f.key + '" aria-label="Delete">🗑</button>' +
+        '</div>';
+      grid.appendChild(card);
+    });
+
+    grid.querySelectorAll('[data-copy]').forEach(function (btn) {
+      btn.addEventListener('click', function () { copyToClipboard(btn.getAttribute('data-copy'), btn); });
+    });
+    grid.querySelectorAll('[data-del]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (!confirm('Delete this file? This cannot be undone.')) return;
+        adminFetch('/api/admin/media', { method: 'POST', body: JSON.stringify({ action: 'delete', key: btn.getAttribute('data-del') }) })
+          .then(function () { load(prefix); });
+      });
+    });
+
+    if (!data.folders.length && !data.files.length) {
+      grid.innerHTML = '<p class="text-muted text-sm col-span-full">Nothing here yet.</p>';
+    }
+  }
+
+  function load(newPrefix) {
+    prefix = newPrefix || '';
+    setStatus('Loading…');
+    adminFetch('/api/admin/media?prefix=' + encodeURIComponent(prefix)).then(function (res) {
+      if (!res.ok) { setStatus(res.data.error || 'Failed to load', true); return; }
+      setStatus('');
+      renderBreadcrumb();
+      render(res.data);
+    });
+  }
+
+  document.getElementById('newFolderBtn').addEventListener('click', function () {
+    var name = prompt('Folder name:');
+    if (!name) return;
+    adminFetch('/api/admin/media', { method: 'POST', body: JSON.stringify({ action: 'create-folder', prefix: prefix, name: name }) })
+      .then(function (res) {
+        if (!res.ok) { setStatus(res.data.error || 'Could not create folder', true); return; }
+        load(prefix);
+      });
+  });
+
+  function uploadFiles(fileList) {
+    var files = Array.prototype.slice.call(fileList);
+    if (!files.length) return;
+    setStatus('Uploading ' + files.length + ' file' + (files.length > 1 ? 's' : '') + '…');
+    Promise.all(files.map(function (file) {
+      var fd = new FormData();
+      fd.append('file', file);
+      fd.append('folder', prefix);
+      return adminFetch('/api/admin/upload', { method: 'POST', body: fd });
+    })).then(function (results) {
+      var failed = results.filter(function (r) { return !r.ok; });
+      setStatus(failed.length ? (failed.length + ' file(s) failed to upload') : 'Done.', !!failed.length);
+      load(prefix);
+    });
+  }
+
+  document.getElementById('uploadBtn').addEventListener('click', function () { fileInput.click(); });
+  fileInput.addEventListener('change', function () { uploadFiles(fileInput.files); fileInput.value = ''; });
+
+  dropzone.addEventListener('dragover', function (e) { e.preventDefault(); dropzone.style.borderColor = 'var(--blue-ink)'; });
+  dropzone.addEventListener('dragleave', function () { dropzone.style.borderColor = 'rgba(25,23,18,.3)'; });
+  dropzone.addEventListener('drop', function (e) {
+    e.preventDefault();
+    dropzone.style.borderColor = 'rgba(25,23,18,.3)';
+    uploadFiles(e.dataTransfer.files);
+  });
+
+  document.addEventListener('admin:ready', function () { load(''); });
+})();
+</script>

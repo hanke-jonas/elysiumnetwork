@@ -29,7 +29,13 @@ export async function onRequestPost({ request, env }) {
     if (file.size > maxBytes) return badRequest(`File is too large — ${Math.round(maxBytes / (1024 * 1024))}MB maximum`);
 
     const ext = EXT_BY_TYPE[file.type] || 'bin';
-    const key = `${randomId()}.${ext}`;
+    // Optional folder prefix for the media library (functions/api/admin/media) —
+    // every other caller (team photos, blog covers, resource files) omits
+    // this and keeps uploading to the bucket root exactly as before.
+    const rawFolder = form.get('folder');
+    let folder = typeof rawFolder === 'string' ? rawFolder.replace(/^\/+/, '').replace(/\.\./g, '') : '';
+    if (folder && !folder.endsWith('/')) folder += '/';
+    const key = `${folder}${randomId()}.${ext}`;
     await env.UPLOADS.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: file.type } });
 
     return json({ url: `/uploads/${key}`, filename: file.name || null }, { status: 201 });
