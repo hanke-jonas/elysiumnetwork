@@ -29,7 +29,17 @@
           </div>
         </div>
         <div class="absolute top-4 left-4 eyebrow bg-paper border-2 border-ink px-2.5 py-1 rounded-full">Drag to rotate</div>
-        <button type="button" id="globeSpinToggle" class="absolute top-4 right-4 z-20 eyebrow bg-paper border-2 border-ink px-2.5 py-1 rounded-full inline-flex items-center gap-1.5" aria-pressed="false">{% icon "spark", "w-3 h-3" %} Spin globe</button>
+        <div class="absolute top-4 right-4 z-20 flex flex-col items-end gap-2">
+          <button type="button" id="globeSpinToggle" class="eyebrow bg-paper border-2 border-ink px-2.5 py-1 rounded-full inline-flex items-center gap-1.5" aria-pressed="false">{% icon "spark", "w-3 h-3" %} Spin globe</button>
+          <div id="globeSpeedRow" class="hidden items-center gap-2 bg-paper border-2 border-ink px-3 py-1.5 rounded-full">
+            <label for="globeSpeed" class="mono text-[10px] opacity-70 uppercase tracking-wider">Speed</label>
+            <input type="range" id="globeSpeed" min="1" max="6" step="0.5" value="2" class="w-16 sm:w-20 accent-ink">
+          </div>
+        </div>
+        <div class="absolute bottom-4 right-4 z-20 flex flex-col gap-1.5">
+          <button type="button" id="globeZoomIn" aria-label="Zoom in" class="w-8 h-8 grid place-items-center bg-paper border-2 border-ink rounded-full font-bold leading-none hover:-translate-y-0.5 transition">{% icon "plus", "w-4 h-4" %}</button>
+          <button type="button" id="globeZoomOut" aria-label="Zoom out" class="w-8 h-8 grid place-items-center bg-paper border-2 border-ink rounded-full font-bold leading-none hover:-translate-y-0.5 transition">−</button>
+        </div>
         <div id="globeConfirm" class="hidden absolute z-30 left-0 right-0 mx-auto bottom-6 card p-5 w-[min(90%,20rem)] text-center" role="dialog" aria-modal="true" aria-labelledby="gc-name">
           <span id="gc-flag" class="text-3xl leading-none"></span>
           <p id="gc-name" class="font-display text-lg font-bold mt-2"></p>
@@ -112,6 +122,26 @@ function dotTexture(color) {
   ctx.beginPath(); ctx.arc(32,32,24,0,Math.PI*2);
   ctx.fillStyle = color; ctx.fill();
   ctx.lineWidth = 6; ctx.strokeStyle = '#191712'; ctx.stroke();
+  return new THREE.CanvasTexture(c);
+}
+
+// A warning-triangle marker (not a plain coloured dot like the branch
+// countries) — this is the one country on the globe with an actual
+// designation attached to it, and the marker should read as a hazard
+// symbol at a glance, not just another "pick me" dot.
+function warningTexture(color) {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const ctx = c.getContext('2d');
+  ctx.beginPath();
+  ctx.moveTo(32, 4);
+  ctx.lineTo(60, 56);
+  ctx.lineTo(4, 56);
+  ctx.closePath();
+  ctx.fillStyle = color; ctx.fill();
+  ctx.lineWidth = 5; ctx.strokeStyle = '#191712'; ctx.lineJoin = 'round'; ctx.stroke();
+  ctx.fillStyle = '#191712';
+  ctx.fillRect(28.5, 22, 7, 18);
+  ctx.beginPath(); ctx.arc(32, 47, 4, 0, Math.PI*2); ctx.fill();
   return new THREE.CanvasTexture(c);
 }
 
@@ -364,7 +394,13 @@ function buildBranchHighlightCanvas(geo, branchIds, crimea) {
 
   const russia = geo.features.find(function(f) { return String(f.id) === RUSSIA_ID; });
   if (russia && russia.geometry) {
-    const polys = russia.geometry.type === 'Polygon' ? [russia.geometry.coordinates] : (russia.geometry.type === 'MultiPolygon' ? russia.geometry.coordinates : []);
+    // Crimea is Ukrainian territory under illegal Russian occupation, not
+    // Russian territory — world-atlas's own data merges it into Russia's
+    // polygon set (see findCrimeaPolygon above), so it has to be explicitly
+    // filtered back out here or it silently renders as part of Russia's red
+    // fill, exactly what this page argues against.
+    const polys = (russia.geometry.type === 'Polygon' ? [russia.geometry.coordinates] : (russia.geometry.type === 'MultiPolygon' ? russia.geometry.coordinates : []))
+      .filter(function(poly) { return poly !== crimea; });
     const path = new Path2D();
     addRings(path, polys);
     ctx.globalAlpha = 0.4;
@@ -385,7 +421,11 @@ const controls = new OrbitControls(camera, renderer.domElement);
 // drag on the canvas is actually in progress.
 renderer.domElement.style.touchAction = 'pan-y';
 controls.enablePan = false;
-controls.minDistance = 1.7; controls.maxDistance = 4.5;
+// 1.7 kept visitors further out than the sphere's own detail could reward —
+// nothing gets sharper up close since this is one fixed-resolution texture,
+// not tiled map data, but a closer minimum still lets a country fill the
+// frame for a better look at its coastline/border shape.
+controls.minDistance = 1.15; controls.maxDistance = 4.5;
 // Off by default and centred on Europe until a visitor explicitly asks for
 // motion — a globe that keeps drifting away from the region this network is
 // actually about was more confusing than helpful. #globeSpinToggle below is
@@ -394,13 +434,53 @@ controls.minDistance = 1.7; controls.maxDistance = 4.5;
 let rotationEnabled = false;
 controls.autoRotate = rotationEnabled; controls.autoRotateSpeed = 2;
 const spinToggle = document.getElementById('globeSpinToggle');
+const speedRow = document.getElementById('globeSpeedRow');
+const speedSlider = document.getElementById('globeSpeed');
 function setRotation(on) {
   rotationEnabled = on;
   controls.autoRotate = on;
   spinToggle.setAttribute('aria-pressed', String(on));
   spinToggle.textContent = on ? '⏸ Stop spinning' : '▶ Spin globe';
+  speedRow.classList.toggle('hidden', !on);
+  speedRow.classList.toggle('flex', on);
 }
 spinToggle.addEventListener('click', function(){ setRotation(!rotationEnabled); });
+// Easter egg: spin it up fast enough (5 clicks inside 2.5s) and the globe
+// says so — kept on the network's own toggle rather than anywhere near
+// Russia's marker, since a serious documentation feature isn't the place
+// for a wink. Same shared toast/heart-burst globals as the hero-heart egg
+// in index.njk; guarded at click-time since base.njk's script defining them
+// runs after this page's own inline scripts, not before (see that file's
+// comment for why setup-time checks fail here).
+let spinClicks = 0, spinClicksAt = 0;
+spinToggle.addEventListener('click', function(){
+  const now = Date.now();
+  spinClicks = (now - spinClicksAt < 2500) ? spinClicks + 1 : 1;
+  spinClicksAt = now;
+  if (spinClicks === 5 && window.elysiumShowEggToast) {
+    window.elysiumShowEggToast('🌍 Round and round — four countries, one network.');
+    if (window.elysiumSpawnHeart && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const r = host.getBoundingClientRect();
+      for (let i = 0; i < 6; i++) {
+        setTimeout(function(){ window.elysiumSpawnHeart(r.left + r.width/2, r.top + r.height/2); }, i * 90);
+      }
+    }
+    spinClicks = 0;
+  }
+});
+speedSlider.addEventListener('input', function(){ controls.autoRotateSpeed = parseFloat(speedSlider.value); });
+
+const zoomInBtn = document.getElementById('globeZoomIn');
+const zoomOutBtn = document.getElementById('globeZoomOut');
+function zoomBy(factor) {
+  const dir = camera.position.clone().sub(controls.target);
+  const dist = Math.min(controls.maxDistance, Math.max(controls.minDistance, dir.length() * factor));
+  camera.position.copy(controls.target).add(dir.normalize().multiplyScalar(dist));
+  controls.update();
+}
+zoomInBtn.addEventListener('click', function(){ zoomBy(0.8); });
+zoomOutBtn.addEventListener('click', function(){ zoomBy(1.25); });
+
 controls.enableDamping = true; controls.dampingFactor = .08;
 
 function resize() {
@@ -417,12 +497,19 @@ resize();
 // frame forever — only tab visibility pauses rAF on its own, not this.
 let inView = true;
 new IntersectionObserver(function(entries){ inView = entries[0].isIntersecting; }, { threshold: 0 }).observe(host);
+let warnOutline = null; // Russia's outline material, pulsed below once set
 
 (function loop(){
   requestAnimationFrame(loop);
   if (!inView) return;
   controls.update();
   clouds.rotation.y += 0.0006;
+  if (warnOutline) {
+    // A slow alarm-style pulse (opacity breathing between ~0.45 and 1) —
+    // reads as "this one needs attention" without the flashing being fast
+    // enough to feel gimmicky or, worse, seizure-inducing.
+    warnOutline.opacity = 0.725 + 0.275 * Math.sin(performance.now() / 650);
+  }
   renderer.render(scene, camera);
 })();
 
@@ -433,20 +520,25 @@ BRANCHES.forEach(function(b){
   branchIds[b.id] = b;
   const mat = new THREE.SpriteMaterial({ map: dotTexture(b.accent), depthTest: true });
   const sp = new THREE.Sprite(mat);
-  sp.scale.set(0.13, 0.13, 1);
+  sp.scale.set(0.09, 0.09, 1);
   sp.userData = { kind: 'branch', id: b.id, name: b.name, slug: b.slug, flag: b.flag };
   world.add(sp);
   markers.push(sp);
 });
 
-// Same marker/hover/click/confirm machinery as a branch, just pointed at
-// /against-the-war/ instead of a branch page — see focusOn()/showConfirm()
-// below, which are generic over marker.userData and don't know or care
-// whether a marker is a branch or this.
+// No visible marker icon on Russia — the red fill and outline already say
+// "this one's different" clearly on their own, and the sidebar copy already
+// tells visitors to "click Russia, marked in red," not "click the icon."
+// Still needs *something* there for hover/click to hit, so this is a fully
+// transparent sprite at the same centroid: opacity 0 keeps it invisible to
+// the eye while remaining exactly as clickable as a visible marker would be
+// (Three.js raycasting hit-tests a sprite's geometry, not its rendered
+// opacity), sized larger than the old icon to make up for having no visual
+// target to aim at.
 {
-  const warnMat = new THREE.SpriteMaterial({ map: dotTexture(WARN_RED), depthTest: true });
+  const warnMat = new THREE.SpriteMaterial({ map: dotTexture(WARN_RED), transparent: true, opacity: 0, depthTest: true });
   const warnSp = new THREE.Sprite(warnMat);
-  warnSp.scale.set(0.13, 0.13, 1);
+  warnSp.scale.set(0.22, 0.22, 1);
   warnSp.userData = { kind: 'warning', id: RUSSIA_ID, name: 'Russia — state sponsor of terrorism', slug: 'against-the-war', flag: '⚠️' };
   world.add(warnSp);
   markers.push(warnSp);
@@ -483,8 +575,12 @@ fetch(IS_MOBILE
     {
       const russia = geo.features.find(function(f){ return String(f.id) === RUSSIA_ID; });
       if (russia && russia.geometry) {
-        const polys = russia.geometry.type === 'Polygon' ? [russia.geometry.coordinates] : (russia.geometry.type === 'MultiPolygon' ? russia.geometry.coordinates : []);
-        const warnOutline = new THREE.LineBasicMaterial({ color: new THREE.Color(WARN_RED), transparent: true, opacity: 1 });
+        // Same Crimea exclusion as the fill above — it's Ukrainian
+        // territory under occupation, not Russia's, so it gets no red
+        // outline and doesn't pull Russia's marker toward it.
+        const polys = (russia.geometry.type === 'Polygon' ? [russia.geometry.coordinates] : (russia.geometry.type === 'MultiPolygon' ? russia.geometry.coordinates : []))
+          .filter(function(poly) { return poly !== crimea; });
+        warnOutline = new THREE.LineBasicMaterial({ color: new THREE.Color(WARN_RED), transparent: true, opacity: 1 });
         [1.015, 1.018].forEach(function(r){
           polys.forEach(function(poly){
             poly.forEach(function(ring){
@@ -493,7 +589,7 @@ fetch(IS_MOBILE
             });
           });
         });
-        const centroid = featureCentroid(russia.geometry);
+        const centroid = featureCentroid({ type: 'MultiPolygon', coordinates: polys });
         const rsp = markers.find(m => m.userData.id === RUSSIA_ID);
         if (rsp) rsp.position.copy(llToVec3(centroid[0], centroid[1], 1.05));
       }
