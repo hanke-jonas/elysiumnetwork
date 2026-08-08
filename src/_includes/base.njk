@@ -75,7 +75,7 @@
     <nav class="hidden lg:flex items-center gap-8">
       <a href="/" class="nav-link{% if page.url == '/' %} active{% endif %}">Home</a>
       <div class="nav-item-drop relative">
-        <button class="nav-link nav-drop-btn inline-flex items-center gap-1.5" aria-haspopup="true" aria-expanded="false">Network {% icon "chevron", "w-3.5 h-3.5" %}</button>
+        <a href="/ukraine/" class="nav-link nav-drop-btn inline-flex items-center gap-1.5" aria-haspopup="true" aria-expanded="false">Network {% icon "chevron", "w-3.5 h-3.5" %}</a>
         <div class="nav-drop">
           {% for b in site.branches %}
           <a href="/{{ b.slug }}/">
@@ -90,7 +90,7 @@
         </div>
       </div>
       <div class="nav-item-drop relative">
-        <button class="nav-link nav-drop-btn inline-flex items-center gap-1.5" aria-haspopup="true" aria-expanded="false">Get Involved {% icon "chevron", "w-3.5 h-3.5" %}</button>
+        <a href="/calls/" class="nav-link nav-drop-btn inline-flex items-center gap-1.5" aria-haspopup="true" aria-expanded="false">Get Involved {% icon "chevron", "w-3.5 h-3.5" %}</a>
         <div class="nav-drop">
           <a href="/calls/">{% icon "compass", "w-4 h-4 shrink-0" %}<span class="flex-1 min-w-0"><span class="block font-semibold">Active calls</span></span></a>
           <a href="/events/">{% icon "calendar", "w-4 h-4 shrink-0" %}<span class="flex-1 min-w-0"><span class="block font-semibold">Events</span></span></a>
@@ -99,7 +99,7 @@
         </div>
       </div>
       <div class="nav-item-drop relative">
-        <button class="nav-link nav-drop-btn inline-flex items-center gap-1.5" aria-haspopup="true" aria-expanded="false">About {% icon "chevron", "w-3.5 h-3.5" %}</button>
+        <a href="/about/" class="nav-link nav-drop-btn inline-flex items-center gap-1.5" aria-haspopup="true" aria-expanded="false">About {% icon "chevron", "w-3.5 h-3.5" %}</a>
         <div class="nav-drop">
           <a href="/commitments/" style="background:#7C3FA311">{% icon "venus", "w-4 h-4 shrink-0" %}<span class="flex-1 min-w-0"><span class="block font-semibold">Equity Workplan</span><span class="block text-[11px] opacity-60">Feminist &amp; queer-inclusive, in practice</span></span></a>
           <a href="/about/">{% icon "id", "w-4 h-4 shrink-0" %}<span class="flex-1 min-w-0"><span class="block font-semibold">About Us</span></span></a>
