@@ -39,6 +39,7 @@
         <div class="absolute bottom-4 right-4 z-20 flex flex-col gap-1.5">
           <button type="button" id="globeZoomIn" aria-label="Zoom in" class="w-8 h-8 grid place-items-center bg-paper border-2 border-ink rounded-full font-bold leading-none hover:-translate-y-0.5 transition">{% icon "plus", "w-4 h-4" %}</button>
           <button type="button" id="globeZoomOut" aria-label="Zoom out" class="w-8 h-8 grid place-items-center bg-paper border-2 border-ink rounded-full font-bold leading-none hover:-translate-y-0.5 transition">−</button>
+          <button type="button" id="globeReset" aria-label="Reset view to Europe" class="w-8 h-8 grid place-items-center bg-paper border-2 border-ink rounded-full hover:-translate-y-0.5 transition">{% icon "compass", "w-4 h-4" %}</button>
         </div>
         <div id="globeConfirm" class="hidden absolute z-30 left-0 right-0 mx-auto bottom-6 card p-5 w-[min(90%,20rem)] text-center" role="dialog" aria-modal="true" aria-labelledby="gc-name">
           <span id="gc-flag" class="text-3xl leading-none"></span>
@@ -129,6 +130,21 @@ function dotTexture(color) {
 // countries) — this is the one country on the globe with an actual
 // designation attached to it, and the marker should read as a hazard
 // symbol at a glance, not just another "pick me" dot.
+// City-name label, only ever shown zoomed in close (see the render loop's
+// distance check) — drawn wide-and-short with a transparent background so
+// it reads as a floating text tag rather than another dot.
+function labelTexture(text) {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 64;
+  const ctx = c.getContext('2d');
+  ctx.font = '600 32px Inter, sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(25,23,18,0.85)';
+  ctx.strokeText(text, 128, 34);
+  ctx.fillStyle = '#F7F1E2';
+  ctx.fillText(text, 128, 34);
+  return new THREE.CanvasTexture(c);
+}
+
 function warningTexture(color) {
   const c = document.createElement('canvas'); c.width = c.height = 64;
   const ctx = c.getContext('2d');
@@ -300,7 +316,9 @@ world.add(highlightMesh);
 // rotating). A second correction rotation, around the camera-facing axis
 // only, brings the pole back to vertical without disturbing which point
 // faces the camera.
-{
+const HOME_CAMERA_POS = camera.position.clone();
+function resetToEurope() {
+  camera.position.copy(HOME_CAMERA_POS);
   const cameraDir = camera.position.clone().normalize();
   const initialFacing = llToVec3(15, 50, 1).normalize();
   const q1 = new THREE.Quaternion().setFromUnitVectors(initialFacing, cameraDir);
@@ -313,6 +331,7 @@ world.add(highlightMesh);
 
   world.quaternion.copy(q2.multiply(q1));
 }
+resetToEurope();
 
 const MAP_BORDER = '#B7AA8C';
 // Russia is excluded from the generic "every other country" border pass
@@ -403,10 +422,30 @@ function buildBranchHighlightCanvas(geo, branchIds, crimea) {
       .filter(function(poly) { return poly !== crimea; });
     const path = new Path2D();
     addRings(path, polys);
+
+    // Diagonal hazard-tape stripes instead of a flat tint — the same visual
+    // language as a physical warning/restricted-zone marker, so the
+    // territory itself reads as flagged at a glance rather than needing a
+    // separate icon (which was deliberately removed — see the marker setup
+    // below). Drawn by clipping to Russia's own shape, then stroking
+    // parallel 45° lines across its full bounding box.
+    ctx.save();
+    ctx.clip(path);
     ctx.globalAlpha = 0.4;
     ctx.fillStyle = WARN_RED;
-    ctx.fill(path);
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 0.55;
+    ctx.strokeStyle = '#191712';
+    ctx.lineWidth = 14;
+    var stripeGap = 34;
+    for (var sx = -H; sx < W + H; sx += stripeGap) {
+      ctx.beginPath();
+      ctx.moveTo(sx, 0);
+      ctx.lineTo(sx + H, H);
+      ctx.stroke();
+    }
     ctx.globalAlpha = 1;
+    ctx.restore();
   }
 
   return c;
@@ -481,6 +520,12 @@ function zoomBy(factor) {
 zoomInBtn.addEventListener('click', function(){ zoomBy(0.8); });
 zoomOutBtn.addEventListener('click', function(){ zoomBy(1.25); });
 
+document.getElementById('globeReset').addEventListener('click', function(){
+  controls.target.set(0, 0, 0);
+  resetToEurope();
+  controls.update();
+});
+
 controls.enableDamping = true; controls.dampingFactor = .08;
 
 function resize() {
@@ -498,6 +543,8 @@ resize();
 let inView = true;
 new IntersectionObserver(function(entries){ inView = entries[0].isIntersecting; }, { threshold: 0 }).observe(host);
 let warnOutline = null; // Russia's outline material, pulsed below once set
+let detailBorders = null; // all-country border lines, shown only when zoomed in close
+const cityLabels = []; // text sprites for branch cities, same zoom gating
 
 (function loop(){
   requestAnimationFrame(loop);
@@ -510,6 +557,14 @@ let warnOutline = null; // Russia's outline material, pulsed below once set
     // enough to feel gimmicky or, worse, seizure-inducing.
     warnOutline.opacity = 0.725 + 0.275 * Math.sin(performance.now() / 650);
   }
+  // "Zoomed in close" detail — every country's border, plus each branch
+  // city's name — only makes sense to show once there's little enough of
+  // the globe on screen that it isn't just noise. minDistance is 1.15,
+  // maxDistance 4.5; 1.8 sits close enough to the zoomed-in end that this
+  // only kicks in once a visitor has actually zoomed in for a closer look.
+  const zoomedIn = camera.position.length() < 1.8;
+  if (detailBorders && detailBorders.visible !== zoomedIn) detailBorders.visible = zoomedIn;
+  cityLabels.forEach(function(label){ if (label.visible !== zoomedIn) label.visible = zoomedIn; });
   renderer.render(scene, camera);
 })();
 
@@ -564,11 +619,33 @@ fetch(IS_MOBILE
     highlightMat.map = highlightTex;
     highlightMat.needsUpdate = true;
 
-    // A thin border line on every one of ~170 countries was designed for
-    // the old flat vertex-colour "roadmap" style — layered on top of a real
-    // photo texture it reads as visual clutter instead of a clean globe, so
-    // it's gone. Only the countries actually meant to draw the eye (the
-    // four branches, Russia) get an outline now, below.
+    // A thin border line on every one of ~170 countries was too much
+    // clutter to show all the time layered on top of a real photo texture —
+    // but zoomed in close, with only a slice of the globe on screen at all,
+    // that same detail reads as useful rather than noisy. Built once here,
+    // shown/hidden by camera distance in the render loop below.
+    {
+      const borderPts = [];
+      const borderStep = IS_MOBILE ? 2 : 1;
+      geo.features.forEach(function(f){
+        const id = String(f.id);
+        if (EXCLUDED_IDS.indexOf(id) !== -1 || !f.geometry) return;
+        const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : (f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : []);
+        if (id === '804' && crimea) polys.push(crimea);
+        polys.forEach(function(poly){
+          poly.forEach(function(ring){
+            for (let k = 0; k < ring.length - borderStep; k += borderStep) {
+              borderPts.push(llToVec3(ring[k][0], ring[k][1], 1.006));
+              borderPts.push(llToVec3(ring[k + borderStep][0], ring[k + borderStep][1], 1.006));
+            }
+          });
+        });
+      });
+      const borderMat = new THREE.LineBasicMaterial({ color: 0xB7AA8C, transparent: true, opacity: 0.75 });
+      detailBorders = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(borderPts), borderMat);
+      detailBorders.visible = false;
+      world.add(detailBorders);
+    }
 
     // Russia gets its own explicit red outline and marker (Belarus stays
     // excluded with no special treatment — only Russia was asked for here).
@@ -621,6 +698,14 @@ fetch(IS_MOBILE
       const centroid = featureCentroid(f.geometry);
       const sp = markers.find(m => m.userData.id === id);
       if (sp) sp.position.copy(llToVec3(centroid[0], centroid[1], 1.05));
+
+      const labelMat = new THREE.SpriteMaterial({ map: labelTexture(branch.city), transparent: true, depthTest: true });
+      const label = new THREE.Sprite(labelMat);
+      label.scale.set(0.5, 0.125, 1);
+      label.position.copy(llToVec3(centroid[0], centroid[1], 1.12));
+      label.visible = false;
+      world.add(label);
+      cityLabels.push(label);
     });
     markersReady = true;
   })
