@@ -171,22 +171,32 @@ export async function onRequestGet({ request, env }) {
     section(async () => {
       const data = await cfGraphQL(
         token,
-        `query($accountTag: string!, $start: string!, $end: string!, $scriptName: string!) {
+        `query($accountTag: string!, $start: string!, $end: string!) {
           viewer { accounts(filter: { accountTag: $accountTag }) {
-            workersInvocationsAdaptive(limit: 100, filter: { datetime_geq: $start, datetime_leq: $end, scriptName: $scriptName }) {
+            workersInvocationsAdaptive(limit: 100, filter: { datetime_geq: $start, datetime_leq: $end }) {
               sum { requests errors subrequests }
               quantiles { cpuTimeP50 cpuTimeP99 }
+              dimensions { scriptName }
             }
           } }
         }`,
-        { accountTag, start: monthStartDate, end: nowIso, scriptName: WORKER_SCRIPT_NAME }
+        { accountTag, start: monthStartDate, end: nowIso }
       );
-      const groups = data?.viewer?.accounts?.[0]?.workersInvocationsAdaptive || [];
+      // Deliberately not filtered by scriptName: this account's Pages
+      // Function script name in this dataset isn't confirmed to match the
+      // "elysiumnetwork" name from the Workers Scripts API, so every
+      // script's numbers are grouped here and the matching one picked out
+      // — this also self-corrects if Cloudflare ever renames it internally.
+      const allGroups = data?.viewer?.accounts?.[0]?.workersInvocationsAdaptive || [];
+      const groups = allGroups.filter((g) => g.dimensions.scriptName === WORKER_SCRIPT_NAME);
       const totals = groups.reduce((acc, g) => ({
         requests: acc.requests + (g.sum.requests || 0),
         errors: acc.errors + (g.sum.errors || 0),
         subrequests: acc.subrequests + (g.sum.subrequests || 0),
       }), { requests: 0, errors: 0, subrequests: 0 });
+      if (!groups.length && allGroups.length) {
+        totals.otherScripts = [...new Set(allGroups.map((g) => g.dimensions.scriptName))];
+      }
       const withQuantiles = groups.find((g) => g.quantiles);
       return { ...totals, cpuTimeP50: withQuantiles?.quantiles?.cpuTimeP50 ?? null, cpuTimeP99: withQuantiles?.quantiles?.cpuTimeP99 ?? null };
     }),
@@ -198,20 +208,23 @@ export async function onRequestGet({ request, env }) {
           viewer { zones(filter: { zoneTag: $zoneTag }) {
             httpRequestsAdaptiveGroups(limit: 100, filter: { datetime_geq: $start, datetime_leq: $end }) {
               count
-              sum { edgeResponseBytes cachedRequests cachedResponseBytes threats }
+              sum { edgeResponseBytes cachedResponseBytes threats }
             }
           } }
         }`,
         { zoneTag, start: monthStartDate, end: nowIso }
       );
       const groups = data?.viewer?.zones?.[0]?.httpRequestsAdaptiveGroups || [];
+      // No request-count cache-hit field survived Cloudflare's schema (only
+      // byte totals did) — cachedBytes/bytes is used as the cache-hit
+      // proxy instead, which is arguably the more useful number anyway
+      // (how much bandwidth caching actually saved, not just request count).
       return groups.reduce((acc, g) => ({
         requests: acc.requests + (g.count || 0),
         bytes: acc.bytes + (g.sum.edgeResponseBytes || 0),
-        cachedRequests: acc.cachedRequests + (g.sum.cachedRequests || 0),
         cachedBytes: acc.cachedBytes + (g.sum.cachedResponseBytes || 0),
         threats: acc.threats + (g.sum.threats || 0),
-      }), { requests: 0, bytes: 0, cachedRequests: 0, cachedBytes: 0, threats: 0 });
+      }), { requests: 0, bytes: 0, cachedBytes: 0, threats: 0 });
     }),
   ]);
 

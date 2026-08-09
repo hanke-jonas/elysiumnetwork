@@ -190,11 +190,11 @@ permalink: /admin/stats/
       }
 
       if (cf.traffic && cf.traffic.ok) {
-        var hitRate = cf.traffic.requests ? ((cf.traffic.cachedRequests / cf.traffic.requests) * 100).toFixed(1) : '0.0';
+        var hitRate = cf.traffic.bytes ? ((cf.traffic.cachedBytes / cf.traffic.bytes) * 100).toFixed(1) : '0.0';
         document.getElementById('trafficGrid').innerHTML =
           numCard(humanNum(cf.traffic.requests), 'Requests') +
           numCard(humanBytes(cf.traffic.bytes), 'Bandwidth served') +
-          numCard(hitRate + '%', 'Served from cache') +
+          numCard(hitRate + '%', 'Bandwidth from cache') +
           numCard(humanNum(cf.traffic.threats), 'Threats blocked');
       } else {
         unavailable('trafficCard', cf.traffic);
