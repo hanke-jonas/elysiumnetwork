@@ -92,6 +92,11 @@ export async function onRequestGet({ request, env }) {
   const monthStartDay = monthStartDate.slice(0, 10);
   const nowIso = now.toISOString();
   const nowDay = nowIso.slice(0, 10);
+  // Storage gauges (r2Storage/d1Storage) are point-in-time snapshots, not
+  // sums — a wide date range isn't needed to read the latest value, and
+  // Cloudflare rejects any *StorageAdaptiveGroups query spanning more than
+  // ~4.5 weeks, so this deliberately stays short regardless of month length.
+  const recentWindowStart = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString();
 
   const [r2Operations, r2Storage, d1Queries, d1Storage, workers, traffic] = await Promise.all([
     section(async () => {
@@ -113,15 +118,15 @@ export async function onRequestGet({ request, env }) {
     section(async () => {
       const data = await cfGraphQL(
         token,
-        `query($accountTag: string!, $bucketName: string!) {
+        `query($accountTag: string!, $start: Time!, $end: Time!, $bucketName: string!) {
           viewer { accounts(filter: { accountTag: $accountTag }) {
-            r2StorageAdaptiveGroups(limit: 1, filter: { bucketName: $bucketName }, orderBy: [datetime_DESC]) {
+            r2StorageAdaptiveGroups(limit: 1, filter: { datetime_geq: $start, datetime_leq: $end, bucketName: $bucketName }, orderBy: [datetime_DESC]) {
               max { objectCount payloadSize metadataSize }
               dimensions { datetime }
             }
           } }
         }`,
-        { accountTag, bucketName: 'elysium-uploads' }
+        { accountTag, start: recentWindowStart, end: nowIso, bucketName: 'elysium-uploads' }
       );
       const g = data?.viewer?.accounts?.[0]?.r2StorageAdaptiveGroups?.[0];
       return g ? { objectCount: g.max.objectCount, payloadSize: g.max.payloadSize, metadataSize: g.max.metadataSize } : { unavailable: true };
@@ -150,15 +155,15 @@ export async function onRequestGet({ request, env }) {
     section(async () => {
       const data = await cfGraphQL(
         token,
-        `query($accountTag: string!, $databaseId: string!) {
+        `query($accountTag: string!, $start: Time!, $end: Time!, $databaseId: string!) {
           viewer { accounts(filter: { accountTag: $accountTag }) {
-            d1StorageAdaptiveGroups(limit: 1, filter: { databaseId: $databaseId }, orderBy: [datetime_DESC]) {
+            d1StorageAdaptiveGroups(limit: 1, filter: { datetime_geq: $start, datetime_leq: $end, databaseId: $databaseId }, orderBy: [datetime_DESC]) {
               max { databaseSizeBytes }
               dimensions { datetime }
             }
           } }
         }`,
-        { accountTag, databaseId: env.DB_ID || '85c9189a-8eb9-43e2-a39e-bd272b90b2cf' }
+        { accountTag, start: recentWindowStart, end: nowIso, databaseId: env.DB_ID || '85c9189a-8eb9-43e2-a39e-bd272b90b2cf' }
       );
       const g = data?.viewer?.accounts?.[0]?.d1StorageAdaptiveGroups?.[0];
       return g ? { databaseSizeBytes: g.max.databaseSizeBytes } : { unavailable: true };
@@ -193,7 +198,7 @@ export async function onRequestGet({ request, env }) {
           viewer { zones(filter: { zoneTag: $zoneTag }) {
             httpRequestsAdaptiveGroups(limit: 100, filter: { datetime_geq: $start, datetime_leq: $end }) {
               count
-              sum { bytes cachedRequests cachedBytes threats }
+              sum { edgeResponseBytes cachedRequests cachedResponseBytes threats }
             }
           } }
         }`,
@@ -202,9 +207,9 @@ export async function onRequestGet({ request, env }) {
       const groups = data?.viewer?.zones?.[0]?.httpRequestsAdaptiveGroups || [];
       return groups.reduce((acc, g) => ({
         requests: acc.requests + (g.count || 0),
-        bytes: acc.bytes + (g.sum.bytes || 0),
+        bytes: acc.bytes + (g.sum.edgeResponseBytes || 0),
         cachedRequests: acc.cachedRequests + (g.sum.cachedRequests || 0),
-        cachedBytes: acc.cachedBytes + (g.sum.cachedBytes || 0),
+        cachedBytes: acc.cachedBytes + (g.sum.cachedResponseBytes || 0),
         threats: acc.threats + (g.sum.threats || 0),
       }), { requests: 0, bytes: 0, cachedRequests: 0, cachedBytes: 0, threats: 0 });
     }),
