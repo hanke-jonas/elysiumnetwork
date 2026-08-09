@@ -1,4 +1,4 @@
-import { requirePublic } from '../../../_lib/guard.js';
+import { requireAnyUser } from '../../../_lib/guard.js';
 import { badRequest, json } from '../../../_lib/http.js';
 
 // A signed-in member's own personal file space — same R2 bucket the admin
@@ -13,7 +13,7 @@ function scopedPrefix(userId, raw) {
 }
 
 export async function onRequestGet({ request, env }) {
-  const session = await requirePublic(request, env);
+  const session = await requireAnyUser(request, env);
   if (session instanceof Response) return session;
   if (!env.UPLOADS) return json({ error: 'UPLOADS storage is not configured' }, { status: 500 });
 
@@ -39,7 +39,7 @@ export async function onRequestGet({ request, env }) {
 }
 
 export async function onRequestPost({ request, env }) {
-  const session = await requirePublic(request, env);
+  const session = await requireAnyUser(request, env);
   if (session instanceof Response) return session;
   if (!env.UPLOADS) return json({ error: 'UPLOADS storage is not configured' }, { status: 500 });
 

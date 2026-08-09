@@ -39,7 +39,7 @@ permalink: /portal/
   var content = document.getElementById('filesContent');
 
   fetch('/api/auth/me', { credentials: 'include' }).then(function (r) { return r.json(); }).then(function (data) {
-    if (!data.signedIn || data.type !== 'public') {
+    if (!data.signedIn || (data.type !== 'public' && data.type !== 'staff')) {
       location.href = '/portal/login/';
       return;
     }

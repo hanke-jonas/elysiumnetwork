@@ -16,3 +16,15 @@ export async function requirePublic(request, env) {
   if (!session || session.type !== 'public') return unauthorized('Sign-in required');
   return session;
 }
+
+// Elysium+ Cloud (the /portal/ area) is open to staff and members alike —
+// a staff account's portal files live under users/<their staff id>/,
+// exactly like a member's, just keyed by their staff_users row instead of
+// a public_users one. session.user.id is a crypto.randomUUID() from
+// either table, so there's no realistic collision between the two ID
+// spaces sharing that prefix scheme.
+export async function requireAnyUser(request, env) {
+  const session = await getSession(request, env.DB);
+  if (!session || (session.type !== 'public' && session.type !== 'staff')) return unauthorized('Sign-in required');
+  return session;
+}

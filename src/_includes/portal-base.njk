@@ -45,7 +45,7 @@
     fetch('/api/auth/me', { credentials: 'include' }).then(function (r) { return r.json(); }).then(function (data) {
       var who = document.getElementById('portalWhoami');
       var logoutBtn = document.getElementById('portalLogoutBtn');
-      if (data.signedIn && data.type === 'public') {
+      if (data.signedIn && (data.type === 'public' || data.type === 'staff')) {
         who.textContent = data.user.email;
         who.classList.remove('hidden');
         logoutBtn.classList.remove('hidden');

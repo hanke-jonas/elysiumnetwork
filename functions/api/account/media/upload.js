@@ -1,4 +1,4 @@
-import { requirePublic } from '../../../_lib/guard.js';
+import { requireAnyUser } from '../../../_lib/guard.js';
 import { badRequest, json, randomId } from '../../../_lib/http.js';
 
 // Any file type accepted — functions/uploads/[[path]].js forces anything
@@ -12,7 +12,7 @@ const EXT_BY_TYPE = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'we
 // own `users/<id>/` prefix — a member can never write into another
 // member's space or the org's admin-managed folders.
 export async function onRequestPost({ request, env }) {
-  const session = await requirePublic(request, env);
+  const session = await requireAnyUser(request, env);
   if (session instanceof Response) return session;
   if (!env.UPLOADS) return json({ error: 'UPLOADS storage is not configured' }, { status: 500 });
 

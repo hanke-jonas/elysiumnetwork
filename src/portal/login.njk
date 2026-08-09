@@ -28,7 +28,7 @@ permalink: /portal/login/
 <script>
   (function () {
     fetch('/api/auth/me', { credentials: 'include' }).then(function (r) { return r.json(); }).then(function (data) {
-      if (data.signedIn && data.type === 'public') location.href = '/portal/';
+      if (data.signedIn && (data.type === 'public' || data.type === 'staff')) location.href = '/portal/';
     });
   })();
 
@@ -43,13 +43,28 @@ permalink: /portal/login/
     statusMsg.textContent = 'Logging in…';
     submitBtn.disabled = true;
 
-    fetch('/api/auth/login', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: email, password: password })
-    }).then(function (res) {
-      return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+    // Staff and members share this one login form — a staff email/password
+    // (like the one already used at /admin/login/) works here too, since
+    // Elysium+ Cloud is open to both (see requireAnyUser). Staff credentials
+    // live in a different table behind a different endpoint than member
+    // accounts, so this tries staff-login first and only falls back to the
+    // member login if that specific account isn't a staff one — not on any
+    // other kind of failure, so a wrong password doesn't silently retry and
+    // produce a confusing second error message.
+    function attempt(url) {
+      return fetch(url, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, password: password })
+      }).then(function (res) {
+        return res.json().then(function (data) { return { ok: res.ok, status: res.status, data: data }; });
+      });
+    }
+
+    attempt('/api/auth/staff-login').then(function (staffResult) {
+      if (staffResult.ok) return staffResult;
+      return attempt('/api/auth/login');
     }).then(function (r) {
       if (!r.ok) {
         statusMsg.style.color = 'var(--coral-ink)';
