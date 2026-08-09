@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ title or "Elysium+ Cloud" }}</title>
+<link rel="icon" type="image/png" sizes="32x32" href="{{ site.favicon_32 }}">
+<link rel="stylesheet" href="/assets/tailwind.css?v={{ cssVersion }}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+{% include "theme-style.njk" %}
+</head>
+<!--
+  Deliberately its own standalone shell — no main-site nav, footer, globe,
+  or marketing chrome — so this reads as a separate portal/product rather
+  than a tab bolted onto the main website, per what was asked for. It still
+  authenticates against the same public_users/session backend as the main
+  site's /account/ area (one account, one password, no second signup flow
+  to maintain) — "separate" here means the experience and URL, not a
+  duplicated identity system.
+-->
+<body class="bg-paper text-ink min-h-screen flex flex-col">
+  <header class="border-b-2 border-ink">
+    <div class="max-w-5xl mx-auto px-5 sm:px-8 py-4 flex items-center justify-between gap-4">
+      <a href="/portal/" class="flex items-center gap-2.5">
+        <img src="{{ site.logo_small }}" alt="" width="128" height="128" class="h-8 w-8 object-contain">
+        <span class="font-display text-lg font-extrabold">Elysium<span style="color:var(--coral)">+</span> <span class="text-muted font-semibold">Cloud</span></span>
+      </a>
+      <div class="flex items-center gap-3">
+        <span id="portalWhoami" class="mono text-xs text-muted hidden sm:inline"></span>
+        <button id="portalLogoutBtn" type="button" class="btn !py-2 !px-3 text-sm hidden">Log out</button>
+      </div>
+    </div>
+  </header>
+  <main class="flex-1 max-w-5xl w-full mx-auto px-5 sm:px-8 py-10">
+    {{ content | safe }}
+  </main>
+  <footer class="border-t-2 border-ink">
+    <div class="max-w-5xl mx-auto px-5 sm:px-8 py-5 text-xs text-muted mono">
+      Elysium+ Cloud — personal file storage for network members. <a href="/" class="underline">Back to elysium.ngo</a>
+    </div>
+  </footer>
+  <script>
+    fetch('/api/auth/me', { credentials: 'include' }).then(function (r) { return r.json(); }).then(function (data) {
+      var who = document.getElementById('portalWhoami');
+      var logoutBtn = document.getElementById('portalLogoutBtn');
+      if (data.signedIn && data.type === 'public') {
+        who.textContent = data.user.email;
+        who.classList.remove('hidden');
+        logoutBtn.classList.remove('hidden');
+        logoutBtn.addEventListener('click', function () {
+          fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).then(function () { location.href = '/portal/login/'; });
+        });
+      }
+    }).catch(function(){});
+  </script>
+</body>
+</html>

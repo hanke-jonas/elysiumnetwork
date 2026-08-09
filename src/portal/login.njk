@@ -1,0 +1,67 @@
+---
+layout: portal-base.njk
+title: "Log in — Elysium+ Cloud"
+permalink: /portal/login/
+---
+<div class="max-w-sm mx-auto">
+  <p class="eyebrow" style="color:var(--coral-ink)">Elysium+ Cloud</p>
+  <h1 class="h-hero mt-3">Log in</h1>
+  <p class="mt-3 text-muted leading-relaxed">Your Elysium+ Network account also signs you into your personal file storage.</p>
+
+  <div class="card p-8 mt-6">
+    <form id="login-form" class="flex flex-col gap-4">
+      <div>
+        <label class="form-label" for="email">Email</label>
+        <input class="input" type="email" id="email" name="email" autocomplete="email" required>
+      </div>
+      <div>
+        <label class="form-label" for="password">Password</label>
+        <input class="input" type="password" id="password" name="password" autocomplete="current-password" required>
+      </div>
+      <button type="submit" id="submit-btn" class="btn btn-accent w-full justify-center mt-1">Log in</button>
+      <p id="status-msg" role="status" aria-live="polite" class="text-sm"></p>
+    </form>
+    <p class="text-sm text-muted mt-6">No account yet? <a href="/account/signup/?next=%2Fportal%2F" class="underline">Create one</a></p>
+  </div>
+</div>
+
+<script>
+  (function () {
+    fetch('/api/auth/me', { credentials: 'include' }).then(function (r) { return r.json(); }).then(function (data) {
+      if (data.signedIn && data.type === 'public') location.href = '/portal/';
+    });
+  })();
+
+  document.getElementById('login-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var statusMsg = document.getElementById('status-msg');
+    var submitBtn = document.getElementById('submit-btn');
+    var email = document.getElementById('email').value.trim();
+    var password = document.getElementById('password').value;
+
+    statusMsg.style.color = 'unset';
+    statusMsg.textContent = 'Logging in…';
+    submitBtn.disabled = true;
+
+    fetch('/api/auth/login', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, password: password })
+    }).then(function (res) {
+      return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+    }).then(function (r) {
+      if (!r.ok) {
+        statusMsg.style.color = 'var(--coral-ink)';
+        statusMsg.textContent = (r.data && r.data.error) || 'Something went wrong. Please try again.';
+        submitBtn.disabled = false;
+        return;
+      }
+      location.href = '/portal/';
+    }).catch(function () {
+      statusMsg.style.color = 'var(--coral-ink)';
+      statusMsg.textContent = 'Network error. Please try again.';
+      submitBtn.disabled = false;
+    });
+  });
+</script>

@@ -1,0 +1,123 @@
+---
+layout: base.njk
+title: "Shared files — Elysium+ Network"
+description: "Access a password-protected folder shared by Elysium+ Network."
+permalink: /shared/
+---
+<section class="bg-paper">
+  <div class="max-w-2xl mx-auto px-5 py-16">
+    <p class="eyebrow" style="color:var(--coral-ink)">Elysium+ Network</p>
+    <h1 class="h-hero mt-4" id="pageTitle">Shared files</h1>
+
+    <div id="passwordCard" class="card p-8 mt-8 hidden">
+      <p class="text-muted leading-relaxed" id="promptText">This folder is password-protected.</p>
+      <form id="pwForm" class="flex flex-col gap-4 mt-5">
+        <div>
+          <label class="form-label" for="pw">Password</label>
+          <input class="input" type="password" id="pw" name="password" autocomplete="off" required>
+        </div>
+        <button type="submit" id="submitBtn" class="btn btn-accent">View files</button>
+        <p id="pwStatus" role="status" aria-live="polite" class="text-sm"></p>
+      </form>
+    </div>
+
+    <div id="filesCard" class="mt-8 hidden">
+      <div id="grid" class="grid gap-4" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))"></div>
+    </div>
+
+    <p id="errorMsg" class="text-muted mt-8 hidden"></p>
+  </div>
+</section>
+
+<script>
+(function () {
+  var slug = new URLSearchParams(location.search).get('f');
+  var passwordCard = document.getElementById('passwordCard');
+  var filesCard = document.getElementById('filesCard');
+  var errorMsg = document.getElementById('errorMsg');
+  var grid = document.getElementById('grid');
+
+  function showError(msg) {
+    errorMsg.textContent = msg;
+    errorMsg.classList.remove('hidden');
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function humanSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+  function isImage(name) { return /\.(jpe?g|png|webp|gif)$/i.test(name); }
+
+  if (!slug) {
+    showError("This link is missing its folder reference — check you copied the whole URL.");
+    return;
+  }
+
+  fetch('/api/shared/' + encodeURIComponent(slug)).then(function (r) {
+    if (!r.ok) throw new Error('not found');
+    return r.json();
+  }).then(function (data) {
+    if (data.label) document.getElementById('pageTitle').textContent = data.label;
+    document.getElementById('promptText').textContent = 'This folder' + (data.label ? ' ("' + data.label + '")' : '') + ' is password-protected.';
+    passwordCard.classList.remove('hidden');
+  }).catch(function () {
+    showError('This shared folder link is invalid or no longer available.');
+  });
+
+  document.getElementById('pwForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var statusMsg = document.getElementById('pwStatus');
+    var submitBtn = document.getElementById('submitBtn');
+    var password = document.getElementById('pw').value;
+
+    statusMsg.style.color = 'unset';
+    statusMsg.textContent = 'Checking…';
+    submitBtn.disabled = true;
+
+    fetch('/api/shared/' + encodeURIComponent(slug), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: password })
+    }).then(function (res) {
+      return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+    }).then(function (r) {
+      submitBtn.disabled = false;
+      if (!r.ok) {
+        statusMsg.style.color = 'var(--coral-ink)';
+        statusMsg.textContent = r.data.error || 'Incorrect password.';
+        return;
+      }
+      passwordCard.classList.add('hidden');
+      filesCard.classList.remove('hidden');
+      renderFiles(r.data.files);
+    }).catch(function () {
+      submitBtn.disabled = false;
+      statusMsg.style.color = 'var(--coral-ink)';
+      statusMsg.textContent = 'Network error. Please try again.';
+    });
+  });
+
+  function renderFiles(files) {
+    if (!files.length) {
+      grid.innerHTML = '<p class="text-muted text-sm col-span-full">This folder is empty.</p>';
+      return;
+    }
+    grid.innerHTML = files.map(function (f) {
+      var preview = isImage(f.name)
+        ? '<img src="' + f.url + '" alt="" class="w-full h-24 object-cover rounded-lg border-2 border-ink">'
+        : '<div class="w-full h-24 grid place-items-center rounded-lg border-2 border-ink text-3xl" style="background:var(--paper-2)">📄</div>';
+      return '<a href="' + f.url + '" target="_blank" rel="noopener" class="card p-3 flex flex-col gap-2 hover:-translate-y-0.5 transition">' +
+        preview +
+        '<p class="text-xs font-semibold truncate" title="' + escapeHtml(f.name) + '">' + escapeHtml(f.name) + '</p>' +
+        '<p class="text-[11px] text-muted">' + humanSize(f.size) + '</p>' +
+        '</a>';
+    }).join('');
+  }
+})();
+</script>

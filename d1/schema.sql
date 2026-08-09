@@ -218,3 +218,15 @@ CREATE TABLE IF NOT EXISTS event_rsvps (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE(event_id, user_id)
 );
+
+-- A folder (R2 key prefix) an admin has put a password on, reachable by
+-- anyone with the link and password at /shared/?f=<slug> — no account
+-- needed. slug is the public, guessable-resistant identifier; prefix is
+-- never exposed to the client until the password check passes.
+CREATE TABLE IF NOT EXISTS protected_folders (
+  slug TEXT PRIMARY KEY,
+  prefix TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  label TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);

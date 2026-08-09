@@ -1,5 +1,6 @@
 import { requireStaff } from '../../../_lib/guard.js';
-import { badRequest, json } from '../../../_lib/http.js';
+import { badRequest, json, randomId } from '../../../_lib/http.js';
+import { hashPassword } from '../../../_lib/password.js';
 
 // Staff-only media library: browse and organise everything already sitting
 // in the UPLOADS bucket (including files other admin pages — team photos,
@@ -36,7 +37,21 @@ export async function onRequestGet({ request, env }) {
       contentType: o.httpMetadata ? o.httpMetadata.contentType : null,
     }));
 
-  return json({ prefix, folders, files });
+  // Which of these subfolders are password-protected, so the UI can show a
+  // lock — looked up by exact prefix match against every folder at this
+  // level rather than a LIKE scan, since there's at most a handful per page.
+  let protectedByName = {};
+  if (env.DB && folders.length) {
+    const fullPrefixes = folders.map((name) => `${prefix}${name}/`);
+    const placeholders = fullPrefixes.map(() => '?').join(',');
+    const rows = await env.DB.prepare(`SELECT prefix, slug FROM protected_folders WHERE prefix IN (${placeholders})`).bind(...fullPrefixes).all();
+    (rows.results || []).forEach((r) => {
+      const name = r.prefix.slice(prefix.length, -1);
+      protectedByName[name] = r.slug;
+    });
+  }
+
+  return json({ prefix, folders, files, protectedByName });
 }
 
 // Body: { action: 'create-folder', prefix, name } or { action: 'delete', key }
@@ -63,6 +78,34 @@ export async function onRequestPost({ request, env }) {
     return json({ ok: true });
   }
 
+  if (body.action === 'delete-many') {
+    const keys = Array.isArray(body.keys) ? body.keys.filter((k) => typeof k === 'string') : [];
+    await Promise.all(keys.map((k) => env.UPLOADS.delete(k)));
+    return json({ ok: true, deleted: keys.length });
+  }
+
+  if (body.action === 'protect-folder') {
+    const prefix = safePrefix(body.prefix);
+    if (!prefix) return badRequest('Refusing to password-protect the root');
+    if (!body.password || String(body.password).length < 6) return badRequest('Password must be at least 6 characters');
+    if (!env.DB) return json({ error: 'DB is not configured' }, { status: 500 });
+    const passwordHash = await hashPassword(String(body.password));
+    const existing = await env.DB.prepare('SELECT slug FROM protected_folders WHERE prefix = ?').bind(prefix).first();
+    const slug = existing ? existing.slug : randomId();
+    await env.DB.prepare(
+      `INSERT INTO protected_folders (slug, prefix, password_hash, label) VALUES (?, ?, ?, ?)
+       ON CONFLICT(prefix) DO UPDATE SET password_hash = excluded.password_hash, label = excluded.label`
+    ).bind(slug, prefix, passwordHash, body.label || null).run();
+    return json({ ok: true, slug, shareUrl: `/shared/?f=${slug}` });
+  }
+
+  if (body.action === 'unprotect-folder') {
+    const prefix = safePrefix(body.prefix);
+    if (!env.DB) return json({ error: 'DB is not configured' }, { status: 500 });
+    await env.DB.prepare('DELETE FROM protected_folders WHERE prefix = ?').bind(prefix).run();
+    return json({ ok: true });
+  }
+
   if (body.action === 'delete-folder') {
     const prefix = safePrefix(body.prefix);
     if (!prefix) return badRequest('Refusing to delete the root');
@@ -71,6 +114,7 @@ export async function onRequestPost({ request, env }) {
     // on `cursor`.
     const listed = await env.UPLOADS.list({ prefix });
     await Promise.all(listed.objects.map((o) => env.UPLOADS.delete(o.key)));
+    if (env.DB) await env.DB.prepare('DELETE FROM protected_folders WHERE prefix = ?').bind(prefix).run();
     return json({ ok: true, deleted: listed.objects.length });
   }
 

@@ -15,7 +15,7 @@ permalink: /admin/media/
   </div>
 </div>
 
-<input type="file" id="fileInput" multiple accept="image/*,application/pdf" style="display:none">
+<input type="file" id="fileInput" multiple style="display:none">
 
 <nav id="breadcrumb" class="mono text-xs text-muted mb-5 uppercase tracking-wider"></nav>
 
@@ -24,6 +24,12 @@ permalink: /admin/media/
 </div>
 
 <p id="status" role="status" aria-live="polite" class="text-sm mb-4"></p>
+
+<div id="bulkBar" class="hidden items-center gap-3 rounded-xl border-2 border-ink px-4 py-2.5 mb-4" style="background:var(--paper-2)">
+  <span id="bulkCount" class="text-sm font-semibold"></span>
+  <button type="button" id="bulkDeleteBtn" class="btn !py-1.5 !px-3 text-xs">{% icon "close", "w-3.5 h-3.5" %} Delete selected</button>
+  <button type="button" id="bulkClearBtn" class="btn !py-1.5 !px-3 text-xs">Clear selection</button>
+</div>
 
 <div id="grid" class="grid gap-4" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))"></div>
 
@@ -74,26 +80,46 @@ permalink: /admin/media/
 
   function isImage(name) { return /\.(jpe?g|png|webp|gif|svg)$/i.test(name); }
 
+  // Folder/file names go through innerHTML below. They're already
+  // constrained today (folder names are regex-sanitised at creation, file
+  // names are randomId-based, never the original uploaded filename) — this
+  // is defense-in-depth so that stays true even if a later change starts
+  // displaying real, unsanitised text here.
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
   function render(data) {
     grid.innerHTML = '';
 
     data.folders.forEach(function (name) {
-      var card = document.createElement('button');
-      card.type = 'button';
-      card.className = 'card p-4 text-left hover:-translate-y-0.5 transition';
-      card.innerHTML = '<div class="text-3xl mb-2">📁</div><p class="font-semibold text-sm truncate">' + name + '</p>';
-      card.addEventListener('click', function () { load(prefix + name + '/'); });
+      var isProtected = data.protectedByName && data.protectedByName[name];
+      var card = document.createElement('div');
+      card.className = 'card p-4 relative';
+      card.innerHTML =
+        '<button type="button" class="text-left w-full folder-open" style="cursor:pointer">' +
+          '<div class="text-3xl mb-2">' + (isProtected ? '🔒' : '📁') + '</div>' +
+          '<p class="font-semibold text-sm truncate">' + escapeHtml(name) + '</p>' +
+        '</button>' +
+        '<button type="button" class="btn !py-1 !px-2 text-xs mt-2 w-full folder-protect" data-folder="' + escapeHtml(name) + '" data-protected="' + (isProtected ? '1' : '0') + '">' +
+          (isProtected ? 'Sharing settings' : 'Password-protect & share') +
+        '</button>';
+      card.querySelector('.folder-open').addEventListener('click', function () { load(prefix + name + '/'); });
       grid.appendChild(card);
     });
 
     data.files.forEach(function (f) {
       var card = document.createElement('div');
-      card.className = 'card p-3 flex flex-col gap-2';
+      card.className = 'card p-3 flex flex-col gap-2 relative';
       var preview = isImage(f.name)
         ? '<img src="' + f.url + '" alt="" class="w-full h-24 object-cover rounded-lg border-2 border-ink">'
         : '<div class="w-full h-24 grid place-items-center rounded-lg border-2 border-ink text-3xl" style="background:var(--paper-2)">📄</div>';
-      card.innerHTML = preview +
-        '<p class="text-xs font-semibold truncate" title="' + f.name + '">' + f.name + '</p>' +
+      card.innerHTML =
+        '<input type="checkbox" class="mark-check absolute top-2 left-2 z-10 w-5 h-5" data-key="' + f.key + '" aria-label="Mark ' + escapeHtml(f.name) + '">' +
+        preview +
+        '<p class="text-xs font-semibold truncate" title="' + escapeHtml(f.name) + '">' + escapeHtml(f.name) + '</p>' +
         '<p class="text-[11px] text-muted">' + humanSize(f.size) + '</p>' +
         '<div class="flex gap-1.5">' +
           '<button type="button" class="btn !py-1 !px-2 text-xs flex-1" data-copy="' + f.url + '">Copy URL</button>' +
@@ -112,11 +138,62 @@ permalink: /admin/media/
           .then(function () { load(prefix); });
       });
     });
+    grid.querySelectorAll('.mark-check').forEach(function (cb) {
+      cb.addEventListener('change', updateBulkBar);
+    });
+    grid.querySelectorAll('.folder-protect').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var name = btn.getAttribute('data-folder');
+        var already = btn.getAttribute('data-protected') === '1';
+        if (already) {
+          var action = confirm('This folder is already shared with a password.\n\nOK = set a new password\nCancel = remove password protection entirely');
+          if (!action) {
+            if (!confirm('Remove password protection from "' + name + '"? The share link will stop working.')) return;
+            adminFetch('/api/admin/media', { method: 'POST', body: JSON.stringify({ action: 'unprotect-folder', prefix: prefix + name + '/' }) })
+              .then(function () { load(prefix); });
+            return;
+          }
+        }
+        var pw = prompt('Set a password for "' + name + '" (visitors will use this + a link to view the files, no account needed):');
+        if (!pw) return;
+        if (pw.length < 6) { alert('Password must be at least 6 characters.'); return; }
+        adminFetch('/api/admin/media', { method: 'POST', body: JSON.stringify({ action: 'protect-folder', prefix: prefix + name + '/', password: pw, label: name }) })
+          .then(function (res) {
+            if (!res.ok) { alert(res.data.error || 'Could not protect folder'); return; }
+            prompt('Share this link (password: what you just set):', location.origin + res.data.shareUrl);
+            load(prefix);
+          });
+      });
+    });
 
     if (!data.folders.length && !data.files.length) {
       grid.innerHTML = '<p class="text-muted text-sm col-span-full">Nothing here yet.</p>';
     }
+    updateBulkBar();
   }
+
+  var bulkBar = document.getElementById('bulkBar');
+  var bulkCount = document.getElementById('bulkCount');
+  function markedKeys() {
+    return Array.prototype.slice.call(grid.querySelectorAll('.mark-check:checked')).map(function (cb) { return cb.getAttribute('data-key'); });
+  }
+  function updateBulkBar() {
+    var n = markedKeys().length;
+    bulkBar.classList.toggle('hidden', n === 0);
+    bulkBar.classList.toggle('flex', n > 0);
+    bulkCount.textContent = n + ' marked';
+  }
+  document.getElementById('bulkClearBtn').addEventListener('click', function () {
+    grid.querySelectorAll('.mark-check:checked').forEach(function (cb) { cb.checked = false; });
+    updateBulkBar();
+  });
+  document.getElementById('bulkDeleteBtn').addEventListener('click', function () {
+    var keys = markedKeys();
+    if (!keys.length) return;
+    if (!confirm('Delete ' + keys.length + ' marked file(s)? This cannot be undone.')) return;
+    adminFetch('/api/admin/media', { method: 'POST', body: JSON.stringify({ action: 'delete-many', keys: keys }) })
+      .then(function () { load(prefix); });
+  });
 
   function load(newPrefix) {
     prefix = newPrefix || '';

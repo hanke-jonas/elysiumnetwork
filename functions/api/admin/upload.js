@@ -1,9 +1,12 @@
 import { requireStaff } from '../../_lib/guard.js';
 import { badRequest, json, randomId } from '../../_lib/http.js';
 
-const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml', 'application/pdf']);
-const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // 8MB — generous for a photo.
-const MAX_PDF_BYTES = 25 * 1024 * 1024; // 25MB — a full annual report with images can be sizeable.
+// Any file type is accepted now — the risk that used to matter (an
+// uploaded HTML/SVG file executing script when someone opens its URL
+// directly) is handled at serve time instead (functions/uploads/[[path]].js
+// forces anything outside a small known-safe set to download rather than
+// render inline), so it doesn't need to be a gate here too.
+const MAX_BYTES = 90 * 1024 * 1024; // 90MB — Cloudflare's own Workers request-body ceiling on this plan is ~100MB; this leaves headroom for multipart overhead.
 const EXT_BY_TYPE = {
   'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'image/svg+xml': 'svg',
   'application/pdf': 'pdf',
@@ -24,11 +27,13 @@ export async function onRequestPost({ request, env }) {
     const form = await request.formData().catch(() => null);
     const file = form && form.get('file');
     if (!file || typeof file === 'string') return badRequest('No file provided');
-    if (!ALLOWED_TYPES.has(file.type)) return badRequest('Only JPEG, PNG, WebP, GIF, SVG or PDF files are allowed');
-    const maxBytes = file.type === 'application/pdf' ? MAX_PDF_BYTES : MAX_IMAGE_BYTES;
-    if (file.size > maxBytes) return badRequest(`File is too large — ${Math.round(maxBytes / (1024 * 1024))}MB maximum`);
+    if (file.size > MAX_BYTES) return badRequest(`File is too large — ${Math.round(MAX_BYTES / (1024 * 1024))}MB maximum`);
 
-    const ext = EXT_BY_TYPE[file.type] || 'bin';
+    // Falls back to the original filename's own extension for types outside
+    // the known-mapped set, rather than a meaningless ".bin" on everything
+    // uploaded that isn't an image or PDF.
+    const nameExt = (file.name || '').split('.').pop();
+    const ext = EXT_BY_TYPE[file.type] || (nameExt && nameExt.length <= 8 ? nameExt.toLowerCase() : 'bin');
     // Optional folder prefix for the media library (functions/api/admin/media) —
     // every other caller (team photos, blog covers, resource files) omits
     // this and keeps uploading to the bucket root exactly as before.
