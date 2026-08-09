@@ -14,10 +14,17 @@
   .admin-nav-link{ font-size:.88rem; font-weight:600; padding:.5rem .7rem; border-radius:.5rem; color:var(--ink); white-space:nowrap; }
   .admin-nav-link:hover{ background:var(--paper-2); }
   .admin-nav-link.active{ background:var(--ink); color:var(--paper); }
+  .admin-nav-drop{ position:absolute; top:calc(100% + .5rem); left:0; min-width:13rem; background:#fff; border:2px solid var(--ink); box-shadow:4px 4px 0 var(--ink); border-radius:.7rem; padding:.4rem; opacity:0; visibility:hidden; transform:translateY(4px); transition:opacity .15s, transform .15s, visibility .15s; z-index:20; }
+  .admin-nav-item-drop:hover .admin-nav-drop, .admin-nav-item-drop:focus-within .admin-nav-drop, .admin-nav-item-drop.open .admin-nav-drop{ opacity:1; visibility:visible; transform:translateY(0); }
+  .admin-nav-drop a{ display:flex; align-items:center; gap:.55rem; padding:.5rem .6rem; border-radius:.5rem; font-size:.85rem; font-weight:600; color:var(--ink); white-space:nowrap; }
+  .admin-nav-drop a:hover{ background:var(--paper-2); }
+  .admin-nav-drop a.active{ background:var(--ink); color:var(--paper); }
   .admin-table{ width:100%; border-collapse:collapse; font-size:.9rem; }
   .admin-table th{ text-align:left; font-family:"JetBrains Mono",monospace; text-transform:uppercase; letter-spacing:.06em; font-size:.68rem; font-weight:600; color:var(--muted); padding:.5rem .75rem; border-bottom:2px solid var(--ink); }
   .admin-table td{ padding:.65rem .75rem; border-bottom:1px solid var(--line); vertical-align:top; }
   .admin-table tr:last-child td{ border-bottom:none; }
+  .stat-bar{ height:.85rem; border:2px solid var(--ink); border-radius:999px; background:var(--paper-2); overflow:hidden; }
+  .stat-bar-fill{ height:100%; width:0%; transition:width .4s ease; }
 </style>
 </head>
 <body class="bg-paper text-ink">
@@ -33,16 +40,27 @@
       </a>
       <nav class="flex items-center gap-1 flex-wrap">
         <a href="/admin/" class="admin-nav-link{% if page.url == '/admin/' %} active{% endif %}">Dashboard</a>
-        <a href="/admin/branches/" class="admin-nav-link{% if page.url == '/admin/branches/' %} active{% endif %}">Branches</a>
-        <a href="/admin/team/" class="admin-nav-link{% if page.url == '/admin/team/' %} active{% endif %}">Team</a>
-        <a href="/admin/calls/" class="admin-nav-link{% if page.url == '/admin/calls/' %} active{% endif %}">Calls</a>
-        <a href="/admin/blog/" class="admin-nav-link{% if page.url == '/admin/blog/' %} active{% endif %}">Blog</a>
-        <a href="/admin/resources/" class="admin-nav-link{% if page.url == '/admin/resources/' %} active{% endif %}">Resources</a>
         <a href="/admin/media/" class="admin-nav-link{% if page.url == '/admin/media/' %} active{% endif %}">Media</a>
-        <a href="/admin/events/" class="admin-nav-link{% if page.url == '/admin/events/' %} active{% endif %}">Events</a>
-        <a href="/admin/faqs/" class="admin-nav-link{% if page.url == '/admin/faqs/' %} active{% endif %}">FAQs</a>
-        <a href="/admin/subscribers/" class="admin-nav-link{% if page.url == '/admin/subscribers/' %} active{% endif %}">Subscribers</a>
-        <a href="/admin/campaigns/" class="admin-nav-link{% if page.url == '/admin/campaigns/' %} active{% endif %}">Newsletter</a>
+        <div class="admin-nav-item-drop relative">
+          <button type="button" class="admin-nav-link admin-nav-drop-btn inline-flex items-center gap-1{% if page.url in ['/admin/branches/', '/admin/team/', '/admin/blog/', '/admin/resources/', '/admin/calls/', '/admin/events/', '/admin/faqs/'] %} active{% endif %}" aria-haspopup="true" aria-expanded="false">Content {% icon "chevron", "w-3.5 h-3.5" %}</button>
+          <div class="admin-nav-drop">
+            <a href="/admin/branches/" class="{% if page.url == '/admin/branches/' %}active{% endif %}">{% icon "globe", "w-4 h-4 shrink-0" %}Branches</a>
+            <a href="/admin/team/" class="{% if page.url == '/admin/team/' %}active{% endif %}">{% icon "id", "w-4 h-4 shrink-0" %}Team</a>
+            <a href="/admin/blog/" class="{% if page.url == '/admin/blog/' %}active{% endif %}">{% icon "monitor", "w-4 h-4 shrink-0" %}Blog</a>
+            <a href="/admin/resources/" class="{% if page.url == '/admin/resources/' %}active{% endif %}">{% icon "box", "w-4 h-4 shrink-0" %}Resources</a>
+            <a href="/admin/calls/" class="{% if page.url == '/admin/calls/' %}active{% endif %}">{% icon "compass", "w-4 h-4 shrink-0" %}Calls</a>
+            <a href="/admin/events/" class="{% if page.url == '/admin/events/' %}active{% endif %}">{% icon "calendar", "w-4 h-4 shrink-0" %}Events</a>
+            <a href="/admin/faqs/" class="{% if page.url == '/admin/faqs/' %}active{% endif %}">{% icon "question", "w-4 h-4 shrink-0" %}FAQs</a>
+          </div>
+        </div>
+        <div class="admin-nav-item-drop relative">
+          <button type="button" class="admin-nav-link admin-nav-drop-btn inline-flex items-center gap-1{% if page.url in ['/admin/subscribers/', '/admin/campaigns/'] %} active{% endif %}" aria-haspopup="true" aria-expanded="false">Audience {% icon "chevron", "w-3.5 h-3.5" %}</button>
+          <div class="admin-nav-drop">
+            <a href="/admin/subscribers/" class="{% if page.url == '/admin/subscribers/' %}active{% endif %}">{% icon "id", "w-4 h-4 shrink-0" %}Subscribers</a>
+            <a href="/admin/campaigns/" class="{% if page.url == '/admin/campaigns/' %}active{% endif %}">{% icon "mail", "w-4 h-4 shrink-0" %}Newsletter</a>
+          </div>
+        </div>
+        <a href="/admin/stats/" class="admin-nav-link{% if page.url == '/admin/stats/' %} active{% endif %}">Stats</a>
         <a href="/admin/staff/" id="staffNavLink" class="admin-nav-link{% if page.url == '/admin/staff/' %} active{% endif %}" hidden>Staff</a>
       </nav>
       <div class="flex items-center gap-3">
@@ -107,6 +125,27 @@
       fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).then(function () {
         location.href = '/admin/login/';
       });
+    });
+  })();
+
+  // Click-to-toggle for the Content/Audience nav dropdowns (the CSS also
+  // reveals them on hover/focus-within, same pattern as the main site nav).
+  (function () {
+    document.querySelectorAll('.admin-nav-item-drop').forEach(function (wrap) {
+      var btn = wrap.querySelector('.admin-nav-drop-btn');
+      if (!btn) return;
+      function closeDrop() { wrap.classList.remove('open'); btn.setAttribute('aria-expanded', 'false'); }
+      function openDrop() { wrap.classList.add('open'); btn.setAttribute('aria-expanded', 'true'); }
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var wasOpen = wrap.classList.contains('open');
+        document.querySelectorAll('.admin-nav-item-drop.open').forEach(function (openWrap) {
+          if (openWrap !== wrap) openWrap.classList.remove('open');
+        });
+        if (wasOpen) closeDrop(); else openDrop();
+      });
+      document.addEventListener('click', function (e) { if (!wrap.contains(e.target)) closeDrop(); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDrop(); });
     });
   })();
 </script>

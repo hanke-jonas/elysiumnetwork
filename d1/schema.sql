@@ -230,3 +230,15 @@ CREATE TABLE IF NOT EXISTS protected_folders (
   label TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Monthly counters behind the admin Stats page, since R2's own free-tier
+-- quotas (Class A "write" ops, Class B "read" ops) reset every month and
+-- aren't otherwise queryable from a Worker binding (only Cloudflare's
+-- account-level dashboard shows those). period is 'YYYY-MM'; metric is
+-- 'upload' (a Class A op) or 'view' (a Class B op).
+CREATE TABLE IF NOT EXISTS usage_counters (
+  period TEXT NOT NULL,
+  metric TEXT NOT NULL,
+  count INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (period, metric)
+);

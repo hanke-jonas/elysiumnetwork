@@ -1,12 +1,20 @@
+import { bumpUsage } from '../_lib/usage.js';
+
 // Public, unauthenticated — these are meant to be viewable on the public
 // site (team photos, blog cover images). Keys are random UUIDs assigned at
 // upload time, so nothing sensitive is exposed by serving them openly.
-export async function onRequestGet({ env, params }) {
+export async function onRequestGet({ env, params, waitUntil }) {
   const key = Array.isArray(params.path) ? params.path.join('/') : params.path;
   if (!env.UPLOADS) return new Response('Not found', { status: 404 });
 
   const object = await env.UPLOADS.get(key);
   if (!object) return new Response('Not found', { status: 404 });
+
+  // Every file view on the site funnels through here — this is the hottest
+  // path in the app, so the counter write must never add latency to it.
+  // waitUntil lets the response return immediately while the write finishes
+  // in the background.
+  waitUntil(bumpUsage(env, 'view'));
 
   const headers = new Headers();
   object.writeHttpMetadata(headers);

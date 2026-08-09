@@ -105,7 +105,8 @@ permalink: /admin/media/
         '</button>' +
         '<button type="button" class="btn !py-1 !px-2 text-xs mt-2 w-full folder-protect" data-folder="' + escapeHtml(name) + '" data-protected="' + (isProtected ? '1' : '0') + '">' +
           (isProtected ? 'Sharing settings' : 'Password-protect & share') +
-        '</button>';
+        '</button>' +
+        '<button type="button" class="btn !py-1 !px-2 text-xs mt-1.5 w-full folder-delete" data-folder="' + escapeHtml(name) + '">Delete folder</button>';
       card.querySelector('.folder-open').addEventListener('click', function () { load(prefix + name + '/'); });
       grid.appendChild(card);
     });
@@ -161,6 +162,17 @@ permalink: /admin/media/
           .then(function (res) {
             if (!res.ok) { alert(res.data.error || 'Could not protect folder'); return; }
             prompt('Share this link (password: what you just set):', location.origin + res.data.shareUrl);
+            load(prefix);
+          });
+      });
+    });
+    grid.querySelectorAll('.folder-delete').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var name = btn.getAttribute('data-folder');
+        if (!confirm('Delete "' + name + '" and everything inside it? This cannot be undone.')) return;
+        adminFetch('/api/admin/media', { method: 'POST', body: JSON.stringify({ action: 'delete-folder', prefix: prefix + name + '/' }) })
+          .then(function (res) {
+            if (!res.ok) { setStatus(res.data.error || 'Could not delete folder', true); return; }
             load(prefix);
           });
       });

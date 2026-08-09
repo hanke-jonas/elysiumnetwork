@@ -1,10 +1,17 @@
 import { requireAnyUser } from '../../../_lib/guard.js';
 import { badRequest, json, randomId } from '../../../_lib/http.js';
+import { bumpUsage } from '../../../_lib/usage.js';
 
 // Any file type accepted — functions/uploads/[[path]].js forces anything
 // outside a small known-safe set to download rather than render inline, so
 // an uploaded HTML/SVG file can't execute script when someone opens its URL.
-const MAX_BYTES = 15 * 1024 * 1024; // 15MB — generous for a personal photo/document, still well under Cloudflare's own ~100MB Worker request-body ceiling on this plan.
+// 90MB — as high as this can safely go. Cloudflare's own Workers
+// request-body ceiling on this plan is ~100MB; the upload goes through a
+// Pages Function before ever reaching R2 (not a direct-to-R2 upload), so
+// that Worker limit is the real, hard ceiling regardless of what's set
+// here — 90MB leaves headroom for multipart overhead rather than sitting
+// right at the edge.
+const MAX_BYTES = 90 * 1024 * 1024;
 const EXT_BY_TYPE = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'application/pdf': 'pdf' };
 
 // Same shape as the admin upload endpoint, but gated on a member's own
@@ -28,6 +35,7 @@ export async function onRequestPost({ request, env }) {
   const ext = EXT_BY_TYPE[file.type] || (nameExt && nameExt.length <= 8 ? nameExt.toLowerCase() : 'bin');
   const key = `users/${session.user.id}/${folder}${randomId()}.${ext}`;
   await env.UPLOADS.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: file.type } });
+  bumpUsage(env, 'upload');
 
   return json({ url: `/uploads/${key}`, filename: file.name || null }, { status: 201 });
 }

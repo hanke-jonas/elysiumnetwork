@@ -1,0 +1,83 @@
+---
+layout: admin-base.njk
+title: "Stats"
+permalink: /admin/stats/
+---
+<div class="mb-8">
+  <p class="eyebrow" style="color:var(--coral-ink)">Admin</p>
+  <h1 class="h-sec mt-1">Storage &amp; usage</h1>
+  <p class="mt-2 text-muted max-w-2xl">How much of Cloudflare's free plan the file storage (Elysium+ Cloud, media library, uploads) is using. As long as every bar below stays under 100%, none of this costs anything.</p>
+</div>
+
+<p id="statsStatus" role="status" aria-live="polite" class="text-sm mb-6"></p>
+
+<div id="statsContent" class="hidden">
+  <div class="card p-6 mb-6">
+    <div class="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+      <h2 class="h-card">Storage used</h2>
+      <span class="mono text-xs text-muted" id="storageObjectCount"></span>
+    </div>
+    <div class="stat-bar"><div class="stat-bar-fill" id="storageBarFill" style="background:var(--blue-ink)"></div></div>
+    <p class="mt-2.5 text-sm" id="storageLabel"></p>
+    <p class="mt-1 text-xs text-muted">Free plan includes 10GB of storage.</p>
+  </div>
+
+  <div class="grid gap-5 sm:grid-cols-2 mb-6">
+    <div class="card p-6">
+      <h2 class="h-card">Uploads this month</h2>
+      <div class="stat-bar mt-3"><div class="stat-bar-fill" id="uploadsBarFill" style="background:var(--coral-ink)"></div></div>
+      <p class="mt-2.5 text-sm" id="uploadsLabel"></p>
+      <p class="mt-1 text-xs text-muted">Free plan includes 1,000,000 uploads/month.</p>
+    </div>
+    <div class="card p-6">
+      <h2 class="h-card">File views this month</h2>
+      <div class="stat-bar mt-3"><div class="stat-bar-fill" id="viewsBarFill" style="background:var(--mint-ink)"></div></div>
+      <p class="mt-2.5 text-sm" id="viewsLabel"></p>
+      <p class="mt-1 text-xs text-muted">Free plan includes 10,000,000 views/month.</p>
+    </div>
+  </div>
+
+  <div class="card p-6" style="background:var(--paper-2)">
+    <p class="text-sm leading-relaxed"><strong>Bandwidth is unlimited and always free.</strong> Cloudflare never charges for downloading or viewing files stored here, no matter how much traffic the site gets — only storage and monthly upload/view counts above have a free-plan ceiling, and both have a lot of headroom.</p>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('admin:ready', function () {
+    var status = document.getElementById('statsStatus');
+    var content = document.getElementById('statsContent');
+    status.textContent = 'Loading…';
+
+    function humanBytes(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
+      if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+      return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+    }
+    function pct(used, free) { return Math.min(100, (used / free) * 100); }
+
+    adminFetch('/api/admin/stats').then(function (r) {
+      if (!r.ok) {
+        status.style.color = 'var(--coral-ink)';
+        status.textContent = r.data.error || 'Could not load stats.';
+        return;
+      }
+      status.textContent = '';
+      content.classList.remove('hidden');
+      var d = r.data;
+
+      document.getElementById('storageObjectCount').textContent = d.storage.objectCount + ' file' + (d.storage.objectCount === 1 ? '' : 's');
+      document.getElementById('storageBarFill').style.width = pct(d.storage.bytes, d.storage.freeBytes) + '%';
+      document.getElementById('storageLabel').textContent = humanBytes(d.storage.bytes) + ' of 10 GB used (' + pct(d.storage.bytes, d.storage.freeBytes).toFixed(1) + '%)';
+
+      document.getElementById('uploadsBarFill').style.width = pct(d.month.uploads, d.month.freeUploads) + '%';
+      document.getElementById('uploadsLabel').textContent = d.month.uploads.toLocaleString() + ' uploads in ' + d.month.period;
+
+      document.getElementById('viewsBarFill').style.width = pct(d.month.views, d.month.freeViews) + '%';
+      document.getElementById('viewsLabel').textContent = d.month.views.toLocaleString() + ' views in ' + d.month.period;
+    }).catch(function () {
+      status.style.color = 'var(--coral-ink)';
+      status.textContent = 'Could not reach the server.';
+    });
+  });
+</script>

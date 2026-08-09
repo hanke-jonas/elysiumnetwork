@@ -29,6 +29,8 @@ const ICONS = {
   box: '<path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
   calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
   venus: '<circle cx="12" cy="9" r="6"/><path d="M12 15v7M8.5 19h7"/>',
+  question: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2 1.8-2 3.5"/><path d="M12 17h.01"/>',
+  chart: '<path d="M4 20V10m8 10V4m8 16v-7"/><path d="M2 20h20"/>',
 };
 
 module.exports = function (eleventyConfig) {

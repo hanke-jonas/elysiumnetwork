@@ -1,5 +1,6 @@
 import { requireStaff } from '../../_lib/guard.js';
 import { badRequest, json, randomId } from '../../_lib/http.js';
+import { bumpUsage } from '../../_lib/usage.js';
 
 // Any file type is accepted now — the risk that used to matter (an
 // uploaded HTML/SVG file executing script when someone opens its URL
@@ -42,6 +43,7 @@ export async function onRequestPost({ request, env }) {
     if (folder && !folder.endsWith('/')) folder += '/';
     const key = `${folder}${randomId()}.${ext}`;
     await env.UPLOADS.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: file.type } });
+    bumpUsage(env, 'upload');
 
     return json({ url: `/uploads/${key}`, filename: file.name || null }, { status: 201 });
   } catch (err) {

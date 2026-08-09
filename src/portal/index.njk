@@ -20,7 +20,7 @@ permalink: /portal/
   <input type="file" id="fileInput" multiple style="display:none">
 
   <div id="dropzone" class="rounded-2xl border-2 border-dashed p-4 mb-6 text-center text-sm text-muted transition" style="background:var(--paper-2);border-color:rgba(25,23,18,.3)">
-    Drag files here, or use "Upload" above — 15MB max per file
+    Drag files here, or use "Upload" above — 90MB max per file
   </div>
 
   <p id="status" role="status" aria-live="polite" class="text-sm mb-4"></p>
@@ -122,11 +122,22 @@ permalink: /portal/
       grid.innerHTML = '';
 
       data.folders.forEach(function (name) {
-        var card = document.createElement('button');
-        card.type = 'button';
-        card.className = 'card p-4 text-left hover:-translate-y-0.5 transition';
-        card.innerHTML = '<div class="text-3xl mb-2">📁</div><p class="font-semibold text-sm truncate">' + escapeHtml(name) + '</p>';
-        card.addEventListener('click', function () { load(prefix + name + '/'); });
+        var card = document.createElement('div');
+        card.className = 'card p-4';
+        card.innerHTML =
+          '<button type="button" class="text-left w-full folder-open" style="cursor:pointer">' +
+            '<div class="text-3xl mb-2">📁</div><p class="font-semibold text-sm truncate">' + escapeHtml(name) + '</p>' +
+          '</button>' +
+          '<button type="button" class="btn !py-1 !px-2 text-xs mt-2 w-full folder-delete" data-folder="' + escapeHtml(name) + '">Delete folder</button>';
+        card.querySelector('.folder-open').addEventListener('click', function () { load(prefix + name + '/'); });
+        card.querySelector('.folder-delete').addEventListener('click', function () {
+          if (!confirm('Delete "' + name + '" and everything inside it? This cannot be undone.')) return;
+          accountFetch('/api/account/media', { method: 'POST', body: JSON.stringify({ action: 'delete-folder', prefix: prefix + name + '/' }) })
+            .then(function (res) {
+              if (!res.ok) { setStatus(res.data.error || 'Could not delete folder', true); return; }
+              load(prefix);
+            });
+        });
         grid.appendChild(card);
       });
 
