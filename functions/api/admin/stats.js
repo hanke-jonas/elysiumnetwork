@@ -189,14 +189,21 @@ export async function onRequestGet({ request, env }) {
       // — this also self-corrects if Cloudflare ever renames it internally.
       const allGroups = data?.viewer?.accounts?.[0]?.workersInvocationsAdaptive || [];
       const groups = allGroups.filter((g) => g.dimensions.scriptName === WORKER_SCRIPT_NAME);
+      // Confirmed live: this account's two standalone Workers scripts
+      // (elysium-discovery-cron, erasmus-workshop-deck) show up here, but
+      // the Pages project's own Functions never do — Cloudflare doesn't
+      // attribute Pages Functions invocations to a scriptName in this
+      // dataset at all, so there is nothing to sum. Total request volume
+      // for the whole site (including every Function call) is still real
+      // and available in the "Whole site" traffic section below.
+      if (!groups.length) {
+        throw new Error('Pages Functions aren’t broken out separately from Workers scripts in Cloudflare’s analytics — see "Whole site" traffic below for total request volume, which includes every Function call.');
+      }
       const totals = groups.reduce((acc, g) => ({
         requests: acc.requests + (g.sum.requests || 0),
         errors: acc.errors + (g.sum.errors || 0),
         subrequests: acc.subrequests + (g.sum.subrequests || 0),
       }), { requests: 0, errors: 0, subrequests: 0 });
-      if (!groups.length && allGroups.length) {
-        totals.otherScripts = [...new Set(allGroups.map((g) => g.dimensions.scriptName))];
-      }
       const withQuantiles = groups.find((g) => g.quantiles);
       return { ...totals, cpuTimeP50: withQuantiles?.quantiles?.cpuTimeP50 ?? null, cpuTimeP99: withQuantiles?.quantiles?.cpuTimeP99 ?? null };
     }),
@@ -208,23 +215,18 @@ export async function onRequestGet({ request, env }) {
           viewer { zones(filter: { zoneTag: $zoneTag }) {
             httpRequestsAdaptiveGroups(limit: 100, filter: { datetime_geq: $start, datetime_leq: $end }) {
               count
-              sum { edgeResponseBytes cachedResponseBytes threats }
+              sum { edgeResponseBytes threats }
             }
           } }
         }`,
         { zoneTag, start: monthStartDate, end: nowIso }
       );
       const groups = data?.viewer?.zones?.[0]?.httpRequestsAdaptiveGroups || [];
-      // No request-count cache-hit field survived Cloudflare's schema (only
-      // byte totals did) — cachedBytes/bytes is used as the cache-hit
-      // proxy instead, which is arguably the more useful number anyway
-      // (how much bandwidth caching actually saved, not just request count).
       return groups.reduce((acc, g) => ({
         requests: acc.requests + (g.count || 0),
         bytes: acc.bytes + (g.sum.edgeResponseBytes || 0),
-        cachedBytes: acc.cachedBytes + (g.sum.cachedResponseBytes || 0),
         threats: acc.threats + (g.sum.threats || 0),
-      }), { requests: 0, bytes: 0, cachedBytes: 0, threats: 0 });
+      }), { requests: 0, bytes: 0, threats: 0 });
     }),
   ]);
 
