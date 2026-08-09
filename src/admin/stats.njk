@@ -76,7 +76,7 @@ permalink: /admin/stats/
   <div id="trafficCard" class="card p-6 mb-6">
     <h2 class="h-card">Total traffic this month</h2>
     <p class="mt-1 text-xs text-muted mb-3">Every request to the site — pages, images, everything — straight from Cloudflare's edge, not an estimate.</p>
-    <div class="grid gap-4 sm:grid-cols-3 mt-3" id="trafficGrid"></div>
+    <div class="grid gap-4 sm:grid-cols-2 mt-3" id="trafficGrid"></div>
   </div>
 
   <div class="card p-6" style="background:var(--paper-2)">
@@ -192,8 +192,7 @@ permalink: /admin/stats/
       if (cf.traffic && cf.traffic.ok) {
         document.getElementById('trafficGrid').innerHTML =
           numCard(humanNum(cf.traffic.requests), 'Requests') +
-          numCard(humanBytes(cf.traffic.bytes), 'Bandwidth served') +
-          numCard(humanNum(cf.traffic.threats), 'Threats blocked');
+          numCard(humanBytes(cf.traffic.bytes), 'Bandwidth served');
       } else {
         unavailable('trafficCard', cf.traffic);
       }

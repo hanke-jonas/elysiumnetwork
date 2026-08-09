@@ -215,7 +215,7 @@ export async function onRequestGet({ request, env }) {
           viewer { zones(filter: { zoneTag: $zoneTag }) {
             httpRequestsAdaptiveGroups(limit: 100, filter: { datetime_geq: $start, datetime_leq: $end }) {
               count
-              sum { edgeResponseBytes threats }
+              sum { edgeResponseBytes }
             }
           } }
         }`,
@@ -225,8 +225,7 @@ export async function onRequestGet({ request, env }) {
       return groups.reduce((acc, g) => ({
         requests: acc.requests + (g.count || 0),
         bytes: acc.bytes + (g.sum.edgeResponseBytes || 0),
-        threats: acc.threats + (g.sum.threats || 0),
-      }), { requests: 0, bytes: 0, threats: 0 });
+      }), { requests: 0, bytes: 0 });
     }),
   ]);
 
