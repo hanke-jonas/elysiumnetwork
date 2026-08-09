@@ -6,12 +6,14 @@ permalink: /admin/stats/
 <div class="mb-8">
   <p class="eyebrow" style="color:var(--coral-ink)">Admin</p>
   <h1 class="h-sec mt-1">Storage &amp; usage</h1>
-  <p class="mt-2 text-muted max-w-2xl">How much of Cloudflare's free plan the file storage (Elysium+ Cloud, media library, uploads) is using. As long as every bar below stays under 100%, none of this costs anything.</p>
+  <p class="mt-2 text-muted max-w-2xl">Everything Cloudflare tracks about this site — storage, database, Functions and total site traffic — next to what's included on the free plan.</p>
 </div>
 
 <p id="statsStatus" role="status" aria-live="polite" class="text-sm mb-6"></p>
 
 <div id="statsContent" class="hidden">
+
+  <p class="eyebrow mb-3" style="color:var(--blue-ink)">Files (R2)</p>
   <div class="card p-6 mb-6">
     <div class="flex flex-wrap items-baseline justify-between gap-2 mb-3">
       <h2 class="h-card">Storage used</h2>
@@ -25,22 +27,72 @@ permalink: /admin/stats/
   <div class="grid gap-5 sm:grid-cols-2 mb-6">
     <div class="card p-6">
       <h2 class="h-card">Uploads this month</h2>
-      <div class="stat-bar mt-3"><div class="stat-bar-fill" id="uploadsBarFill" style="background:var(--coral-ink)"></div></div>
+      <p class="mt-1 text-xs text-muted mb-2">Self-tracked, exact, no delay.</p>
+      <div class="stat-bar"><div class="stat-bar-fill" id="uploadsBarFill" style="background:var(--coral-ink)"></div></div>
       <p class="mt-2.5 text-sm" id="uploadsLabel"></p>
       <p class="mt-1 text-xs text-muted">Free plan includes 1,000,000 uploads/month.</p>
     </div>
     <div class="card p-6">
       <h2 class="h-card">File views this month</h2>
-      <div class="stat-bar mt-3"><div class="stat-bar-fill" id="viewsBarFill" style="background:var(--mint-ink)"></div></div>
+      <p class="mt-1 text-xs text-muted mb-2">Self-tracked, exact, no delay.</p>
+      <div class="stat-bar"><div class="stat-bar-fill" id="viewsBarFill" style="background:var(--mint-ink)"></div></div>
       <p class="mt-2.5 text-sm" id="viewsLabel"></p>
       <p class="mt-1 text-xs text-muted">Free plan includes 10,000,000 views/month.</p>
     </div>
   </div>
 
-  <div class="card p-6" style="background:var(--paper-2)">
-    <p class="text-sm leading-relaxed"><strong>Bandwidth is unlimited and always free.</strong> Cloudflare never charges for downloading or viewing files stored here, no matter how much traffic the site gets — only storage and monthly upload/view counts above have a free-plan ceiling, and both have a lot of headroom.</p>
+  <div id="r2OpsCard" class="card p-6 mb-6">
+    <h2 class="h-card">R2 operations this month <span class="tag ml-1" style="font-size:.62rem">from Cloudflare</span></h2>
+    <p class="mt-1 text-xs text-muted mb-3">Every operation type Cloudflare itself recorded against the bucket — may lag live traffic by up to an hour.</p>
+    <div id="r2OpsBody"></div>
   </div>
+
+  <div id="r2StorageCard" class="card p-6 mb-6" style="background:var(--paper-2)">
+    <h2 class="h-card">R2 storage, per Cloudflare <span class="tag ml-1" style="font-size:.62rem">cross-check</span></h2>
+    <p class="mt-2 text-sm" id="r2StorageBody"></p>
+  </div>
+
+  <p class="eyebrow mb-3 mt-2" style="color:var(--coral-ink)">Database (D1)</p>
+  <div id="d1Card" class="card p-6 mb-6">
+    <h2 class="h-card">Queries this month</h2>
+    <div class="grid gap-4 sm:grid-cols-4 mt-3" id="d1Grid"></div>
+    <p class="mt-3 text-xs text-muted">Free plan includes 5,000,000 rows read and 100,000 rows written <strong>per day</strong> — the numbers above are a month-to-date total, so compare them mentally against roughly 30&times; those daily limits.</p>
+  </div>
+  <div id="d1StorageCard" class="card p-6 mb-6" style="background:var(--paper-2)">
+    <h2 class="h-card">Database size</h2>
+    <p class="mt-2 text-sm" id="d1StorageBody"></p>
+    <p class="mt-1 text-xs text-muted">Free plan includes 5GB of D1 storage.</p>
+  </div>
+
+  <p class="eyebrow mb-3 mt-2" style="color:var(--mint-ink)">Functions (Workers)</p>
+  <div id="workersCard" class="card p-6 mb-6">
+    <h2 class="h-card">Every admin/portal/API request this month</h2>
+    <p class="mt-1 text-xs text-muted mb-3">Every Pages Function invocation behind /api/, /uploads/, /admin/ and /portal/ — the code that runs the site's backend.</p>
+    <div class="grid gap-4 sm:grid-cols-4 mt-3" id="workersGrid"></div>
+    <p class="mt-3 text-xs text-muted">Free plan includes 100,000 requests <strong>per day</strong> — the numbers above are a month-to-date total.</p>
+  </div>
+
+  <p class="eyebrow mb-3 mt-2" style="color:var(--blue-ink)">Whole site (elysium.ngo)</p>
+  <div id="trafficCard" class="card p-6 mb-6">
+    <h2 class="h-card">Total traffic this month</h2>
+    <p class="mt-1 text-xs text-muted mb-3">Every request to the site — pages, images, everything — straight from Cloudflare's edge, not an estimate.</p>
+    <div class="grid gap-4 sm:grid-cols-4 mt-3" id="trafficGrid"></div>
+  </div>
+
+  <div class="card p-6" style="background:var(--paper-2)">
+    <p class="text-sm leading-relaxed"><strong>Bandwidth is unlimited and always free.</strong> Cloudflare never charges for serving traffic on this plan — Workers/Pages requests, R2 downloads and the whole site's bandwidth shown above have no cost ceiling, no matter how much traffic the site gets. Only the storage and monthly/daily operation counts above have a free-plan limit, and every one of them has a lot of headroom.</p>
+  </div>
+
 </div>
+
+<style>
+  .stat-num-card{ border:2px solid var(--ink); border-radius:.7rem; padding:.85rem; background:var(--paper); }
+  .stat-num-card .n{ font-family:"Bricolage Grotesque",sans-serif; font-weight:800; font-size:1.5rem; line-height:1.1; }
+  .stat-num-card .l{ font-size:.7rem; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin-top:.25rem; }
+  .stat-unavailable{ font-size:.85rem; color:var(--muted); font-style:italic; }
+  .r2-op-row{ display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.4rem 0; border-bottom:1px solid var(--line); font-size:.88rem; }
+  .r2-op-row:last-child{ border-bottom:none; }
+</style>
 
 <script>
   document.addEventListener('admin:ready', function () {
@@ -49,12 +101,26 @@ permalink: /admin/stats/
     status.textContent = 'Loading…';
 
     function humanBytes(bytes) {
+      if (bytes == null) return '—';
       if (bytes < 1024) return bytes + ' B';
       if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
       if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
       return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
     }
+    function humanNum(n) { return n == null ? '—' : n.toLocaleString(); }
+    function humanMs(ms) { return ms == null ? '—' : (ms < 1 ? (ms * 1000).toFixed(0) + 'µs' : ms.toFixed(1) + 'ms'); }
     function pct(used, free) { return Math.min(100, (used / free) * 100); }
+
+    function numCard(n, label) {
+      return '<div class="stat-num-card"><div class="n">' + n + '</div><div class="l">' + label + '</div></div>';
+    }
+    function unavailable(cardId, section) {
+      var el = document.getElementById(cardId);
+      var note = document.createElement('p');
+      note.className = 'stat-unavailable mt-2';
+      note.textContent = section && section.error ? 'Not available yet: ' + section.error : 'Not available — Cloudflare account access isn\'t configured for this.';
+      el.appendChild(note);
+    }
 
     adminFetch('/api/admin/stats').then(function (r) {
       if (!r.ok) {
@@ -75,6 +141,64 @@ permalink: /admin/stats/
 
       document.getElementById('viewsBarFill').style.width = pct(d.month.views, d.month.freeViews) + '%';
       document.getElementById('viewsLabel').textContent = d.month.views.toLocaleString() + ' views in ' + d.month.period;
+
+      var cf = d.cloudflare || {};
+      if (!cf.configured) {
+        ['r2OpsCard', 'r2StorageCard', 'd1Card', 'd1StorageCard', 'workersCard', 'trafficCard'].forEach(function (id) { unavailable(id); });
+        return;
+      }
+
+      if (cf.r2Operations && cf.r2Operations.ok && cf.r2Operations.byAction.length) {
+        document.getElementById('r2OpsBody').innerHTML = cf.r2Operations.byAction
+          .sort(function (a, b) { return b.requests - a.requests; })
+          .map(function (op) { return '<div class="r2-op-row"><span class="mono">' + op.actionType + '</span><strong>' + humanNum(op.requests) + '</strong></div>'; })
+          .join('');
+      } else {
+        unavailable('r2OpsCard', cf.r2Operations);
+      }
+
+      if (cf.r2Storage && cf.r2Storage.ok && !cf.r2Storage.unavailable) {
+        document.getElementById('r2StorageBody').textContent = humanNum(cf.r2Storage.objectCount) + ' objects, ' + humanBytes(cf.r2Storage.payloadSize) + ' payload + ' + humanBytes(cf.r2Storage.metadataSize) + ' metadata, per Cloudflare\'s own measurement.';
+      } else {
+        unavailable('r2StorageCard', cf.r2Storage);
+      }
+
+      if (cf.d1 && cf.d1.ok) {
+        document.getElementById('d1Grid').innerHTML =
+          numCard(humanNum(cf.d1.readQueries), 'Read queries') +
+          numCard(humanNum(cf.d1.writeQueries), 'Write queries') +
+          numCard(humanNum(cf.d1.rowsRead), 'Rows read') +
+          numCard(humanNum(cf.d1.rowsWritten), 'Rows written');
+      } else {
+        unavailable('d1Card', cf.d1);
+      }
+
+      if (cf.d1Storage && cf.d1Storage.ok && !cf.d1Storage.unavailable) {
+        document.getElementById('d1StorageBody').textContent = humanBytes(cf.d1Storage.databaseSizeBytes) + ' used of 5 GB.';
+      } else {
+        unavailable('d1StorageCard', cf.d1Storage);
+      }
+
+      if (cf.workers && cf.workers.ok) {
+        document.getElementById('workersGrid').innerHTML =
+          numCard(humanNum(cf.workers.requests), 'Requests') +
+          numCard(humanNum(cf.workers.errors), 'Errors') +
+          numCard(humanMs(cf.workers.cpuTimeP50), 'Median CPU time') +
+          numCard(humanMs(cf.workers.cpuTimeP99), 'P99 CPU time');
+      } else {
+        unavailable('workersCard', cf.workers);
+      }
+
+      if (cf.traffic && cf.traffic.ok) {
+        var hitRate = cf.traffic.requests ? ((cf.traffic.cachedRequests / cf.traffic.requests) * 100).toFixed(1) : '0.0';
+        document.getElementById('trafficGrid').innerHTML =
+          numCard(humanNum(cf.traffic.requests), 'Requests') +
+          numCard(humanBytes(cf.traffic.bytes), 'Bandwidth served') +
+          numCard(hitRate + '%', 'Served from cache') +
+          numCard(humanNum(cf.traffic.threats), 'Threats blocked');
+      } else {
+        unavailable('trafficCard', cf.traffic);
+      }
     }).catch(function () {
       status.style.color = 'var(--coral-ink)';
       status.textContent = 'Could not reach the server.';

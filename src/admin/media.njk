@@ -103,10 +103,10 @@ permalink: /admin/media/
           '<div class="text-3xl mb-2">' + (isProtected ? '🔒' : '📁') + '</div>' +
           '<p class="font-semibold text-sm truncate">' + escapeHtml(name) + '</p>' +
         '</button>' +
-        '<button type="button" class="btn !py-1 !px-2 text-xs mt-2 w-full folder-protect" data-folder="' + escapeHtml(name) + '" data-protected="' + (isProtected ? '1' : '0') + '">' +
+        '<button type="button" class="btn !py-1.5 !px-2 !whitespace-normal !leading-snug text-center justify-center text-xs mt-2 w-full folder-protect" data-folder="' + escapeHtml(name) + '" data-protected="' + (isProtected ? '1' : '0') + '">' +
           (isProtected ? 'Sharing settings' : 'Password-protect & share') +
         '</button>' +
-        '<button type="button" class="btn !py-1 !px-2 text-xs mt-1.5 w-full folder-delete" data-folder="' + escapeHtml(name) + '">Delete folder</button>';
+        '<button type="button" class="btn !py-1.5 !px-2 text-xs mt-1.5 w-full justify-center folder-delete" data-folder="' + escapeHtml(name) + '">Delete folder</button>';
       card.querySelector('.folder-open').addEventListener('click', function () { load(prefix + name + '/'); });
       grid.appendChild(card);
     });
