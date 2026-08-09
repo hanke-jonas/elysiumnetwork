@@ -117,6 +117,7 @@ export async function onRequestGet({ request, env }) {
           viewer { accounts(filter: { accountTag: $accountTag }) {
             r2StorageAdaptiveGroups(limit: 1, filter: { bucketName: $bucketName }, orderBy: [datetime_DESC]) {
               max { objectCount payloadSize metadataSize }
+              dimensions { datetime }
             }
           } }
         }`,
@@ -153,6 +154,7 @@ export async function onRequestGet({ request, env }) {
           viewer { accounts(filter: { accountTag: $accountTag }) {
             d1StorageAdaptiveGroups(limit: 1, filter: { databaseId: $databaseId }, orderBy: [datetime_DESC]) {
               max { databaseSizeBytes }
+              dimensions { datetime }
             }
           } }
         }`,
@@ -166,7 +168,7 @@ export async function onRequestGet({ request, env }) {
         token,
         `query($accountTag: string!, $start: string!, $end: string!, $scriptName: string!) {
           viewer { accounts(filter: { accountTag: $accountTag }) {
-            workersInvocationsAdaptiveGroups(limit: 100, filter: { datetime_geq: $start, datetime_leq: $end, scriptName: $scriptName }) {
+            workersInvocationsAdaptive(limit: 100, filter: { datetime_geq: $start, datetime_leq: $end, scriptName: $scriptName }) {
               sum { requests errors subrequests }
               quantiles { cpuTimeP50 cpuTimeP99 }
             }
@@ -174,7 +176,7 @@ export async function onRequestGet({ request, env }) {
         }`,
         { accountTag, start: monthStartDate, end: nowIso, scriptName: WORKER_SCRIPT_NAME }
       );
-      const groups = data?.viewer?.accounts?.[0]?.workersInvocationsAdaptiveGroups || [];
+      const groups = data?.viewer?.accounts?.[0]?.workersInvocationsAdaptive || [];
       const totals = groups.reduce((acc, g) => ({
         requests: acc.requests + (g.sum.requests || 0),
         errors: acc.errors + (g.sum.errors || 0),
@@ -190,7 +192,8 @@ export async function onRequestGet({ request, env }) {
         `query($zoneTag: string!, $start: string!, $end: string!) {
           viewer { zones(filter: { zoneTag: $zoneTag }) {
             httpRequestsAdaptiveGroups(limit: 100, filter: { datetime_geq: $start, datetime_leq: $end }) {
-              sum { requests bytes cachedRequests cachedBytes threats }
+              count
+              sum { bytes cachedRequests cachedBytes threats }
             }
           } }
         }`,
@@ -198,7 +201,7 @@ export async function onRequestGet({ request, env }) {
       );
       const groups = data?.viewer?.zones?.[0]?.httpRequestsAdaptiveGroups || [];
       return groups.reduce((acc, g) => ({
-        requests: acc.requests + (g.sum.requests || 0),
+        requests: acc.requests + (g.count || 0),
         bytes: acc.bytes + (g.sum.bytes || 0),
         cachedRequests: acc.cachedRequests + (g.sum.cachedRequests || 0),
         cachedBytes: acc.cachedBytes + (g.sum.cachedBytes || 0),
