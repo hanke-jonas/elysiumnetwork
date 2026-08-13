@@ -1,3 +1,27 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Explicit source scanning (matches the old tailwind.config.js `content`
+   array exactly): .eleventy.js needs to be scanned too because its
+   `emptyState` shortcode returns raw HTML with utility classes
+   (p-10, sm:p-14, rounded-2xl, ...) that live in JS, not in a .njk file. */
+@source "../**/*.njk";
+@source "../../.eleventy.js";
+
+@theme {
+  --color-paper: #F7F1E2;
+  --color-paper-2: #EFE6CE;
+  --color-ink: #191712;
+  --color-fg: #191712;
+  --color-muted: #5B5748;
+  --color-line: rgba(25, 23, 18, .16);
+  --color-blue: #7C93D6;
+  --color-coral: #FF6B54;
+  --color-sun: #FFC93C;
+  --color-mint: #59B37B;
+  --color-plum: #B478D9;
+
+  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-hand: Caveat, cursive;
+  --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
