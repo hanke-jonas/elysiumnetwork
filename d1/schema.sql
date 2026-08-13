@@ -123,6 +123,7 @@ CREATE TABLE IF NOT EXISTS call_interest (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE(call_id, user_id) -- one expression of interest per user per call
 );
+CREATE INDEX IF NOT EXISTS idx_call_interest_user ON call_interest(user_id);
 
 -- Newsletter subscribers are intentionally NOT the same table as
 -- public_users: subscribing shouldn't require creating an account, and a
@@ -189,6 +190,7 @@ CREATE TABLE IF NOT EXISTS resources (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE INDEX IF NOT EXISTS idx_resources_status ON resources(status, published_at);
 
 -- Real events with a date, distinct from the informal "Active Calls" list —
 -- calls stay a static open/closed listing; events get a real date, location
@@ -218,6 +220,7 @@ CREATE TABLE IF NOT EXISTS event_rsvps (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE(event_id, user_id)
 );
+CREATE INDEX IF NOT EXISTS idx_event_rsvps_user ON event_rsvps(user_id);
 
 -- A folder (R2 key prefix) an admin has put a password on, reachable by
 -- anyone with the link and password at /shared/?f=<slug> — no account

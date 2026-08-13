@@ -26,7 +26,7 @@ export async function onRequestPost({ request, env }) {
   const form = await request.formData().catch(() => null);
   const file = form && form.get('file');
   if (!file || typeof file === 'string') return badRequest('No file provided');
-  if (file.size > MAX_BYTES) return badRequest('File is too large — 15MB maximum');
+  if (file.size > MAX_BYTES) return badRequest(`File is too large — ${Math.round(MAX_BYTES / (1024 * 1024))}MB maximum`);
 
   let folder = String(form.get('folder') || '').replace(/^\/+/, '').replace(/\.\./g, '');
   if (folder && !folder.endsWith('/')) folder += '/';

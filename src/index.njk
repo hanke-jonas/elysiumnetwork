@@ -161,16 +161,20 @@ permalink: /
 
 <section class="bg-paper-2 border-b-2 border-ink">
   <div class="max-w-[1400px] mx-auto px-5 sm:px-8 py-20 sm:py-24 space-y-6">
+    {% set featured = null %}
+    {% for c in calls %}{% if not featured and c.status != 'closed' %}{% set featured = c %}{% endif %}{% endfor %}
+    {% if featured %}
     <div class="card !rounded-2xl overflow-hidden relative reveal">
       <div class="p-8 sm:p-12 grid lg:grid-cols-3 gap-8 items-center">
         <div class="lg:col-span-2">
           <p class="eyebrow" style="color:var(--coral-ink)">Featured project</p>
-          <h2 class="h-sec mt-4">Democracy on TrackS</h2>
-          <p class="mt-4 text-muted text-lg leading-relaxed max-w-2xl">A ten-day, fully funded rail journey from Berlin to Strasbourg, taking in the Bundestag, the European Commission, the Court of Justice and the European Parliament. Run through our German branch.</p>
+          <h2 class="h-sec mt-4">{{ featured.title }}</h2>
+          <p class="mt-4 text-muted text-lg leading-relaxed max-w-2xl">{{ featured.summary }}</p>
         </div>
         <div class="lg:justify-self-end"><a href="/calls/" class="btn btn-accent w-full lg:w-auto justify-center">See active calls {% icon "arrow", "w-4 h-4" %}</a></div>
       </div>
     </div>
+    {% endif %}
     <a href="{{ site.hub }}" target="_blank" rel="noopener" class="block card p-6 sm:p-7 flex flex-col sm:flex-row sm:items-center gap-4 reveal group">
       <div class="flex-1">
         <span class="tag" style="border-color:var(--mint);color:var(--mint)"><span class="w-1.5 h-1.5 rounded-full" style="background:var(--mint)"></span> Beta</span>

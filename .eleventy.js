@@ -68,6 +68,7 @@ module.exports = function (eleventyConfig) {
   });
 
   eleventyConfig.addPassthroughCopy('src/robots.txt');
+  eleventyConfig.addPassthroughCopy('src/_redirects');
   eleventyConfig.addPassthroughCopy('src/assets');
 
   // Compiled here (not via a separate package.json script) so the CSS is
@@ -110,7 +111,7 @@ module.exports = function (eleventyConfig) {
         .trim();
 
     const pages = results
-      .filter((r) => r.url && r.content && r.url !== '/404.html' && !r.url.startsWith('/admin/'))
+      .filter((r) => r.url && r.content && r.url !== '/404.html' && !r.url.startsWith('/admin/') && !r.url.startsWith('/portal/'))
       .map((r) => {
         const titleMatch = r.content.match(/<title>([\s\S]*?)<\/title>/i);
         const title = titleMatch ? stripHtml(titleMatch[1]) : r.url;

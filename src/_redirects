@@ -1,0 +1,4 @@
+# /about-us/ isn't a URL this site has ever used, but it 404s for visitors
+# following stale links/search results from the pre-Eleventy site (see
+# src/about.njk's link to old.elysium.ngo for the archived prior platform).
+/about-us/ /about/ 301
