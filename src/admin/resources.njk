@@ -194,7 +194,7 @@ permalink: /admin/resources/
 
       var delBtn = document.createElement('button');
       delBtn.type = 'button';
-      delBtn.className = 'btn !py-1.5 !px-3 text-xs ml-2';
+      delBtn.className = 'btn btn-coral !py-1.5 !px-3 text-xs ml-2';
       delBtn.textContent = 'Delete';
       delBtn.addEventListener('click', function () { deleteResource(item.id, item.title, delBtn); });
 
@@ -232,16 +232,18 @@ permalink: /admin/resources/
   }
 
   function deleteResource(id, title, btn) {
-    if (!confirm('Delete "' + title + '"? This cannot be undone.')) return;
-    btn.disabled = true;
-    setTableStatus('');
-    adminFetch('/api/admin/resources/' + id, { method: 'DELETE' }).then(function (r) {
-      if (!r.ok) {
-        btn.disabled = false;
-        setTableStatus(r.data && r.data.error ? r.data.error : 'Failed to delete resource.', true);
-        return;
-      }
-      load();
+    confirmDialog('Delete "' + title + '"? This cannot be undone.', 'Delete').then(function (ok) {
+      if (!ok) return;
+      btn.disabled = true;
+      setTableStatus('');
+      adminFetch('/api/admin/resources/' + id, { method: 'DELETE' }).then(function (r) {
+        if (!r.ok) {
+          btn.disabled = false;
+          setTableStatus(r.data && r.data.error ? r.data.error : 'Failed to delete resource.', true);
+          return;
+        }
+        load();
+      });
     });
   }
 

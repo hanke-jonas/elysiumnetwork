@@ -1,0 +1,81 @@
+<div id="dialogOverlay" class="dialog-overlay hidden">
+  <div class="dialog-box card p-6" role="alertdialog" aria-modal="true" aria-labelledby="dialogMessage">
+    <p id="dialogMessage" class="text-base leading-relaxed" style="white-space:pre-line"></p>
+    <div id="dialogInputWrap" class="mt-4 hidden">
+      <input type="text" id="dialogInput" class="input w-full">
+    </div>
+    <div class="mt-6 flex gap-3 justify-end">
+      <button type="button" id="dialogCancelBtn" class="btn">Cancel</button>
+      <button type="button" id="dialogOkBtn" class="btn btn-accent">OK</button>
+    </div>
+  </div>
+</div>
+<style>
+  .dialog-overlay{ position:fixed; inset:0; background:rgba(25,23,18,.55); z-index:200; display:flex; align-items:center; justify-content:center; padding:1.5rem; }
+  .dialog-overlay.hidden{ display:none; }
+  .dialog-box{ max-width:26rem; width:100%; }
+</style>
+<script>
+  // Replaces native confirm()/prompt()/alert() everywhere in /admin/ and
+  // /portal/ with something that actually looks like the rest of the site
+  // instead of raw browser chrome. One shared overlay per page — callers
+  // never run concurrently since they're always triggered by a single
+  // user click, so reusing one instance is safe.
+  (function () {
+    var overlay = document.getElementById('dialogOverlay');
+    var messageEl = document.getElementById('dialogMessage');
+    var inputWrap = document.getElementById('dialogInputWrap');
+    var input = document.getElementById('dialogInput');
+    var cancelBtn = document.getElementById('dialogCancelBtn');
+    var okBtn = document.getElementById('dialogOkBtn');
+    var activeResolve = null;
+
+    function close(result) {
+      overlay.classList.add('hidden');
+      if (activeResolve) { var r = activeResolve; activeResolve = null; r(result); }
+    }
+
+    cancelBtn.addEventListener('click', function () { close(null); });
+    okBtn.addEventListener('click', function () {
+      close(inputWrap.classList.contains('hidden') ? true : input.value);
+    });
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) close(null); });
+    document.addEventListener('keydown', function (e) {
+      if (overlay.classList.contains('hidden')) return;
+      if (e.key === 'Escape') close(null);
+      if (e.key === 'Enter' && document.activeElement !== cancelBtn) okBtn.click();
+    });
+
+    function open(message, opts) {
+      opts = opts || {};
+      return new Promise(function (resolve) {
+        activeResolve = resolve;
+        messageEl.textContent = message;
+        okBtn.textContent = opts.okLabel || 'OK';
+        cancelBtn.textContent = opts.cancelLabel || 'Cancel';
+        cancelBtn.hidden = !!opts.hideCancel;
+        if (opts.withInput) {
+          inputWrap.classList.remove('hidden');
+          input.placeholder = opts.placeholder || '';
+          input.value = opts.defaultValue || '';
+          input.type = opts.inputType || 'text';
+        } else {
+          inputWrap.classList.add('hidden');
+        }
+        overlay.classList.remove('hidden');
+        if (opts.withInput) setTimeout(function () { input.focus(); }, 20);
+      });
+    }
+
+    window.confirmDialog = function (message, okLabel, cancelLabel) {
+      return open(message, { okLabel: okLabel || 'Confirm', cancelLabel: cancelLabel }).then(function (r) { return r === true; });
+    };
+    window.promptDialog = function (message, opts) {
+      opts = opts || {};
+      return open(message, { withInput: true, placeholder: opts.placeholder, defaultValue: opts.defaultValue, inputType: opts.inputType, okLabel: opts.okLabel });
+    };
+    window.alertDialog = function (message) {
+      return open(message, { hideCancel: true });
+    };
+  })();
+</script>

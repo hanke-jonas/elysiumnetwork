@@ -46,15 +46,6 @@ permalink: /portal/
     init();
   });
 
-  function accountFetch(url, opts) {
-    opts = opts || {};
-    opts.credentials = 'include';
-    opts.headers = opts.body instanceof FormData ? (opts.headers || {}) : Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
-    return fetch(url, opts).then(function (res) {
-      return res.json().then(function (data) { return { ok: res.ok, status: res.status, data: data }; });
-    });
-  }
-
   function init() {
     content.classList.remove('hidden');
 
@@ -131,12 +122,14 @@ permalink: /portal/
           '<button type="button" class="btn !py-1 !px-2 text-xs mt-2 w-full folder-delete" data-folder="' + escapeHtml(name) + '">Delete folder</button>';
         card.querySelector('.folder-open').addEventListener('click', function () { load(prefix + name + '/'); });
         card.querySelector('.folder-delete').addEventListener('click', function () {
-          if (!confirm('Delete "' + name + '" and everything inside it? This cannot be undone.')) return;
-          accountFetch('/api/account/media', { method: 'POST', body: JSON.stringify({ action: 'delete-folder', prefix: prefix + name + '/' }) })
-            .then(function (res) {
-              if (!res.ok) { setStatus(res.data.error || 'Could not delete folder', true); return; }
-              load(prefix);
-            });
+          confirmDialog('Delete "' + name + '" and everything inside it? This cannot be undone.', 'Delete').then(function (ok) {
+            if (!ok) return;
+            accountFetch('/api/account/media', { method: 'POST', body: JSON.stringify({ action: 'delete-folder', prefix: prefix + name + '/' }) })
+              .then(function (res) {
+                if (!res.ok) { setStatus(res.data.error || 'Could not delete folder', true); return; }
+                load(prefix);
+              });
+          });
         });
         grid.appendChild(card);
       });
@@ -164,9 +157,11 @@ permalink: /portal/
       });
       grid.querySelectorAll('[data-del]').forEach(function (btn) {
         btn.addEventListener('click', function () {
-          if (!confirm('Delete this file? This cannot be undone.')) return;
-          accountFetch('/api/account/media', { method: 'POST', body: JSON.stringify({ action: 'delete', key: btn.getAttribute('data-del') }) })
-            .then(function () { load(prefix); });
+          confirmDialog('Delete this file? This cannot be undone.', 'Delete').then(function (ok) {
+            if (!ok) return;
+            accountFetch('/api/account/media', { method: 'POST', body: JSON.stringify({ action: 'delete', key: btn.getAttribute('data-del') }) })
+              .then(function () { load(prefix); });
+          });
         });
       });
       grid.querySelectorAll('.mark-check').forEach(function (cb) { cb.addEventListener('change', updateBulkBar); });
@@ -189,13 +184,14 @@ permalink: /portal/
     }
 
     document.getElementById('newFolderBtn').addEventListener('click', function () {
-      var name = prompt('Folder name:');
-      if (!name) return;
-      accountFetch('/api/account/media', { method: 'POST', body: JSON.stringify({ action: 'create-folder', prefix: prefix, name: name }) })
-        .then(function (res) {
-          if (!res.ok) { setStatus(res.data.error || 'Could not create folder', true); return; }
-          load(prefix);
-        });
+      promptDialog('Folder name:', { placeholder: 'e.g. photos' }).then(function (name) {
+        if (!name) return;
+        accountFetch('/api/account/media', { method: 'POST', body: JSON.stringify({ action: 'create-folder', prefix: prefix, name: name }) })
+          .then(function (res) {
+            if (!res.ok) { setStatus(res.data.error || 'Could not create folder', true); return; }
+            load(prefix);
+          });
+      });
     });
 
     document.getElementById('bulkClearBtn').addEventListener('click', function () {
@@ -205,9 +201,11 @@ permalink: /portal/
     document.getElementById('bulkDeleteBtn').addEventListener('click', function () {
       var keys = markedKeys();
       if (!keys.length) return;
-      if (!confirm('Delete ' + keys.length + ' marked file(s)? This cannot be undone.')) return;
-      accountFetch('/api/account/media', { method: 'POST', body: JSON.stringify({ action: 'delete-many', keys: keys }) })
-        .then(function () { load(prefix); });
+      confirmDialog('Delete ' + keys.length + ' marked file(s)? This cannot be undone.', 'Delete').then(function (ok) {
+        if (!ok) return;
+        accountFetch('/api/account/media', { method: 'POST', body: JSON.stringify({ action: 'delete-many', keys: keys }) })
+          .then(function () { load(prefix); });
+      });
     });
 
     function uploadFiles(fileList) {

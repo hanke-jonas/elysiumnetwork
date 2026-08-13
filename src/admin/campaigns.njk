@@ -164,14 +164,14 @@ permalink: /admin/campaigns/
         sendBtn.type = 'button';
         sendBtn.className = 'btn btn-accent !py-1.5 !px-3 text-sm mr-2';
         sendBtn.textContent = 'Send';
-        sendBtn.addEventListener('click', function () { sendCampaign(item.id); });
+        sendBtn.addEventListener('click', function () { sendCampaign(item.id, sendBtn); });
         actionsTd.appendChild(sendBtn);
 
         var deleteBtn = document.createElement('button');
         deleteBtn.type = 'button';
-        deleteBtn.className = 'btn !py-1.5 !px-3 text-sm';
+        deleteBtn.className = 'btn btn-coral !py-1.5 !px-3 text-sm';
         deleteBtn.textContent = 'Delete';
-        deleteBtn.addEventListener('click', function () { deleteCampaign(item.id); });
+        deleteBtn.addEventListener('click', function () { deleteCampaign(item.id, deleteBtn); });
         actionsTd.appendChild(deleteBtn);
       } else {
         var viewBtn = document.createElement('button');
@@ -231,35 +231,43 @@ permalink: /admin/campaigns/
     composeStatus.textContent = '';
   }
 
-  function sendCampaign(id) {
-    if (!confirm('This will immediately email every confirmed subscriber. This cannot be undone. Continue?')) return;
-    listStatus.style.color = 'unset';
-    listStatus.textContent = 'Sending…';
-    adminFetch('/api/admin/campaigns/' + id + '/send', { method: 'POST' }).then(function (r) {
-      if (!r.ok) {
-        listStatus.style.color = 'var(--coral-ink)';
-        listStatus.textContent = r.data.error || 'Could not send campaign.';
-        return;
-      }
+  function sendCampaign(id, btn) {
+    confirmDialog('This will immediately email every confirmed subscriber. This cannot be undone. Continue?', 'Send').then(function (ok) {
+      if (!ok) return;
+      if (btn) btn.disabled = true;
       listStatus.style.color = 'unset';
-      listStatus.textContent = 'Sent to ' + r.data.sent + ' subscribers.';
-      loadCampaigns();
+      listStatus.textContent = 'Sending…';
+      adminFetch('/api/admin/campaigns/' + id + '/send', { method: 'POST' }).then(function (r) {
+        if (btn) btn.disabled = false;
+        if (!r.ok) {
+          listStatus.style.color = 'var(--coral-ink)';
+          listStatus.textContent = r.data.error || 'Could not send campaign.';
+          return;
+        }
+        listStatus.style.color = 'unset';
+        listStatus.textContent = 'Sent to ' + r.data.sent + ' subscribers.';
+        loadCampaigns();
+      });
     });
   }
 
-  function deleteCampaign(id) {
-    if (!confirm('Delete this draft campaign? This cannot be undone.')) return;
-    listStatus.style.color = 'unset';
-    listStatus.textContent = 'Deleting…';
-    adminFetch('/api/admin/campaigns/' + id, { method: 'DELETE' }).then(function (r) {
-      if (!r.ok) {
-        listStatus.style.color = 'var(--coral-ink)';
-        listStatus.textContent = r.data.error || 'Could not delete campaign.';
-        return;
-      }
-      listStatus.textContent = '';
-      resetComposeForm();
-      loadCampaigns();
+  function deleteCampaign(id, btn) {
+    confirmDialog('Delete this draft campaign? This cannot be undone.', 'Delete').then(function (ok) {
+      if (!ok) return;
+      if (btn) btn.disabled = true;
+      listStatus.style.color = 'unset';
+      listStatus.textContent = 'Deleting…';
+      adminFetch('/api/admin/campaigns/' + id, { method: 'DELETE' }).then(function (r) {
+        if (btn) btn.disabled = false;
+        if (!r.ok) {
+          listStatus.style.color = 'var(--coral-ink)';
+          listStatus.textContent = r.data.error || 'Could not delete campaign.';
+          return;
+        }
+        listStatus.textContent = '';
+        resetComposeForm();
+        loadCampaigns();
+      });
     });
   }
 

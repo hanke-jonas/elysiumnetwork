@@ -314,7 +314,7 @@ permalink: /admin/events/
 
       var delBtn = document.createElement('button');
       delBtn.type = 'button';
-      delBtn.className = 'btn !py-1.5 !px-3 text-xs ml-2';
+      delBtn.className = 'btn btn-coral !py-1.5 !px-3 text-xs ml-2';
       delBtn.textContent = 'Delete';
       delBtn.addEventListener('click', function () { deleteEvent(item.id, item.title, delBtn); });
 
@@ -353,16 +353,18 @@ permalink: /admin/events/
   }
 
   function deleteEvent(id, title, btn) {
-    if (!confirm('Delete "' + title + '"? This also removes all its RSVPs and cannot be undone.')) return;
-    btn.disabled = true;
-    setTableStatus('');
-    adminFetch('/api/admin/events/' + id, { method: 'DELETE' }).then(function (r) {
-      if (!r.ok) {
-        btn.disabled = false;
-        setTableStatus(r.data && r.data.error ? r.data.error : 'Failed to delete event.', true);
-        return;
-      }
-      load();
+    confirmDialog('Delete "' + title + '"? This also removes all its RSVPs and cannot be undone.', 'Delete').then(function (ok) {
+      if (!ok) return;
+      btn.disabled = true;
+      setTableStatus('');
+      adminFetch('/api/admin/events/' + id, { method: 'DELETE' }).then(function (r) {
+        if (!r.ok) {
+          btn.disabled = false;
+          setTableStatus(r.data && r.data.error ? r.data.error : 'Failed to delete event.', true);
+          return;
+        }
+        load();
+      });
     });
   }
 

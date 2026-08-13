@@ -73,6 +73,7 @@
     {{ content | safe }}
   </main>
 </div>
+{% include "dialog.njk" %}
 <script>
   // Shared fetch helper for every admin page: always sends the session
   // cookie, always parses JSON, and bounces to login on an expired/missing

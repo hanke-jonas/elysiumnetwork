@@ -154,7 +154,7 @@ permalink: /admin/staff/
       var actionsTd = document.createElement('td');
       var deleteBtn = document.createElement('button');
       deleteBtn.type = 'button';
-      deleteBtn.className = 'btn !py-1.5 !px-3 text-sm';
+      deleteBtn.className = 'btn btn-coral !py-1.5 !px-3 text-sm';
       deleteBtn.textContent = 'Delete';
       deleteBtn.addEventListener('click', function () { deleteStaff(item.id, item.email, deleteBtn); });
       actionsTd.appendChild(deleteBtn);
@@ -182,19 +182,21 @@ permalink: /admin/staff/
   }
 
   function deleteStaff(id, email, btn) {
-    if (!confirm('Remove ' + email + '? They will lose staff access immediately.')) return;
-    staffListStatus.style.color = 'unset';
-    staffListStatus.textContent = 'Removing…';
-    btn.disabled = true;
-    adminFetch('/api/admin/staff/' + id, { method: 'DELETE' }).then(function (r) {
-      btn.disabled = false;
-      if (!r.ok) {
-        staffListStatus.style.color = 'var(--coral-ink)';
-        staffListStatus.textContent = r.data.error || 'Could not remove account.';
-        return;
-      }
-      staffListStatus.textContent = '';
-      loadStaff();
+    confirmDialog('Remove ' + email + '? They will lose staff access immediately.', 'Remove').then(function (ok) {
+      if (!ok) return;
+      staffListStatus.style.color = 'unset';
+      staffListStatus.textContent = 'Removing…';
+      btn.disabled = true;
+      adminFetch('/api/admin/staff/' + id, { method: 'DELETE' }).then(function (r) {
+        btn.disabled = false;
+        if (!r.ok) {
+          staffListStatus.style.color = 'var(--coral-ink)';
+          staffListStatus.textContent = r.data.error || 'Could not remove account.';
+          return;
+        }
+        staffListStatus.textContent = '';
+        loadStaff();
+      });
     });
   }
 

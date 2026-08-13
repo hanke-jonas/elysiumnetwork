@@ -9,7 +9,7 @@ permalink: /admin/branches/
     <p class="eyebrow text-muted mb-1">Content</p>
     <h1 class="h-sec">Branches</h1>
   </div>
-  <button type="button" id="addBranchBtn" class="btn btn-ink">{% icon "plus", "w-4 h-4" %} Add branch</button>
+  <button type="button" id="addBranchBtn" class="btn btn-accent">{% icon "plus", "w-4 h-4" %} Add branch</button>
 </div>
 
 <p id="branchesStatus" role="status" aria-live="polite" class="mono text-sm mb-4"></p>
@@ -238,7 +238,7 @@ permalink: /admin/branches/
       delBtn.type = 'button';
       delBtn.className = 'btn btn-coral !py-1.5 !px-2.5 text-xs ml-2';
       delBtn.textContent = 'Delete';
-      delBtn.addEventListener('click', function () { deleteBranch(b.slug, b.name || b.slug); });
+      delBtn.addEventListener('click', function () { deleteBranch(b.slug, b.name || b.slug, delBtn); });
 
       tdActions.appendChild(editBtn);
       tdActions.appendChild(delBtn);
@@ -322,16 +322,20 @@ permalink: /admin/branches/
     editingSlug = null;
   }
 
-  function deleteBranch(slug, name) {
-    if (!confirm('Delete ' + name + '? This cannot be undone.')) return;
-    adminFetch('/api/admin/branches/' + encodeURIComponent(slug), { method: 'DELETE' }).then(function (r) {
-      if (!r.ok) {
-        setStatus(document.getElementById('branchesStatus'), r.data.error || 'Could not delete branch.', true);
-        return;
-      }
-      if (editingSlug === slug) cancelForm();
-      setStatus(document.getElementById('branchesStatus'), 'Branch deleted.', false);
-      loadBranches();
+  function deleteBranch(slug, name, btn) {
+    confirmDialog('Delete ' + name + '? This cannot be undone.', 'Delete').then(function (ok) {
+      if (!ok) return;
+      if (btn) btn.disabled = true;
+      adminFetch('/api/admin/branches/' + encodeURIComponent(slug), { method: 'DELETE' }).then(function (r) {
+        if (btn) btn.disabled = false;
+        if (!r.ok) {
+          setStatus(document.getElementById('branchesStatus'), r.data.error || 'Could not delete branch.', true);
+          return;
+        }
+        if (editingSlug === slug) cancelForm();
+        setStatus(document.getElementById('branchesStatus'), 'Branch deleted.', false);
+        loadBranches();
+      });
     });
   }
 

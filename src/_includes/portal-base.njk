@@ -41,7 +41,25 @@
       Elysium+ Cloud — personal file storage for network members. <a href="/" class="underline">Back to elysium.ngo</a>
     </div>
   </footer>
+  {% include "dialog.njk" %}
   <script>
+    // Shared fetch helper for every portal page — mirrors admin-base.njk's
+    // adminFetch (same credentials/FormData handling, same 401-redirect),
+    // so a portal page can't be left calling a dead session with no way
+    // back to the login screen the way the old per-page fetch closures were.
+    window.accountFetch = function (url, opts) {
+      opts = opts || {};
+      opts.credentials = 'include';
+      opts.headers = opts.body instanceof FormData ? (opts.headers || {}) : Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+      return fetch(url, opts).then(function (res) {
+        if (res.status === 401) {
+          location.href = '/portal/login/?next=' + encodeURIComponent(location.pathname);
+          throw new Error('Not signed in');
+        }
+        return res.json().then(function (data) { return { ok: res.ok, status: res.status, data: data }; });
+      });
+    };
+
     fetch('/api/auth/me', { credentials: 'include' }).then(function (r) { return r.json(); }).then(function (data) {
       var who = document.getElementById('portalWhoami');
       var logoutBtn = document.getElementById('portalLogoutBtn');

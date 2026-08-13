@@ -23,10 +23,11 @@ permalink: /admin/subscribers/
           <th>Status</th>
           <th>Created</th>
           <th>Confirmed</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody id="subsBody">
-        <tr><td colspan="4" class="text-muted">Loading…</td></tr>
+        <tr><td colspan="5" class="text-muted">Loading…</td></tr>
       </tbody>
     </table>
   </div>
@@ -61,59 +62,90 @@ permalink: /admin/subscribers/
     function emptyRow(message) {
       var tr = document.createElement('tr');
       var td = document.createElement('td');
-      td.colSpan = 4;
+      td.colSpan = 5;
       td.className = 'text-muted';
       td.textContent = message;
       tr.appendChild(td);
       return tr;
     }
 
-    adminFetch('/api/admin/subscribers').then(function (r) {
-      if (!r.ok) {
-        statsText.style.color = 'var(--coral-ink)';
-        statsText.textContent = r.data.error || 'Could not load subscribers.';
-        body.innerHTML = '';
-        body.appendChild(emptyRow('Nothing to show.'));
-        return;
-      }
-
-      statsText.textContent = r.data.total + ' total · ' + r.data.confirmed + ' confirmed';
-
-      var items = r.data.items || [];
-      body.innerHTML = '';
-      if (items.length === 0) {
-        body.appendChild(emptyRow('No subscribers yet.'));
-        return;
-      }
-
-      // Subscriber emails come from the public, unauthenticated newsletter
-      // signup form — build every cell via textContent/DOM methods, never
-      // string-concatenated innerHTML, so a crafted "email" can't run script
-      // in a signed-in staff member's session.
-      items.forEach(function (item) {
-        var tr = document.createElement('tr');
-
-        var emailTd = document.createElement('td');
-        emailTd.textContent = item.email;
-        tr.appendChild(emailTd);
-
-        var statusTd = document.createElement('td');
-        statusTd.appendChild(statusTag(item.status));
-        tr.appendChild(statusTd);
-
-        var createdTd = document.createElement('td');
-        createdTd.textContent = formatDate(item.created_at);
-        tr.appendChild(createdTd);
-
-        var confirmedTd = document.createElement('td');
-        confirmedTd.textContent = formatDate(item.confirmed_at);
-        tr.appendChild(confirmedTd);
-
-        body.appendChild(tr);
+    function deleteSubscriber(id, email, btn) {
+      confirmDialog('Remove ' + email + ' from the subscriber list? This cannot be undone.', 'Remove').then(function (ok) {
+        if (!ok) return;
+        btn.disabled = true;
+        adminFetch('/api/admin/subscribers?id=' + encodeURIComponent(id), { method: 'DELETE' }).then(function (r) {
+          if (!r.ok) {
+            btn.disabled = false;
+            status.style.color = 'var(--coral-ink)';
+            status.textContent = r.data.error || 'Could not remove subscriber.';
+            return;
+          }
+          status.style.color = 'unset';
+          status.textContent = 'Removed.';
+          load();
+        });
       });
-    }).catch(function () {
-      status.style.color = 'var(--coral-ink)';
-      status.textContent = 'Something went wrong loading subscribers.';
-    });
+    }
+
+    function load() {
+      adminFetch('/api/admin/subscribers').then(function (r) {
+        if (!r.ok) {
+          statsText.style.color = 'var(--coral-ink)';
+          statsText.textContent = r.data.error || 'Could not load subscribers.';
+          body.innerHTML = '';
+          body.appendChild(emptyRow('Nothing to show.'));
+          return;
+        }
+
+        statsText.textContent = r.data.total + ' total · ' + r.data.confirmed + ' confirmed';
+
+        var items = r.data.items || [];
+        body.innerHTML = '';
+        if (items.length === 0) {
+          body.appendChild(emptyRow('No subscribers yet.'));
+          return;
+        }
+
+        // Subscriber emails come from the public, unauthenticated newsletter
+        // signup form — build every cell via textContent/DOM methods, never
+        // string-concatenated innerHTML, so a crafted "email" can't run script
+        // in a signed-in staff member's session.
+        items.forEach(function (item) {
+          var tr = document.createElement('tr');
+
+          var emailTd = document.createElement('td');
+          emailTd.textContent = item.email;
+          tr.appendChild(emailTd);
+
+          var statusTd = document.createElement('td');
+          statusTd.appendChild(statusTag(item.status));
+          tr.appendChild(statusTd);
+
+          var createdTd = document.createElement('td');
+          createdTd.textContent = formatDate(item.created_at);
+          tr.appendChild(createdTd);
+
+          var confirmedTd = document.createElement('td');
+          confirmedTd.textContent = formatDate(item.confirmed_at);
+          tr.appendChild(confirmedTd);
+
+          var actionsTd = document.createElement('td');
+          var delBtn = document.createElement('button');
+          delBtn.type = 'button';
+          delBtn.className = 'btn btn-coral !py-1.5 !px-3 text-xs';
+          delBtn.textContent = 'Remove';
+          delBtn.addEventListener('click', function () { deleteSubscriber(item.id, item.email, delBtn); });
+          actionsTd.appendChild(delBtn);
+          tr.appendChild(actionsTd);
+
+          body.appendChild(tr);
+        });
+      }).catch(function () {
+        status.style.color = 'var(--coral-ink)';
+        status.textContent = 'Something went wrong loading subscribers.';
+      });
+    }
+
+    load();
   });
 </script>
