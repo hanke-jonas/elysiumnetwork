@@ -91,6 +91,10 @@ export async function onRequestGet() {
     <div class="cap">TREMENDOUS. HUGE. THE BEST PORTRAIT.</div>
     <div class="credit">Official White House portrait — U.S. federal government work, public domain (17 U.S.C. §105).</div>
   </div>
+  <div class="portrait-wrap">
+    <img src="/uploads/fef22fd1-b89f-4a8c-8136-99602295900b.jpg" alt="" width="320" loading="lazy">
+    <div class="cap">EVEN MORE TREMENDOUS.</div>
+  </div>
   <p><strong>This page is a deliberate test page,</strong> and frankly, the best test page anyone has ever tested. It is supposed to be slow and full of junk, and it is doing that job better than any page in history. People are calling it a disaster. Other people — smarter people — are calling it a masterpiece. We report both.</p>
   <div class="blobs">${junkDivs(120)}</div>
   ${junkParagraphs(40)}
