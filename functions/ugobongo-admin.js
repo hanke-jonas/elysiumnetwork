@@ -135,6 +135,7 @@ export async function onRequestGet({ request, env }) {
   <div class="chat">
     <h2>Chat assistant</h2>
     <div class="sub">Ask it to change the page — it can edit content directly.</div>
+    <div class="sub" id="chatBudget">Free daily AI budget — shown after your first message</div>
     <div id="chatLog"></div>
     <div class="chat-input-row">
       <textarea id="chatInput" placeholder="e.g. Add a button linking to https://example.com"></textarea>
@@ -480,6 +481,12 @@ export async function onRequestGet({ request, env }) {
   var chatInput = document.getElementById('chatInput');
   var chatSendBtn = document.getElementById('chatSendBtn');
 
+  function updateChatBudget(budget) {
+    var remaining = Math.max(0, budget.cap - budget.used);
+    document.getElementById('chatBudget').textContent =
+      'Free daily AI budget: ' + remaining + ' / ' + budget.cap + ' left (resets midnight UTC)';
+  }
+
   function addChatMsg(role, text, extraClass) {
     var row = document.createElement('div');
     row.className = 'chat-msg ' + role + (extraClass ? ' ' + extraClass : '');
@@ -515,6 +522,7 @@ export async function onRequestGet({ request, env }) {
     }).then(function (r) {
       chatSendBtn.disabled = false;
       thinking.remove();
+      if (r.data && r.data.budget) updateChatBudget(r.data.budget);
       if (!r.ok) {
         addChatMsg('assistant', r.data.error || 'Something went wrong.', 'error');
         return;

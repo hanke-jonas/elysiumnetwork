@@ -1,6 +1,7 @@
 import { requireUgobongoAdmin } from '../../_lib/ugobongoAuth.js';
 import { json, badRequest } from '../../_lib/http.js';
 import { readConfig, saveConfig } from '../../_lib/ugobongoConfig.js';
+import { DAILY_NEURON_CAP, getTodayNeuronUsage, addNeuronUsage, estimateNeurons } from '../../_lib/aiUsage.js';
 
 const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 const JSON_ACTION_RE = /```json_action\s*([\s\S]*?)```/;
@@ -54,6 +55,16 @@ export async function onRequestPost({ request, env }) {
 
   if (!history.length) return badRequest('messages array is empty');
 
+  // Hard budget gate, checked BEFORE calling the model — this can never let
+  // the account cross into Workers AI's billable range (see aiUsage.js).
+  const usedSoFar = await getTodayNeuronUsage(env);
+  if (usedSoFar >= DAILY_NEURON_CAP) {
+    return json({
+      error: 'Daily AI usage budget reached — resets at midnight UTC. No charge was made; this limit exists specifically to keep usage inside Cloudflare\'s free allocation.',
+      budget: { used: usedSoFar, cap: DAILY_NEURON_CAP },
+    }, { status: 429 });
+  }
+
   const config = await readConfig(env);
   const messages = [{ role: 'system', content: systemPrompt(config) }, ...history];
 
@@ -63,6 +74,10 @@ export async function onRequestPost({ request, env }) {
   } catch (err) {
     return json({ error: `AI request failed: ${err.message || err}` }, { status: 502 });
   }
+
+  const neurons = estimateNeurons(result && result.usage);
+  await addNeuronUsage(env, neurons);
+  const budget = { used: Math.round(usedSoFar + neurons), cap: DAILY_NEURON_CAP };
 
   const raw = (result && result.response) || '';
   const match = JSON_ACTION_RE.exec(raw);
@@ -75,10 +90,10 @@ export async function onRequestPost({ request, env }) {
       newConfig = await saveConfig(env, proposed);
       applied = true;
     } catch (err) {
-      return json({ reply: raw.replace(JSON_ACTION_RE, '').trim(), applied: false, error: `Proposed change was invalid, not saved: ${err.message || err}` });
+      return json({ reply: raw.replace(JSON_ACTION_RE, '').trim(), applied: false, budget, error: `Proposed change was invalid, not saved: ${err.message || err}` });
     }
   }
 
   const reply = raw.replace(JSON_ACTION_RE, '').trim();
-  return json({ reply, applied, config: newConfig });
+  return json({ reply, applied, config: newConfig, budget });
 }
