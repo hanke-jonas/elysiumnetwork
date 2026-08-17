@@ -33,7 +33,22 @@ export async function onRequestGet({ request, env }) {
   .btn:disabled { opacity:.5; cursor:not-allowed; }
   #status { color:#cfd8e8; font-size:.8rem; }
 
-  .layout { flex:1; display:grid; grid-template-columns:220px 1fr 300px; min-height:0; }
+  .layout { flex:1; display:grid; grid-template-columns:220px 1fr 300px 320px; min-height:0; }
+
+  .chat { background:#fff; border-left:1px solid #ddd; display:flex; flex-direction:column; min-height:0; }
+  .chat h2 { font-size:.75rem; text-transform:uppercase; letter-spacing:.05em; color:#888; margin:0; padding:1rem 1rem 0; }
+  .chat .sub { font-size:.7rem; color:#aaa; padding:.25rem 1rem .75rem; }
+  #chatLog { flex:1; overflow-y:auto; padding:0 1rem; }
+  .chat-msg { margin-bottom:.75rem; font-size:.85rem; line-height:1.4; }
+  .chat-msg .who { font-weight:700; font-size:.7rem; text-transform:uppercase; color:#888; margin-bottom:.15rem; }
+  .chat-msg.user .bubble { background:#eef1f8; border-radius:.5rem; padding:.5rem .65rem; }
+  .chat-msg.assistant .bubble { background:#f4f4f4; border-radius:.5rem; padding:.5rem .65rem; white-space:pre-wrap; }
+  .chat-msg.applied .bubble { border-left:3px solid #2e7d32; }
+  .chat-msg.error .bubble { border-left:3px solid #c0392b; color:#a92a1a; }
+  .chat-input-row { border-top:1px solid #ddd; padding:.75rem; display:flex; gap:.4rem; }
+  .chat-input-row textarea { flex:1; resize:none; height:44px; padding:.5rem; border:1px solid #ccc; border-radius:.4rem; font:inherit; font-size:.85rem; }
+  .chat-input-row button { border:none; background:#0a1e42; color:#fff; border-radius:.4rem; padding:0 1rem; cursor:pointer; font-weight:700; }
+  .chat-input-row button:disabled { opacity:.5; cursor:not-allowed; }
 
   .palette, .props { background:#fff; border-right:1px solid #ddd; overflow-y:auto; padding:1rem; }
   .props { border-right:none; border-left:1px solid #ddd; }
@@ -115,6 +130,16 @@ export async function onRequestGet({ request, env }) {
   <div class="props" id="propsPanel">
     <h2>Properties</h2>
     <div class="no-selection">Select a block on the canvas to edit it.</div>
+  </div>
+
+  <div class="chat">
+    <h2>Chat assistant</h2>
+    <div class="sub">Ask it to change the page — it can edit content directly.</div>
+    <div id="chatLog"></div>
+    <div class="chat-input-row">
+      <textarea id="chatInput" placeholder="e.g. Add a button linking to https://example.com"></textarea>
+      <button type="button" id="chatSendBtn">Send</button>
+    </div>
   </div>
 </div>
 
@@ -447,6 +472,83 @@ export async function onRequestGet({ request, env }) {
       btn.disabled = false;
       status.textContent = r.ok ? 'Saved & live.' : (r.data.error || 'Failed to save.');
     });
+  });
+
+  // --- Chat assistant ------------------------------------------------------
+  var chatHistory = [];
+  var chatLog = document.getElementById('chatLog');
+  var chatInput = document.getElementById('chatInput');
+  var chatSendBtn = document.getElementById('chatSendBtn');
+
+  function addChatMsg(role, text, extraClass) {
+    var row = document.createElement('div');
+    row.className = 'chat-msg ' + role + (extraClass ? ' ' + extraClass : '');
+    var who = document.createElement('div');
+    who.className = 'who';
+    who.textContent = role === 'user' ? 'You' : 'Assistant';
+    var bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = text;
+    row.appendChild(who);
+    row.appendChild(bubble);
+    chatLog.appendChild(row);
+    chatLog.scrollTop = chatLog.scrollHeight;
+  }
+
+  function sendChat() {
+    var text = chatInput.value.trim();
+    if (!text) return;
+    chatInput.value = '';
+    chatHistory.push({ role: 'user', content: text });
+    addChatMsg('user', text);
+    chatSendBtn.disabled = true;
+    var thinking = document.createElement('div');
+    thinking.className = 'chat-msg assistant';
+    thinking.innerHTML = '<div class="who">Assistant</div><div class="bubble">Thinking…</div>';
+    chatLog.appendChild(thinking);
+    chatLog.scrollTop = chatLog.scrollHeight;
+
+    apiFetch('/api/ugobongo-admin/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: chatHistory }),
+    }).then(function (r) {
+      chatSendBtn.disabled = false;
+      thinking.remove();
+      if (!r.ok) {
+        addChatMsg('assistant', r.data.error || 'Something went wrong.', 'error');
+        return;
+      }
+      chatHistory.push({ role: 'assistant', content: r.data.reply || '' });
+      if (r.data.error) {
+        addChatMsg('assistant', (r.data.reply || '') + '\\n\\n' + r.data.error, 'error');
+      } else {
+        addChatMsg('assistant', r.data.reply || '(no reply)', r.data.applied ? 'applied' : '');
+      }
+      if (r.data.applied && r.data.config) {
+        state.title = r.data.config.title || '';
+        state.subtitle = r.data.config.subtitle || '';
+        state.bio_html = r.data.config.bio_html || '';
+        state.images = r.data.config.images || [];
+        state.loading_ms = r.data.config.loading_ms;
+        state.loading_messages = r.data.config.loading_messages || [];
+        state.spinner_image_url = r.data.config.spinner_image_url || null;
+        state.spinner_speed_ms = r.data.config.spinner_speed_ms || 2000;
+        state.blocks = r.data.config.blocks || [];
+        selectedId = null;
+        renderCanvas();
+        renderProps();
+        document.getElementById('status').textContent = 'Saved & live (via chat).';
+      }
+    });
+  }
+
+  chatSendBtn.addEventListener('click', sendChat);
+  chatInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendChat();
+    }
   });
 })();
 </script>
