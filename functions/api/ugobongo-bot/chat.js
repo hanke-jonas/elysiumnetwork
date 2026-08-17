@@ -45,7 +45,7 @@ export async function onRequestPost({ request, env }) {
 
   let result;
   try {
-    result = await env.AI.run(MODEL, { messages, max_tokens: 4096 }); // raised from 512
+    result = await env.AI.run(MODEL, { messages, max_tokens: 2048 }); // 4096 crashed the Worker (error 1101) -- 2048 is the value already proven stable in the admin chat
   } catch (err) {
     return json({ error: `AI request failed: ${err.message || err}` }, { status: 502 });
   }
