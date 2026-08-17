@@ -258,6 +258,7 @@ CREATE TABLE IF NOT EXISTS ugobongo_config (
   loading_ms INTEGER NOT NULL DEFAULT 12000,
   loading_messages_json TEXT NOT NULL DEFAULT '[]',
   spinner_image_url TEXT,
+  spinner_speed_ms INTEGER NOT NULL DEFAULT 2000,
   -- Block-based page body driving the visual editor at /ugobongo-admin: a
   -- JSON array of {id, type, ...fields}, type is one of 'heading' |
   -- 'paragraph' | 'image' | 'gallery' | 'button' | 'spacer' | 'role' (a

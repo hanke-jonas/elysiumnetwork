@@ -15,6 +15,8 @@
 //   2. A fake client-side loading screen (spinner + rotating messages,
 //      no fake percentage) before the page is revealed.
 
+import { requireUgobongoAdmin } from './_lib/ugobongoAuth.js';
+
 const DEFAULT_BIO_HTML = `
     <h3 class="role">Chief Executive Officer &amp; Chief Sleeping Officer</h3>
     <div class="role-meta">The Trump Organization &amp; Oval Office</div>
@@ -108,7 +110,15 @@ function renderBlock(block) {
   return '';
 }
 
-export async function onRequestGet({ env }) {
+export async function onRequestGet({ env, request }) {
+  // Authenticated preview mode (?preview=1), linked from /ugobongo-admin's
+  // "Preview live page" button: skips both the server delay and the
+  // client-side loading screen so an editor can see the real page instantly.
+  // Gated behind the same admin credentials so the public joke page still
+  // always shows its full loading sequence.
+  const url = new URL(request.url);
+  const isPreview = url.searchParams.get('preview') === '1' && !requireUgobongoAdmin(request, env);
+
   let cfg = null;
   if (env.DB) {
     const row = await env.DB.prepare('SELECT * FROM ugobongo_config WHERE id = 1').first().catch(() => null);
@@ -121,6 +131,7 @@ export async function onRequestGet({ env }) {
         loadingMs: row.loading_ms,
         messages: JSON.parse(row.loading_messages_json || 'null'),
         spinnerUrl: row.spinner_image_url,
+        spinnerSpeedMs: row.spinner_speed_ms,
         blocks: JSON.parse(row.blocks_json || 'null'),
       };
     }
@@ -130,17 +141,19 @@ export async function onRequestGet({ env }) {
   const subtitle = (cfg && cfg.subtitle) || 'Tremendous Leader, World-Class Napper, Very Stable Genius — And Definitely Not a Racist, According to Me';
   const bioHtml = (cfg && cfg.bioHtml) || DEFAULT_BIO_HTML;
   const images = (cfg && cfg.images && cfg.images.length) ? cfg.images : DEFAULT_IMAGES;
-  const loadingMs = cfg && Number.isFinite(cfg.loadingMs) ? cfg.loadingMs : 12000;
+  const configuredLoadingMs = cfg && Number.isFinite(cfg.loadingMs) ? cfg.loadingMs : 12000;
+  const loadingMs = isPreview ? 0 : configuredLoadingMs;
   const messages = (cfg && cfg.messages && cfg.messages.length) ? cfg.messages : DEFAULT_MESSAGES;
   const spinnerUrl = cfg && cfg.spinnerUrl;
+  const spinnerSpeedMs = cfg && Number.isFinite(cfg.spinnerSpeedMs) ? cfg.spinnerSpeedMs : 2000;
 
   // Layer 1: real, blocking server-side delay before anything is sent.
   await new Promise((resolve) => setTimeout(resolve, loadingMs));
 
   const galleryHtml = images.map((url) => `<img src="${escapeHtml(url)}" alt="" loading="lazy">`).join('\n      ');
   const spinnerHtml = spinnerUrl
-    ? `<img src="${escapeHtml(spinnerUrl)}" alt="" style="width:100px;height:100px;object-fit:cover;border-radius:50%;margin-bottom:2rem;animation:spin 2s linear infinite;">`
-    : `<div class="spinner"></div>`;
+    ? `<img src="${escapeHtml(spinnerUrl)}" alt="" style="width:100px;height:100px;object-fit:cover;border-radius:50%;margin-bottom:2rem;animation:spin ${spinnerSpeedMs}ms linear infinite;">`
+    : `<div class="spinner" style="animation-duration:${spinnerSpeedMs}ms"></div>`;
 
   // When the visual editor at /ugobongo-admin has saved a block structure,
   // it fully replaces the body below (portrait/summary/gallery/bio all
@@ -239,7 +252,7 @@ export async function onRequestGet({ env }) {
       clearInterval(interval);
       loader.style.display = 'none';
       content.style.display = 'block';
-    }, 10000);
+    }, ${loadingMs});
   })();
 </script>
 

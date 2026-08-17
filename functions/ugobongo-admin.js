@@ -97,7 +97,7 @@ export async function onRequestGet({ request, env }) {
   <div class="actions">
     <span id="status"></span>
     <button type="button" class="btn" id="settingsBtn">Site settings</button>
-    <a href="/ugobongo" target="_blank" class="btn">Preview live page</a>
+    <a href="/ugobongo?preview=1" target="_blank" class="btn">Preview (no loading screen)</a>
     <button type="button" class="btn primary" id="saveBtn">Save &amp; publish</button>
   </div>
 </header>
@@ -130,9 +130,11 @@ export async function onRequestGet({ request, env }) {
     <label for="stMessages">Loading messages (one per line)</label>
     <textarea id="stMessages"></textarea>
     <label>Spinner overlay image</label>
-    <div id="spinnerDrop" class="dropzone">Drag an image here, or click to upload</div>
-    <input type="file" id="spinnerFile" accept="image/*" style="display:none">
+    <div id="spinnerDrop" class="dropzone">Drag a picture here, or click to upload</div>
+    <input type="file" id="spinnerFile" style="display:none">
     <div id="spinnerThumb" class="thumbs"></div>
+    <label for="stSpinnerSpeed">Spin speed (ms per rotation — lower is faster)</label>
+    <input type="number" id="stSpinnerSpeed" min="200" max="10000" step="100">
     <div style="margin-top:1.25rem; display:flex; gap:.5rem; justify-content:flex-end;">
       <button type="button" class="btn" id="settingsCloseBtn">Done</button>
     </div>
@@ -201,7 +203,7 @@ export async function onRequestGet({ request, env }) {
 
   // --- State -------------------------------------------------------------
   var state = {
-    title: '', subtitle: '', loading_ms: 12000, loading_messages: [], spinner_image_url: null,
+    title: '', subtitle: '', loading_ms: 12000, loading_messages: [], spinner_image_url: null, spinner_speed_ms: 2000,
     images: [], bio_html: '',
     blocks: [],
   };
@@ -303,11 +305,11 @@ export async function onRequestGet({ request, env }) {
     } else if (block.type === 'paragraph') {
       html += '<label>HTML</label><textarea data-f="html">' + esc(block.html) + '</textarea>';
     } else if (block.type === 'image') {
-      html += '<label>Image</label><div class="dropzone" id="imgDrop">Drag an image here, or click to upload</div><input type="file" id="imgFile" accept="image/*" style="display:none">' +
+      html += '<label>Image</label><div class="dropzone" id="imgDrop">Drag a file here, or click to upload</div><input type="file" id="imgFile" style="display:none">' +
         (block.url ? '<div class="thumbs"><img src="' + esc(block.url) + '"></div>' : '') +
         '<label>Caption</label><input type="text" data-f="caption" value="' + esc(block.caption || '') + '">';
     } else if (block.type === 'gallery') {
-      html += '<label>Images</label><div class="dropzone" id="galDrop">Drag images here, or click to upload</div><input type="file" id="galFile" accept="image/*" multiple style="display:none">' +
+      html += '<label>Images</label><div class="dropzone" id="galDrop">Drag files here, or click to upload</div><input type="file" id="galFile" multiple style="display:none">' +
         '<div class="thumbs" id="galThumbs">' + (block.images || []).map(function (u, i) { return '<img src="' + esc(u) + '" data-i="' + i + '">'; }).join('') + '</div>';
     } else if (block.type === 'button') {
       html += '<label>Label</label><input type="text" data-f="label" value="' + esc(block.label) + '">' +
@@ -388,6 +390,7 @@ export async function onRequestGet({ request, env }) {
     document.getElementById('stSubtitle').value = state.subtitle;
     document.getElementById('stLoadingMs').value = state.loading_ms;
     document.getElementById('stMessages').value = (state.loading_messages || []).join('\\n');
+    document.getElementById('stSpinnerSpeed').value = state.spinner_speed_ms;
     renderSpinnerThumb();
     settingsPanel.classList.add('open');
   });
@@ -396,6 +399,7 @@ export async function onRequestGet({ request, env }) {
     state.subtitle = document.getElementById('stSubtitle').value;
     state.loading_ms = Number(document.getElementById('stLoadingMs').value) || 0;
     state.loading_messages = document.getElementById('stMessages').value.split('\\n').map(function (s) { return s.trim(); }).filter(Boolean);
+    state.spinner_speed_ms = Number(document.getElementById('stSpinnerSpeed').value) || 2000;
     settingsPanel.classList.remove('open');
   });
   function renderSpinnerThumb() {
@@ -412,6 +416,7 @@ export async function onRequestGet({ request, env }) {
     state.loading_ms = r.data.loading_ms;
     state.loading_messages = r.data.loading_messages || [];
     state.spinner_image_url = r.data.spinner_image_url || null;
+    state.spinner_speed_ms = r.data.spinner_speed_ms || 2000;
     state.images = r.data.images || [];
     state.bio_html = r.data.bio_html || '';
     state.blocks = r.data.blocks || [];
@@ -435,6 +440,7 @@ export async function onRequestGet({ request, env }) {
         loading_ms: state.loading_ms,
         loading_messages: state.loading_messages,
         spinner_image_url: state.spinner_image_url,
+        spinner_speed_ms: state.spinner_speed_ms,
         blocks: state.blocks,
       }),
     }).then(function (r) {

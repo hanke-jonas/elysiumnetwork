@@ -9,6 +9,7 @@ const DEFAULTS = {
   loading_ms: 12000,
   loading_messages: ['Preparing Official Bio…', 'Consulting the record…', 'Verifying tremendousness…', 'Almost ready…', 'Still preparing, on purpose…'],
   spinner_image_url: null,
+  spinner_speed_ms: 2000,
 };
 
 export async function onRequestGet({ request, env }) {
@@ -26,6 +27,7 @@ export async function onRequestGet({ request, env }) {
     loading_ms: row.loading_ms ?? DEFAULTS.loading_ms,
     loading_messages: JSON.parse(row.loading_messages_json || 'null') || DEFAULTS.loading_messages,
     spinner_image_url: row.spinner_image_url || null,
+    spinner_speed_ms: row.spinner_speed_ms ?? DEFAULTS.spinner_speed_ms,
     blocks: JSON.parse(row.blocks_json || 'null'),
   });
 }
@@ -46,6 +48,7 @@ export async function onRequestPost({ request, env }) {
     ? body.loading_messages.slice(0, 20).map((m) => String(m).slice(0, 200))
     : DEFAULTS.loading_messages;
   const spinner_image_url = typeof body.spinner_image_url === 'string' && body.spinner_image_url ? body.spinner_image_url : null;
+  const spinner_speed_ms = Number.isFinite(body.spinner_speed_ms) ? Math.max(200, Math.min(10000, body.spinner_speed_ms)) : DEFAULTS.spinner_speed_ms;
 
   // Blocks: {id, type, ...} — the widget type registry mirrors the one in
   // functions/ugobongo-admin.js's canvas and functions/ugobongo.js's
@@ -90,8 +93,8 @@ export async function onRequestPost({ request, env }) {
     : null;
 
   await env.DB.prepare(`
-    INSERT INTO ugobongo_config (id, title, subtitle, bio_html, images_json, loading_ms, loading_messages_json, spinner_image_url, blocks_json, updated_at)
-    VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+    INSERT INTO ugobongo_config (id, title, subtitle, bio_html, images_json, loading_ms, loading_messages_json, spinner_image_url, spinner_speed_ms, blocks_json, updated_at)
+    VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
     ON CONFLICT(id) DO UPDATE SET
       title = excluded.title,
       subtitle = excluded.subtitle,
@@ -100,9 +103,10 @@ export async function onRequestPost({ request, env }) {
       loading_ms = excluded.loading_ms,
       loading_messages_json = excluded.loading_messages_json,
       spinner_image_url = excluded.spinner_image_url,
+      spinner_speed_ms = excluded.spinner_speed_ms,
       blocks_json = excluded.blocks_json,
       updated_at = datetime('now')
-  `).bind(title, subtitle, bio_html, JSON.stringify(images), loading_ms, JSON.stringify(loading_messages), spinner_image_url, blocks ? JSON.stringify(blocks) : null).run();
+  `).bind(title, subtitle, bio_html, JSON.stringify(images), loading_ms, JSON.stringify(loading_messages), spinner_image_url, spinner_speed_ms, blocks ? JSON.stringify(blocks) : null).run();
 
   return json({ ok: true });
 }
