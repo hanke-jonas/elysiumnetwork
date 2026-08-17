@@ -19,7 +19,7 @@ const fallback = {
   // doesn't let you disable it) but nothing in this codebase should
   // reference it — elysium.ngo is the one and only canonical URL.
   url: 'https://elysium.ngo',
-  default_description: 'Elysium+ is a feminist, queer-inclusive European youth network rooted in Ukraine, moving young people across Ukraine, Poland, Italy and Germany.',
+  default_description: 'Elysium+ is a European youth network rooted in Ukraine, moving young people across Ukraine, Poland, Italy and Germany through fully funded exchanges and non-formal education.',
   logo_small: '/assets/logo-128.png',
   logo_hero: '/assets/logo-320.png',
   og_image: '/assets/og-image.png',
