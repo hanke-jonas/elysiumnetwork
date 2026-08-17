@@ -32,7 +32,7 @@ permalink: /about/
       {% set rot = ["-2deg","1.5deg","-1deg","2deg"] %}
       {% for m in site.team %}
       <div class="card overflow-hidden reveal reveal-d{{ (loop.index0 % 4) + 1 }}" style="transform:rotate({{ rot[loop.index0 % 4] }})">
-        <img src="{{ m.image }}" alt="{{ m.name }}" loading="lazy" class="w-full h-64 object-cover border-b-2 border-ink" style="object-position:center {{ m.focalY }}">
+        <img src="{{ m.image }}" alt="{{ m.name }}" width="400" height="256" loading="lazy" class="w-full h-64 object-cover border-b-2 border-ink" style="object-position:center {{ m.focalY }}">
         <div class="p-5">
           <h3 class="font-display text-xl font-bold">{{ m.name }}</h3>
           <p class="text-sm font-bold mt-0.5" style="color:var(--coral-ink)">{{ m.role }}</p>

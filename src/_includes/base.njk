@@ -124,7 +124,7 @@
 </header>
 
 {% include "search.njk" %}
-{% include "detail-modal.njk" %}
+{% if page.url == '/' %}{% include "detail-modal.njk" %}{% endif %}
 {% include "cookie-banner.njk" %}
 
 <div class="mmenu" id="mmenu" role="dialog" aria-modal="true" aria-label="Navigation">

@@ -23,7 +23,7 @@ eleventyComputed:
     </nav>
 
     {% if post.coverImage %}
-    <img src="{{ post.coverImage }}" alt="{{ post.title }}" class="max-h-[420px] object-cover w-full rounded-2xl border-2 border-ink mb-8">
+    <img src="{{ post.coverImage }}" alt="{{ post.title }}" width="1200" height="420" class="max-h-[420px] object-cover w-full rounded-2xl border-2 border-ink mb-8" style="aspect-ratio:1200/420">
     {% endif %}
 
     <div class="flex flex-wrap items-center gap-3">

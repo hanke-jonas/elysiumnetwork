@@ -1,6 +1,25 @@
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 const { fetchLive } = require('../_lib/d1.js');
 
 const contact_email = 'contact@elysium.ngo';
+
+// Same cache-busting technique .eleventy.js already uses for tailwind.css
+// (a content-hash query param), applied to the handful of static images
+// referenced sitewide via `site.*` — without this, these had no
+// content-hash in their URL, so anyone who loaded the site recently would
+// keep a stale cached copy after a logo/favicon update, same class of bug
+// the CSS version already exists to prevent.
+function withVersion(relPath) {
+  try {
+    const file = fs.readFileSync(path.join(__dirname, '..', relPath));
+    const hash = crypto.createHash('md5').update(file).digest('hex').slice(0, 10);
+    return `${relPath}?v=${hash}`;
+  } catch {
+    return relPath;
+  }
+}
 
 // Hardcoded fallback — used whenever the live site's admin API isn't
 // reachable at build time (local dev, or the very first deployment ever,
@@ -20,12 +39,12 @@ const fallback = {
   // reference it — elysium.ngo is the one and only canonical URL.
   url: 'https://elysium.ngo',
   default_description: 'Elysium+ is a European youth network rooted in Ukraine, moving young people across Ukraine, Poland, Italy and Germany through fully funded exchanges and non-formal education.',
-  logo_small: '/assets/logo-128.png',
-  logo_hero: '/assets/logo-320.png',
-  og_image: '/assets/og-image.png',
-  favicon_32: '/assets/favicon-32.png',
-  favicon_48: '/assets/favicon-48.png',
-  apple_touch_icon: '/assets/apple-touch-icon.png',
+  logo_small: withVersion('/assets/logo-128.png'),
+  logo_hero: withVersion('/assets/logo-320.png'),
+  og_image: withVersion('/assets/og-image.png'),
+  favicon_32: withVersion('/assets/favicon-32.png'),
+  favicon_48: withVersion('/assets/favicon-48.png'),
+  apple_touch_icon: withVersion('/assets/apple-touch-icon.png'),
   join_form: 'mailto:' + contact_email + '?subject=' + encodeURIComponent('I want to join Elysium+'),
   hub: 'https://hub.elysium.ngo/',
   astra_site: 'https://astra.ngo',
