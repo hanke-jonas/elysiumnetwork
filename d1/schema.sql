@@ -245,3 +245,26 @@ CREATE TABLE IF NOT EXISTS usage_counters (
   count INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (period, metric)
 );
+
+-- Single-row config for the hidden /ugobongo joke page's mini admin panel
+-- (/ugobongo-admin) -- id is always 1, there is only ever one row. Not
+-- part of the real site's content model on purpose; kept fully separate.
+CREATE TABLE IF NOT EXISTS ugobongo_config (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  title TEXT,
+  subtitle TEXT,
+  bio_html TEXT,
+  images_json TEXT NOT NULL DEFAULT '[]',
+  loading_ms INTEGER NOT NULL DEFAULT 12000,
+  loading_messages_json TEXT NOT NULL DEFAULT '[]',
+  spinner_image_url TEXT,
+  -- Block-based page body driving the visual editor at /ugobongo-admin: a
+  -- JSON array of {id, type, ...fields}, type is one of 'heading' |
+  -- 'paragraph' | 'image' | 'gallery' | 'button' | 'spacer' | 'role' (a
+  -- titled list section) | 'columns' (nests one level of the other simple
+  -- types into a two-up layout) -- rendered in array order, reorderable by
+  -- drag-and-drop on the canvas. NULL/empty means "use the built-in
+  -- default bio", same fallback pattern as every other column here.
+  blocks_json TEXT,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);

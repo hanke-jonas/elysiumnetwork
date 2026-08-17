@@ -4,78 +4,18 @@
 // generators ever see it) — the only way to reach it is to already know
 // the URL. noindex/nofollow so it can never end up in a search engine.
 //
+// Content (title, subtitle, bio body, gallery images, loading duration,
+// loading messages, spinner overlay) is editable live at /ugobongo-admin
+// (see functions/ugobongo-admin.js + functions/api/ugobongo-admin/*) and
+// stored in the single-row ugobongo_config D1 table. Everything here
+// falls back to sensible defaults if that row doesn't exist yet.
+//
 // "Slow" happens on two independent layers, stacked:
 //   1. Real server-side delay before the response even starts (TTFB).
 //   2. A fake client-side loading screen (spinner + rotating messages,
 //      no fake percentage) before the page is revealed.
 
-export async function onRequestGet() {
-  // Layer 1: real, blocking server-side delay before anything is sent.
-  await new Promise((resolve) => setTimeout(resolve, 12000));
-
-  const html = `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="robots" content="noindex, nofollow, noarchive">
-<title>Ugobongo — Official Executive Bio</title>
-<style>
-  * { box-sizing: border-box; }
-  body { margin:0; font-family: Georgia, "Times New Roman", serif; background:#fff; color:#1a1a2e; }
-  #loader { position:fixed; inset:0; z-index:999; background:#fff; color:#0a1e42; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family: -apple-system, Arial, sans-serif; }
-  #loader .spinner { width:80px; height:80px; border:10px solid #e8e8ec; border-top-color:#0a1e42; border-radius:50%; animation:spin 1s linear infinite; margin-bottom:2rem; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  #loader .msg { margin-top:.5rem; font-size:1.4rem; font-weight:700; min-height:1.5em; text-align:center; padding:0 2rem; font-family:-apple-system, Arial, sans-serif; }
-  #content { display:none; }
-  header.gov { background:#0a1e42; color:#fff; padding:2.5rem 2rem; text-align:center; }
-  header.gov .seal { font-size:3.5rem; }
-  header.gov h1 { font-family:-apple-system, Arial, sans-serif; font-size:2.2rem; font-weight:800; margin:.75rem 0 .25rem; letter-spacing:-.01em; }
-  header.gov .subtitle { font-size:1.05rem; opacity:.85; font-style:italic; }
-  main { max-width:820px; margin:0 auto; padding:3rem 2rem 5rem; }
-  .portrait-wrap { text-align:center; margin:0 0 2.5rem; }
-  .portrait-wrap img { max-width:280px; width:100%; border:4px solid #0a1e42; }
-  .portrait-wrap .cap { margin-top:.75rem; font-weight:700; font-family:-apple-system, Arial, sans-serif; font-size:.95rem; color:#555; }
-  .gallery { display:flex; flex-wrap:wrap; gap:1.5rem; justify-content:center; margin-bottom:3rem; }
-  .gallery img { max-width:200px; width:100%; border:3px solid #0a1e42; }
-  h2.section { font-family:-apple-system, Arial, sans-serif; font-size:1.1rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:#0a1e42; border-bottom:3px solid #0a1e42; padding-bottom:.5rem; margin:2.5rem 0 1rem; }
-  h3.role { font-family:-apple-system, Arial, sans-serif; font-weight:700; font-size:1.15rem; margin:1.5rem 0 .25rem; }
-  .role-meta { font-style:italic; color:#555; margin-bottom:.75rem; }
-  ul { padding-left:1.25rem; }
-  li { margin-bottom:.85rem; line-height:1.55; }
-  footer.gov { background:#f4f4f7; border-top:1px solid #ddd; text-align:center; padding:2rem; font-family:-apple-system, Arial, sans-serif; font-size:.8rem; color:#777; }
-</style>
-</head>
-<body>
-
-<div id="loader">
-  <div class="spinner"></div>
-  <div class="msg" id="msg">Preparing Official Bio…</div>
-</div>
-
-<div id="content">
-  <header class="gov">
-    <div class="seal">🦅</div>
-    <h1>UGOBONGO — OFFICIAL EXECUTIVE BIO</h1>
-    <div class="subtitle">Tremendous Leader, World-Class Napper, Very Stable Genius — And Definitely Not a Racist, According to Me</div>
-  </header>
-
-  <main>
-    <div class="portrait-wrap">
-      <img src="/assets/ugobongo-portrait.jpg" alt="" width="280" height="350" loading="lazy">
-      <div class="cap">Official White House portrait — public domain (17 U.S.C. §105)</div>
-    </div>
-
-    <h2 class="section">Executive Summary</h2>
-    <p>A hugely successful, bigly visionary leader with unmatched cognitive stamina, selective memory, and a gift for statements that critics call racially charged and supporters call &ldquo;not politically correct.&rdquo; Proven track record of real-estate management, reality television, running the country twice, attending high-profile civil trials, and commenting on race, immigration, and history in ways that generate permanent Wikipedia entries.</p>
-
-    <div class="gallery">
-      <img src="/uploads/fef22fd1-b89f-4a8c-8136-99602295900b.jpg" alt="" loading="lazy">
-      <img src="/uploads/d6221aa2-e55a-4b65-8d84-49a5d947d966.jpg" alt="" loading="lazy">
-    </div>
-
-    <h2 class="section">Professional Experience</h2>
-
+const DEFAULT_BIO_HTML = `
     <h3 class="role">Chief Executive Officer &amp; Chief Sleeping Officer</h3>
     <div class="role-meta">The Trump Organization &amp; Oval Office</div>
     <ul>
@@ -118,7 +58,167 @@ export async function onRequestGet() {
       <li>2017 Charlottesville: initial &ldquo;very fine people on both sides&rdquo; framing of the Unite the Right rally (with explicit exclusion of neo-Nazis and white nationalists); later clarified condemnations of racism while continuing to defend Confederate monuments.</li>
       <li>2018 Oval Office: reportedly referred to El Salvador, Haiti, and African countries as &ldquo;shithole countries&rdquo; and expressed a preference for immigrants from places like Norway (multiple attendees confirmed the language; Trump later confirmed the phrasing in 2025 remarks).</li>
       <li>2019: tweeted that four Democratic congresswomen of color should &ldquo;go back&rdquo; to the &ldquo;totally broken and crime-infested&rdquo; countries they came from.</li>
-    </ul>
+    </ul>`;
+
+const DEFAULT_IMAGES = [
+  '/uploads/fef22fd1-b89f-4a8c-8136-99602295900b.jpg',
+  '/uploads/d6221aa2-e55a-4b65-8d84-49a5d947d966.jpg',
+];
+
+const DEFAULT_MESSAGES = ['Preparing Official Bio…', 'Consulting the record…', 'Verifying tremendousness…', 'Almost ready…', 'Still preparing, on purpose…'];
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// Block-based body renderer, backing the drag-to-reorder visual editor in
+// /ugobongo-admin. `html`/paragraph content is trusted as-is (admin-only,
+// same trust level as bio_html already was) -- every other field is
+// escaped since it renders as plain text.
+function renderBlock(block) {
+  if (block.type === 'heading') {
+    return `<h2 class="section">${escapeHtml(block.text || '')}</h2>`;
+  }
+  if (block.type === 'paragraph') {
+    return `<p>${block.html || ''}</p>`;
+  }
+  if (block.type === 'image') {
+    const cap = block.caption ? `<div class="cap">${escapeHtml(block.caption)}</div>` : '';
+    return `<div class="portrait-wrap">${block.url ? `<img src="${escapeHtml(block.url)}" alt="" loading="lazy">` : ''}${cap}</div>`;
+  }
+  if (block.type === 'gallery') {
+    const imgs = (block.images || []).map((url) => `<img src="${escapeHtml(url)}" alt="" loading="lazy">`).join('\n      ');
+    return `<div class="gallery">\n      ${imgs}\n    </div>`;
+  }
+  if (block.type === 'button') {
+    return `<div class="u-button"><a href="${escapeHtml(block.href || '#')}">${escapeHtml(block.label || '')}</a></div>`;
+  }
+  if (block.type === 'spacer') {
+    const h = Number.isFinite(block.height) ? Math.max(0, Math.min(400, block.height)) : 40;
+    return `<div style="height:${h}px"></div>`;
+  }
+  if (block.type === 'role') {
+    const items = (block.items || []).map((i) => `<li>${i}</li>`).join('\n      ');
+    return `<h3 class="role">${escapeHtml(block.title || '')}</h3>\n    <div class="role-meta">${escapeHtml(block.meta || '')}</div>\n    <ul>\n      ${items}\n    </ul>`;
+  }
+  if (block.type === 'columns') {
+    const side = (list) => (list || []).map(renderBlock).join('\n');
+    return `<div class="u-columns"><div class="u-col">${side(block.left)}</div><div class="u-col">${side(block.right)}</div></div>`;
+  }
+  return '';
+}
+
+export async function onRequestGet({ env }) {
+  let cfg = null;
+  if (env.DB) {
+    const row = await env.DB.prepare('SELECT * FROM ugobongo_config WHERE id = 1').first().catch(() => null);
+    if (row) {
+      cfg = {
+        title: row.title,
+        subtitle: row.subtitle,
+        bioHtml: row.bio_html,
+        images: JSON.parse(row.images_json || '[]'),
+        loadingMs: row.loading_ms,
+        messages: JSON.parse(row.loading_messages_json || 'null'),
+        spinnerUrl: row.spinner_image_url,
+        blocks: JSON.parse(row.blocks_json || 'null'),
+      };
+    }
+  }
+
+  const title = (cfg && cfg.title) || 'UGOBONGO — Official Executive Bio';
+  const subtitle = (cfg && cfg.subtitle) || 'Tremendous Leader, World-Class Napper, Very Stable Genius — And Definitely Not a Racist, According to Me';
+  const bioHtml = (cfg && cfg.bioHtml) || DEFAULT_BIO_HTML;
+  const images = (cfg && cfg.images && cfg.images.length) ? cfg.images : DEFAULT_IMAGES;
+  const loadingMs = cfg && Number.isFinite(cfg.loadingMs) ? cfg.loadingMs : 12000;
+  const messages = (cfg && cfg.messages && cfg.messages.length) ? cfg.messages : DEFAULT_MESSAGES;
+  const spinnerUrl = cfg && cfg.spinnerUrl;
+
+  // Layer 1: real, blocking server-side delay before anything is sent.
+  await new Promise((resolve) => setTimeout(resolve, loadingMs));
+
+  const galleryHtml = images.map((url) => `<img src="${escapeHtml(url)}" alt="" loading="lazy">`).join('\n      ');
+  const spinnerHtml = spinnerUrl
+    ? `<img src="${escapeHtml(spinnerUrl)}" alt="" style="width:100px;height:100px;object-fit:cover;border-radius:50%;margin-bottom:2rem;animation:spin 2s linear infinite;">`
+    : `<div class="spinner"></div>`;
+
+  // When the visual editor at /ugobongo-admin has saved a block structure,
+  // it fully replaces the body below (portrait/summary/gallery/bio all
+  // become editable blocks). With no blocks saved yet, the original
+  // hardcoded layout is the fallback — same defaults as before the editor
+  // existed.
+  const hasBlocks = cfg && Array.isArray(cfg.blocks) && cfg.blocks.length > 0;
+  const bodyHtml = hasBlocks
+    ? cfg.blocks.map(renderBlock).join('\n')
+    : `
+    <div class="portrait-wrap">
+      <img src="/assets/ugobongo-portrait.jpg" alt="" width="280" height="350" loading="lazy">
+      <div class="cap">Official White House portrait — public domain (17 U.S.C. §105)</div>
+    </div>
+
+    <h2 class="section">Executive Summary</h2>
+    <p>A hugely successful, bigly visionary leader with unmatched cognitive stamina, selective memory, and a gift for statements that critics call racially charged and supporters call &ldquo;not politically correct.&rdquo; Proven track record of real-estate management, reality television, running the country twice, attending high-profile civil trials, and commenting on race, immigration, and history in ways that generate permanent Wikipedia entries.</p>
+
+    <div class="gallery">
+      ${galleryHtml}
+    </div>
+
+    <h2 class="section">Professional Experience</h2>
+    ${bioHtml}`;
+
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>${escapeHtml(title)}</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: Georgia, "Times New Roman", serif; background:#fff; color:#1a1a2e; }
+  #loader { position:fixed; inset:0; z-index:999; background:#fff; color:#0a1e42; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family: -apple-system, Arial, sans-serif; }
+  #loader .spinner { width:80px; height:80px; border:10px solid #e8e8ec; border-top-color:#0a1e42; border-radius:50%; animation:spin 1s linear infinite; margin-bottom:2rem; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loader .msg { margin-top:.5rem; font-size:1.4rem; font-weight:700; min-height:1.5em; text-align:center; padding:0 2rem; font-family:-apple-system, Arial, sans-serif; }
+  #content { display:none; }
+  header.gov { background:#0a1e42; color:#fff; padding:2.5rem 2rem; text-align:center; }
+  header.gov .seal { font-size:3.5rem; }
+  header.gov h1 { font-family:-apple-system, Arial, sans-serif; font-size:2.2rem; font-weight:800; margin:.75rem 0 .25rem; letter-spacing:-.01em; }
+  header.gov .subtitle { font-size:1.05rem; opacity:.85; font-style:italic; }
+  main { max-width:820px; margin:0 auto; padding:3rem 2rem 5rem; }
+  .portrait-wrap { text-align:center; margin:0 0 2.5rem; }
+  .portrait-wrap img { max-width:280px; width:100%; border:4px solid #0a1e42; }
+  .portrait-wrap .cap { margin-top:.75rem; font-weight:700; font-family:-apple-system, Arial, sans-serif; font-size:.95rem; color:#555; }
+  .gallery { display:flex; flex-wrap:wrap; gap:1.5rem; justify-content:center; margin-bottom:3rem; }
+  .gallery img { max-width:200px; width:100%; border:3px solid #0a1e42; }
+  h2.section { font-family:-apple-system, Arial, sans-serif; font-size:1.1rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:#0a1e42; border-bottom:3px solid #0a1e42; padding-bottom:.5rem; margin:2.5rem 0 1rem; }
+  h3.role { font-family:-apple-system, Arial, sans-serif; font-weight:700; font-size:1.15rem; margin:1.5rem 0 .25rem; }
+  .role-meta { font-style:italic; color:#555; margin-bottom:.75rem; }
+  ul { padding-left:1.25rem; }
+  li { margin-bottom:.85rem; line-height:1.55; }
+  .u-button { text-align:center; margin:1.5rem 0; }
+  .u-button a { display:inline-block; background:#0a1e42; color:#fff; padding:.75rem 1.75rem; border-radius:.4rem; text-decoration:none; font-family:-apple-system, Arial, sans-serif; font-weight:700; }
+  .u-columns { display:grid; grid-template-columns:1fr 1fr; gap:2.5rem; margin:1.5rem 0; }
+  @media (max-width:600px) { .u-columns { grid-template-columns:1fr; } }
+  footer.gov { background:#f4f4f7; border-top:1px solid #ddd; text-align:center; padding:2rem; font-family:-apple-system, Arial, sans-serif; font-size:.8rem; color:#777; }
+</style>
+</head>
+<body>
+
+<div id="loader">
+  ${spinnerHtml}
+  <div class="msg" id="msg">${escapeHtml(messages[0])}</div>
+</div>
+
+<div id="content">
+  <header class="gov">
+    <div class="seal">🦅</div>
+    <h1>${escapeHtml(title)}</h1>
+    <div class="subtitle">${escapeHtml(subtitle)}</div>
+  </header>
+
+  <main>
+    ${bodyHtml}
   </main>
 
   <footer class="gov">This is a satirical test page. Sourced from widely reported public record. Not an official government website.</footer>
@@ -129,14 +229,8 @@ export async function onRequestGet() {
     var msg = document.getElementById('msg');
     var loader = document.getElementById('loader');
     var content = document.getElementById('content');
-    var messages = [
-      'Preparing Official Bio…',
-      'Consulting the record…',
-      'Verifying tremendousness…',
-      'Almost ready…',
-      'Still preparing, on purpose…',
-    ];
-    var i = 0;
+    var messages = ${JSON.stringify(messages).replace(/</g, '\\u003c')};
+    var i = 1;
     var interval = setInterval(function () {
       msg.textContent = messages[i % messages.length];
       i++;
