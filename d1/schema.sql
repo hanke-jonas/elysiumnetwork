@@ -269,3 +269,24 @@ CREATE TABLE IF NOT EXISTS ugobongo_config (
   blocks_json TEXT,
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Persistent, multi-session chat history for the ugobongo-admin chat
+-- assistant. Each session is a separate conversation the admin can switch
+-- between; messages carry an optional image_url for attachments uploaded
+-- alongside a chat message.
+CREATE TABLE IF NOT EXISTS ugobongo_chat_sessions (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL DEFAULT 'New chat',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS ugobongo_chat_messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL REFERENCES ugobongo_chat_sessions(id),
+  role TEXT NOT NULL, -- 'user' | 'assistant'
+  content TEXT NOT NULL,
+  image_url TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_ugobongo_chat_messages_session ON ugobongo_chat_messages(session_id, created_at);

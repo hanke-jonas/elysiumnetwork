@@ -49,6 +49,14 @@ export async function onRequestGet({ request, env }) {
   .chat-input-row textarea { flex:1; resize:none; height:44px; padding:.5rem; border:1px solid #ccc; border-radius:.4rem; font:inherit; font-size:.85rem; }
   .chat-input-row button { border:none; background:#0a1e42; color:#fff; border-radius:.4rem; padding:0 1rem; cursor:pointer; font-weight:700; }
   .chat-input-row button:disabled { opacity:.5; cursor:not-allowed; }
+  .chat-head { display:flex; align-items:center; justify-content:space-between; padding:1rem 1rem 0; }
+  #chatSessionSelect { margin:.5rem 1rem 0; width:calc(100% - 2rem); padding:.35rem; border:1px solid #ccc; border-radius:.4rem; font-size:.8rem; }
+  .chat-attach-btn { border:1px solid #ccc; background:#fafafa; border-radius:.4rem; padding:0 .6rem; cursor:pointer; font-size:1rem; }
+  .chat-attach-preview { padding:0 1rem; }
+  .chat-attach-preview:not(:empty) { padding-bottom:.5rem; }
+  .chat-attach-preview .chip { display:inline-flex; align-items:center; gap:.4rem; background:#eef1f8; border-radius:1rem; padding:.2rem .6rem; font-size:.75rem; }
+  .chat-attach-preview .chip button { border:none; background:none; cursor:pointer; font-weight:700; color:#c0392b; }
+  .chat-msg .status { font-style:italic; color:#999; }
 
   .palette, .props { background:#fff; border-right:1px solid #ddd; overflow-y:auto; padding:1rem; }
   .props { border-right:none; border-left:1px solid #ddd; }
@@ -133,11 +141,18 @@ export async function onRequestGet({ request, env }) {
   </div>
 
   <div class="chat">
-    <h2>Chat assistant</h2>
-    <div class="sub">Ask it to change the page — it can edit content directly.</div>
+    <div class="chat-head">
+      <h2 style="padding:0;margin:0">Chat assistant</h2>
+      <button type="button" class="btn" id="newChatBtn" style="font-size:.75rem;padding:.3rem .6rem">+ New chat</button>
+    </div>
+    <select id="chatSessionSelect"></select>
+    <div class="sub">Ask it to change the page, or have it look something up first.</div>
     <div class="sub" id="chatBudget">Free daily AI budget — shown after your first message</div>
     <div id="chatLog"></div>
+    <div id="chatAttachPreview" class="chat-attach-preview"></div>
     <div class="chat-input-row">
+      <button type="button" id="chatAttachBtn" title="Attach a file" class="chat-attach-btn">📎</button>
+      <input type="file" id="chatAttachFile" style="display:none">
       <textarea id="chatInput" placeholder="e.g. Add a button linking to https://example.com"></textarea>
       <button type="button" id="chatSendBtn">Send</button>
     </div>
@@ -476,10 +491,15 @@ export async function onRequestGet({ request, env }) {
   });
 
   // --- Chat assistant ------------------------------------------------------
-  var chatHistory = [];
   var chatLog = document.getElementById('chatLog');
   var chatInput = document.getElementById('chatInput');
   var chatSendBtn = document.getElementById('chatSendBtn');
+  var chatSessionSelect = document.getElementById('chatSessionSelect');
+  var chatAttachBtn = document.getElementById('chatAttachBtn');
+  var chatAttachFile = document.getElementById('chatAttachFile');
+  var chatAttachPreview = document.getElementById('chatAttachPreview');
+  var currentSessionId = null;
+  var pendingAttachment = null; // { url, name }
 
   function updateChatBudget(budget) {
     var remaining = Math.max(0, budget.cap - budget.used);
@@ -500,54 +520,111 @@ export async function onRequestGet({ request, env }) {
     row.appendChild(bubble);
     chatLog.appendChild(row);
     chatLog.scrollTop = chatLog.scrollHeight;
+    return bubble;
+  }
+
+  // Every intermediate step the assistant takes (thinking, fetching a URL,
+  // saving) gets its own persistent line -- this IS the assistant's
+  // "reasoning" that's actually available to show: this model doesn't
+  // produce a separate hidden chain-of-thought, but every real step of its
+  // tool loop is visible here, in order, and stays visible after the final
+  // reply lands rather than being overwritten.
+  function addStatusLine(text) {
+    var row = document.createElement('div');
+    row.className = 'chat-msg assistant';
+    row.innerHTML = '<div class="bubble status"></div>';
+    row.querySelector('.bubble').textContent = text;
+    chatLog.appendChild(row);
+    chatLog.scrollTop = chatLog.scrollHeight;
+  }
+
+  function renderAttachPreview() {
+    if (!pendingAttachment) { chatAttachPreview.innerHTML = ''; return; }
+    chatAttachPreview.innerHTML = '<span class="chip">' + esc(pendingAttachment.name) + ' <button type="button" id="chatAttachClear">×</button></span>';
+    document.getElementById('chatAttachClear').addEventListener('click', function () {
+      pendingAttachment = null;
+      renderAttachPreview();
+    });
+  }
+
+  chatAttachBtn.addEventListener('click', function () { chatAttachFile.click(); });
+  chatAttachFile.addEventListener('change', function () {
+    var f = chatAttachFile.files[0];
+    chatAttachFile.value = '';
+    if (!f) return;
+    addStatusLine('Uploading ' + f.name + '…');
+    uploadFile(f, function (url) {
+      pendingAttachment = { url: url, name: f.name };
+      renderAttachPreview();
+    });
+  });
+
+  function applyConfigFromChat(cfg) {
+    state.title = cfg.title || '';
+    state.subtitle = cfg.subtitle || '';
+    state.bio_html = cfg.bio_html || '';
+    state.images = cfg.images || [];
+    state.loading_ms = cfg.loading_ms;
+    state.loading_messages = cfg.loading_messages || [];
+    state.spinner_image_url = cfg.spinner_image_url || null;
+    state.spinner_speed_ms = cfg.spinner_speed_ms || 2000;
+    state.blocks = cfg.blocks || [];
+    selectedId = null;
+    renderCanvas();
+    renderProps();
+    document.getElementById('status').textContent = 'Saved & live (via chat).';
   }
 
   function sendChat() {
     var text = chatInput.value.trim();
-    if (!text) return;
+    if (!text && !pendingAttachment) return;
     chatInput.value = '';
-    chatHistory.push({ role: 'user', content: text });
-    addChatMsg('user', text);
+    var displayText = text + (pendingAttachment ? (text ? '\\n' : '') + '[attached: ' + pendingAttachment.name + ']' : '');
+    addChatMsg('user', displayText);
+    var attachment = pendingAttachment;
+    pendingAttachment = null;
+    renderAttachPreview();
     chatSendBtn.disabled = true;
-    var thinking = document.createElement('div');
-    thinking.className = 'chat-msg assistant';
-    thinking.innerHTML = '<div class="who">Assistant</div><div class="bubble">Thinking…</div>';
-    chatLog.appendChild(thinking);
-    chatLog.scrollTop = chatLog.scrollHeight;
 
-    apiFetch('/api/ugobongo-admin/chat', {
+    fetch('/api/ugobongo-admin/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: chatHistory }),
-    }).then(function (r) {
+      body: JSON.stringify({ session_id: currentSessionId, message: text, image_url: attachment ? attachment.url : null }),
+    }).then(function (res) {
+      var reader = res.body.getReader();
+      var decoder = new TextDecoder();
+      var buf = '';
+
+      function pump() {
+        return reader.read().then(function (result) {
+          if (result.done) { chatSendBtn.disabled = false; return; }
+          buf += decoder.decode(result.value, { stream: true });
+          var parts = buf.split('\\n\\n');
+          buf = parts.pop();
+          parts.forEach(function (part) {
+            var line = part.replace(/^data: /, '').trim();
+            if (!line) return;
+            var evt;
+            try { evt = JSON.parse(line); } catch (e) { return; }
+            if (evt.type === 'status') {
+              addStatusLine(evt.text);
+            } else if (evt.type === 'error') {
+              addChatMsg('assistant', evt.error, 'error');
+              if (evt.budget) updateChatBudget(evt.budget);
+            } else if (evt.type === 'done') {
+              addChatMsg('assistant', evt.reply || '(no reply)', evt.applied ? 'applied' : '');
+              if (evt.budget) updateChatBudget(evt.budget);
+              if (evt.applied && evt.config) applyConfigFromChat(evt.config);
+              refreshSessionList();
+            }
+          });
+          return pump();
+        });
+      }
+      return pump();
+    }).catch(function (err) {
       chatSendBtn.disabled = false;
-      thinking.remove();
-      if (r.data && r.data.budget) updateChatBudget(r.data.budget);
-      if (!r.ok) {
-        addChatMsg('assistant', r.data.error || 'Something went wrong.', 'error');
-        return;
-      }
-      chatHistory.push({ role: 'assistant', content: r.data.reply || '' });
-      if (r.data.error) {
-        addChatMsg('assistant', (r.data.reply || '') + '\\n\\n' + r.data.error, 'error');
-      } else {
-        addChatMsg('assistant', r.data.reply || '(no reply)', r.data.applied ? 'applied' : '');
-      }
-      if (r.data.applied && r.data.config) {
-        state.title = r.data.config.title || '';
-        state.subtitle = r.data.config.subtitle || '';
-        state.bio_html = r.data.config.bio_html || '';
-        state.images = r.data.config.images || [];
-        state.loading_ms = r.data.config.loading_ms;
-        state.loading_messages = r.data.config.loading_messages || [];
-        state.spinner_image_url = r.data.config.spinner_image_url || null;
-        state.spinner_speed_ms = r.data.config.spinner_speed_ms || 2000;
-        state.blocks = r.data.config.blocks || [];
-        selectedId = null;
-        renderCanvas();
-        renderProps();
-        document.getElementById('status').textContent = 'Saved & live (via chat).';
-      }
+      addChatMsg('assistant', 'Connection error: ' + err.message, 'error');
     });
   }
 
@@ -556,6 +633,56 @@ export async function onRequestGet({ request, env }) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendChat();
+    }
+  });
+
+  // --- Chat sessions ---------------------------------------------------
+  function loadSessionMessages(id) {
+    chatLog.innerHTML = '';
+    apiFetch('/api/ugobongo-admin/chat-sessions/' + id).then(function (r) {
+      if (!r.ok) return;
+      r.data.messages.forEach(function (m) {
+        addChatMsg(m.role, m.content);
+      });
+    });
+  }
+
+  function refreshSessionList() {
+    return apiFetch('/api/ugobongo-admin/chat-sessions').then(function (r) {
+      if (!r.ok) return;
+      chatSessionSelect.innerHTML = '';
+      r.data.sessions.forEach(function (s) {
+        var opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = s.title;
+        if (s.id === currentSessionId) opt.selected = true;
+        chatSessionSelect.appendChild(opt);
+      });
+    });
+  }
+
+  chatSessionSelect.addEventListener('change', function () {
+    currentSessionId = chatSessionSelect.value;
+    loadSessionMessages(currentSessionId);
+  });
+
+  document.getElementById('newChatBtn').addEventListener('click', function () {
+    apiFetch('/api/ugobongo-admin/chat-sessions', { method: 'POST' }).then(function (r) {
+      if (!r.ok) return;
+      currentSessionId = r.data.id;
+      chatLog.innerHTML = '';
+      refreshSessionList();
+    });
+  });
+
+  refreshSessionList().then(function () {
+    if (chatSessionSelect.options.length) {
+      currentSessionId = chatSessionSelect.options[0].value;
+      loadSessionMessages(currentSessionId);
+    } else {
+      return apiFetch('/api/ugobongo-admin/chat-sessions', { method: 'POST' }).then(function (r) {
+        if (r.ok) { currentSessionId = r.data.id; refreshSessionList(); }
+      });
     }
   });
 })();
