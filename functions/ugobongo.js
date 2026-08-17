@@ -8,8 +8,8 @@
 // "Slow" happens on three independent layers, stacked:
 //   1. Real server-side delay before the response even starts (TTFB).
 //   2. A large, deliberately junk-padded HTML payload.
-//   3. A fake client-side loading screen with its own fake, non-linear
-//      progress bar before the "real" (junk) page is even revealed.
+//   3. A fake client-side loading screen (no fake percentage — just a
+//      spinner and rotating messages) before the junk page is revealed.
 
 function junkParagraphs(n) {
   const lines = [
@@ -39,7 +39,8 @@ function junkDivs(n) {
 
 export async function onRequestGet() {
   // Layer 1: real, blocking server-side delay before anything is sent.
-  await new Promise((resolve) => setTimeout(resolve, 6000));
+  // Slower than before, on purpose.
+  await new Promise((resolve) => setTimeout(resolve, 12000));
 
   // Layer 2: a big, deliberately junk-padded body.
   const html = `<!doctype html>
@@ -51,33 +52,31 @@ export async function onRequestGet() {
 <title>Ugobongo — the most tremendous page ever built</title>
 <style>
   * { box-sizing: border-box; }
-  body { margin:0; font-family: "Comic Sans MS", cursive, sans-serif; background: repeating-linear-gradient(45deg, #ff00ff, #ff00ff 10px, #00ffff 10px, #00ffff 20px); color:#111; }
-  marquee { background:#000; color:#0f0; font-size:1.4rem; padding:.5rem; }
-  #loader { position:fixed; inset:0; z-index:999; background:#000; color:#0f0; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family: monospace; }
-  #loader .spinner { width:64px; height:64px; border:8px solid #0f0; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite; margin-bottom:1.5rem; }
+  body { margin:0; font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; background:#fff; color:#111; }
+  marquee { background:#111; color:#fff; font-size:1.4rem; padding:.5rem; font-weight:800; letter-spacing:.02em; }
+  #loader { position:fixed; inset:0; z-index:999; background:#fff; color:#111; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  #loader .spinner { width:80px; height:80px; border:10px solid #eee; border-top-color:#111; border-radius:50%; animation:spin 1s linear infinite; margin-bottom:2rem; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  #loader .pct { font-size:2rem; }
-  #loader .msg { margin-top:1rem; opacity:.7; min-height:1.5em; }
-  #content { display:none; padding:2rem; }
-  .junk { background:#fff; border:3px dashed magenta; padding:.75rem; margin:.75rem 0; }
-  .tiny { font-size:.7rem; opacity:.6; }
-  .blobs { display:flex; flex-wrap:wrap; gap:4px; margin:1.5rem 0; }
-  .blob { width:40px; height:40px; display:flex; align-items:center; justify-content:center; font-size:.6rem; color:#fff; border-radius:50%; animation:pulse 2s ease-in-out infinite; }
+  #loader .msg { margin-top:.5rem; font-size:1.4rem; font-weight:800; min-height:1.5em; text-align:center; padding:0 2rem; }
+  #content { display:none; padding:3rem 2rem; max-width:1000px; margin:0 auto; }
+  .junk { background:#fafafa; border:2px solid #eee; border-radius:.5rem; padding:1rem; margin:1rem 0; }
+  .tiny { font-size:.7rem; opacity:.5; }
+  .blobs { display:flex; flex-wrap:wrap; gap:6px; margin:2rem 0; }
+  .blob { width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-size:.6rem; color:#fff; border-radius:50%; animation:pulse 2s ease-in-out infinite; }
   @keyframes pulse { 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.15);} }
-  h1 { font-size:3.5rem; text-shadow:4px 4px 0 magenta, 8px 8px 0 cyan; color:#fff; text-transform:uppercase; }
+  h1 { font-size:5rem; font-weight:900; color:#111; text-transform:uppercase; letter-spacing:-.02em; line-height:1; margin:1rem 0; }
   .crown { font-size:5rem; text-align:center; }
-  .banner { background:gold; border:4px solid #b8860b; color:#111; font-weight:bold; text-align:center; padding:1rem; font-size:1.3rem; margin:1.5rem 0; text-transform:uppercase; }
-  .portrait-wrap { text-align:center; margin:2rem 0; }
-  .portrait-wrap img { max-width:320px; width:100%; border:8px solid gold; box-shadow:0 0 0 4px #111, 12px 12px 0 magenta; }
-  .portrait-wrap .cap { margin-top:.75rem; font-weight:bold; font-size:1.1rem; }
-  .portrait-wrap .credit { font-size:.65rem; opacity:.6; margin-top:.25rem; }
+  .banner { background:#111; border-radius:.75rem; color:#fff; font-weight:800; text-align:center; padding:1.25rem; font-size:1.5rem; margin:2rem 0; text-transform:uppercase; }
+  .portrait-wrap { text-align:center; margin:2.5rem 0; }
+  .portrait-wrap img { max-width:340px; width:100%; border-radius:1rem; box-shadow:0 20px 60px rgba(0,0,0,.15); }
+  .portrait-wrap .cap { margin-top:1rem; font-weight:800; font-size:1.2rem; }
+  .portrait-wrap .credit { font-size:.65rem; opacity:.5; margin-top:.25rem; }
 </style>
 </head>
 <body>
 
 <div id="loader">
   <div class="spinner"></div>
-  <div class="pct" id="pct">0%</div>
   <div class="msg" id="msg">Building the Greatest Loading Screen in History…</div>
 </div>
 
@@ -107,11 +106,10 @@ export async function onRequestGet() {
 </div>
 
 <script>
-  // Layer 3: a fake, non-linear, occasionally-stalling loading bar that
-  // has nothing to do with real load progress — it exists purely to make
-  // the page feel even slower than it already is.
+  // Layer 3: a fake client-side wait with no percentage at all — no fake
+  // number to point at, just a spinner and rotating messages, for even
+  // longer than before, on purpose.
   (function () {
-    var pct = document.getElementById('pct');
     var msg = document.getElementById('msg');
     var loader = document.getElementById('loader');
     var content = document.getElementById('content');
@@ -120,26 +118,21 @@ export async function onRequestGet() {
       'Ugobonging the bongo…',
       'Downloading more RAM…',
       'Asking nicely…',
-      'Definitely almost done…',
+      'This is taking a while, and that is intentional…',
       'Recalculating pointlessness…',
       'Please continue to wait…',
+      'Still not done. Still on purpose.',
     ];
-    var p = 0;
-    function tick() {
-      var jump = p < 80 ? Math.random() * 6 : Math.random() * 0.5;
-      p = Math.min(100, p + jump);
-      pct.textContent = Math.floor(p) + '%';
-      msg.textContent = messages[Math.floor(Math.random() * messages.length)];
-      if (p < 100) {
-        setTimeout(tick, 250 + Math.random() * 400);
-      } else {
-        setTimeout(function () {
-          loader.style.display = 'none';
-          content.style.display = 'block';
-        }, 600);
-      }
-    }
-    setTimeout(tick, 500);
+    var i = 0;
+    var interval = setInterval(function () {
+      msg.textContent = messages[i % messages.length];
+      i++;
+    }, 900);
+    setTimeout(function () {
+      clearInterval(interval);
+      loader.style.display = 'none';
+      content.style.display = 'block';
+    }, 10000);
   })();
 </script>
 
