@@ -13,13 +13,13 @@
 
 function junkParagraphs(n) {
   const lines = [
-    "Ugobongo Industries™ regrets to inform you that nothing here is real, load-bearing, or a good idea.",
-    "This page intentionally contains a large amount of nothing, rendered slowly, on purpose.",
-    "97% of statistics about this page are made up on the spot, including this one.",
-    "If you are reading this, you have already wasted more time than the page intended, and it intends a lot.",
-    "Ugobongo: not a word, not a product, not a place. Just vibes.",
-    "Please enjoy this filler text as if it were meaningful. It is not.",
-    "Loading is a state of mind. So is patience. Neither will help you here.",
+    "This is, without question, the SLOWEST page ever built. Nobody has ever seen a page load this badly. TREMENDOUS badness. The best badness.",
+    "Many people are saying — and I mean MANY people, very smart people — that Ugobongo is the number one worst website in the history of websites, maybe ever.",
+    "97% of statistics about this page are made up on the spot, and honestly? Still more accurate than most polls.",
+    "If you are reading this, you have already wasted more time than the page intended, and frankly, it intends A LOT. Nobody wastes time better than this page. Nobody.",
+    "Ugobongo: not a word, not a product, not a place. Just vibes. Tremendous vibes. The most tremendous vibes anyone has ever vibed.",
+    "This filler text is, in the opinion of many, the greatest filler text ever written. Some say the greatest text, period. We're not saying that. Other people are saying that.",
+    "Loading is a state of mind. So is winning. This page is losing on purpose, which, if you think about it, is actually winning. Very smart.",
   ];
   let out = "";
   for (let i = 0; i < n; i++) {
@@ -48,7 +48,7 @@ export async function onRequestGet() {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow, noarchive">
-<title>Ugobongo — please wait forever</title>
+<title>Ugobongo — the most tremendous page ever built</title>
 <style>
   * { box-sizing: border-box; }
   body { margin:0; font-family: "Comic Sans MS", cursive, sans-serif; background: repeating-linear-gradient(45deg, #ff00ff, #ff00ff 10px, #00ffff 10px, #00ffff 20px); color:#111; }
@@ -64,7 +64,13 @@ export async function onRequestGet() {
   .blobs { display:flex; flex-wrap:wrap; gap:4px; margin:1.5rem 0; }
   .blob { width:40px; height:40px; display:flex; align-items:center; justify-content:center; font-size:.6rem; color:#fff; border-radius:50%; animation:pulse 2s ease-in-out infinite; }
   @keyframes pulse { 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.15);} }
-  h1 { font-size:3rem; text-shadow:4px 4px 0 magenta, 8px 8px 0 cyan; color:#fff; }
+  h1 { font-size:3.5rem; text-shadow:4px 4px 0 magenta, 8px 8px 0 cyan; color:#fff; text-transform:uppercase; }
+  .crown { font-size:5rem; text-align:center; }
+  .banner { background:gold; border:4px solid #b8860b; color:#111; font-weight:bold; text-align:center; padding:1rem; font-size:1.3rem; margin:1.5rem 0; text-transform:uppercase; }
+  .portrait-wrap { text-align:center; margin:2rem 0; }
+  .portrait-wrap img { max-width:320px; width:100%; border:8px solid gold; box-shadow:0 0 0 4px #111, 12px 12px 0 magenta; }
+  .portrait-wrap .cap { margin-top:.75rem; font-weight:bold; font-size:1.1rem; }
+  .portrait-wrap .credit { font-size:.65rem; opacity:.6; margin-top:.25rem; }
 </style>
 </head>
 <body>
@@ -72,16 +78,24 @@ export async function onRequestGet() {
 <div id="loader">
   <div class="spinner"></div>
   <div class="pct" id="pct">0%</div>
-  <div class="msg" id="msg">Initializing Ugobongo Experience™…</div>
+  <div class="msg" id="msg">Building the Greatest Loading Screen in History…</div>
 </div>
 
 <div id="content">
-  <marquee behavior="alternate" scrollamount="8">★彡 WELCOME TO UGOBONGO — YOU ARE VISITOR #4,839,201,004 彡★</marquee>
-  <h1>UGOBONGO</h1>
-  <p><strong>This page is a deliberate test page.</strong> It is supposed to be slow and full of junk. It is doing a great job.</p>
+  <marquee behavior="alternate" scrollamount="8">★彡 WELCOME TO UGOBONGO — THE MOST TREMENDOUS PAGE EVER BUILT — BELIEVE ME 彡★</marquee>
+  <div class="crown">👑🍊</div>
+  <h1>UGOBONGO: HUGE. TREMENDOUS. THE BEST.</h1>
+  <div class="banner">Nobody has ever built a slower page. NOBODY. And that's a good thing, believe me.</div>
+  <div class="portrait-wrap">
+    <img src="/assets/ugobongo-portrait.jpg" alt="" width="320" height="400" loading="lazy">
+    <div class="cap">TREMENDOUS. HUGE. THE BEST PORTRAIT.</div>
+    <div class="credit">Official White House portrait — U.S. federal government work, public domain (17 U.S.C. §105).</div>
+  </div>
+  <p><strong>This page is a deliberate test page,</strong> and frankly, the best test page anyone has ever tested. It is supposed to be slow and full of junk, and it is doing that job better than any page in history. People are calling it a disaster. Other people — smarter people — are calling it a masterpiece. We report both.</p>
   <div class="blobs">${junkDivs(120)}</div>
   ${junkParagraphs(40)}
-  <marquee>THANK YOU FOR YOUR PATIENCE. THERE WAS NEVER ANYTHING HERE. GOODBYE.</marquee>
+  <div class="banner">Sad!</div>
+  <marquee>THANK YOU FOR YOUR PATIENCE. IT WAS TREMENDOUS PATIENCE. THERE WAS NEVER ANYTHING HERE. GOODBYE.</marquee>
 </div>
 
 <script>
