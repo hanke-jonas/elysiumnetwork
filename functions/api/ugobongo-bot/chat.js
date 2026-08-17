@@ -36,12 +36,10 @@ export async function onRequestPost({ request, env }) {
 
   if (!history.length) return badRequest('messages array is empty');
 
-  // Daily neuron budget check disabled for unrestricted use.
-  // const usedSoFar = await getTodayNeuronUsage(env);
-  // if (usedSoFar >= DAILY_NEURON_CAP) {
-  //   return json({ error: "This site's shared daily AI budget is used up — resets at midnight UTC. No charge was made.", budget: budgetInfo(usedSoFar) }, { status: 429 });
-  // }
-  const usedSoFar = 0; // placeholder so budgetInfo still works if you want it
+  const usedSoFar = await getTodayNeuronUsage(env);
+  if (usedSoFar >= DAILY_NEURON_CAP) {
+    return json({ error: "This site's shared daily AI budget is used up — resets at midnight UTC. No charge was made.", budget: budgetInfo(usedSoFar) }, { status: 429 });
+  }
 
   const messages = [{ role: 'system', content: SYSTEM_PROMPT }, ...history];
 
