@@ -46,7 +46,12 @@ export async function onRequestGet({ request, env }) {
   .msg.status .bubble { background:none; border:none; color:#999; font-style:italic; padding:.1rem 0; }
   .msg.error .bubble { border-left:3px solid #c0392b; color:#a92a1a; background:#fff; }
   .msg img { max-width:100%; border-radius:.5rem; margin-top:.4rem; display:block; }
-  #budget { text-align:center; font-size:.7rem; color:#999; padding:0 1rem .4rem; }
+  #budgetWrap { padding:0 1rem .5rem; }
+  #budgetLabel { text-align:center; font-size:.7rem; color:#999; margin-bottom:.25rem; }
+  #budgetBarTrack { height:6px; border-radius:3px; background:#e2e5ea; overflow:hidden; }
+  #budgetBarFill { height:100%; width:0%; background:#0a1e42; transition:width .3s ease, background .3s ease; }
+  #budgetBarFill.warning { background:#b06a00; }
+  #budgetBarFill.exhausted { background:#c0392b; }
   #attachPreview:not(:empty) { padding:0 1rem .4rem; font-size:.75rem; }
   #attachPreview .chip { background:#eef1f8; border-radius:1rem; padding:.2rem .6rem; }
   #attachPreview .chip button { border:none; background:none; color:#c0392b; font-weight:700; cursor:pointer; margin-left:.3rem; }
@@ -68,7 +73,10 @@ export async function onRequestGet({ request, env }) {
 
 <main>
   <div id="log"></div>
-  <div id="budget"></div>
+  <div id="budgetWrap">
+    <div id="budgetLabel">Loading today's AI budget…</div>
+    <div id="budgetBarTrack"><div id="budgetBarFill"></div></div>
+  </div>
   <div id="attachPreview"></div>
   <div class="input-row">
     <button type="button" id="attachBtn" title="Attach a file">📎</button>
@@ -91,7 +99,8 @@ export async function onRequestGet({ request, env }) {
   var attachFile = document.getElementById('attachFile');
   var attachPreview = document.getElementById('attachPreview');
   var imageBtn = document.getElementById('imageBtn');
-  var budgetEl = document.getElementById('budget');
+  var budgetLabel = document.getElementById('budgetLabel');
+  var budgetBarFill = document.getElementById('budgetBarFill');
   var pendingAttachment = null;
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]; }); }
@@ -113,10 +122,17 @@ export async function onRequestGet({ request, env }) {
   function updateBudget(b) {
     if (!b) return;
     var remaining = b.remaining != null ? b.remaining : Math.max(0, b.cap - b.used);
-    if (remaining <= 0) budgetEl.textContent = 'Shared site AI budget used up for today — resets at midnight UTC.';
-    else if (b.warning) budgetEl.textContent = 'Almost at today\\'s shared AI limit (' + remaining + ' left).';
-    else budgetEl.textContent = '';
+    var pct = Math.min(100, Math.round((b.used / b.cap) * 100));
+    budgetBarFill.style.width = pct + '%';
+    budgetBarFill.className = remaining <= 0 ? 'exhausted' : b.warning ? 'warning' : '';
+    if (remaining <= 0) budgetLabel.textContent = 'Shared site AI budget used up for today — resets at midnight UTC.';
+    else budgetLabel.textContent = b.used + ' / ' + b.cap + ' neurons used today (' + remaining + ' left, resets midnight UTC)';
   }
+
+  // Show today's real usage immediately on load, not just after a message.
+  fetch('/api/ugobongo-bot/budget').then(function (r) { return r.json(); }).then(function (d) {
+    if (d.budget) updateBudget(d.budget);
+  }).catch(function () { budgetLabel.textContent = ''; });
 
   function renderAttachPreview() {
     if (!pendingAttachment) { attachPreview.innerHTML = ''; return; }
