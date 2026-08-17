@@ -9,9 +9,12 @@
 // lives in this page's own JS memory and is gone the instant the tab
 // closes or reloads. It cannot edit the site (see
 // functions/api/ugobongo-bot/chat.js for why that's still a hard
-// boundary) -- it's chat, image generation, and file upload only, all
+// boundary) -- it's chat, image generation, and file attachment only, all
 // sharing the same site-wide daily Workers AI budget as everything else
-// under /ugobongo.
+// under /ugobongo. Attached files are read client-side via FileReader and
+// never leave the browser (no upload endpoint is called) -- nothing about
+// this feature touches R2 or any other storage, matching the "nothing
+// saved, not even files" requirement.
 import { requireUgobongoAdmin } from '../_lib/ugobongoAuth.js';
 
 export async function onRequestGet({ request, env }) {
@@ -60,7 +63,7 @@ export async function onRequestGet({ request, env }) {
 
 <header>
   <h1>🔓 Unfiltered Bot</h1>
-  <div class="sub">Nothing you type here is saved anywhere — it's gone when you close this tab.</div>
+  <div class="sub">Nothing here is saved anywhere, not even attached files — it's gone when you close this tab.</div>
 </header>
 
 <main>
@@ -76,7 +79,7 @@ export async function onRequestGet({ request, env }) {
   </div>
 </main>
 
-<footer>Nothing typed here is saved. Shared daily AI budget applies.</footer>
+<footer>Nothing here is stored, including attached files. Shared daily AI budget applies.</footer>
 
 <script>
 (function () {
@@ -117,7 +120,7 @@ export async function onRequestGet({ request, env }) {
 
   function renderAttachPreview() {
     if (!pendingAttachment) { attachPreview.innerHTML = ''; return; }
-    attachPreview.innerHTML = '<span class="chip">' + esc(pendingAttachment.name) + '<button type="button" id="clearAttach">×</button></span>';
+    attachPreview.innerHTML = '<span class="chip">' + esc(pendingAttachment.name) + ' (not sent to server) <button type="button" id="clearAttach">×</button></span>';
     document.getElementById('clearAttach').addEventListener('click', function () { pendingAttachment = null; renderAttachPreview(); });
   }
 
@@ -126,13 +129,16 @@ export async function onRequestGet({ request, env }) {
     var f = attachFile.files[0];
     attachFile.value = '';
     if (!f) return;
-    addMsg('status', 'Uploading ' + f.name + '…');
-    var fd = new FormData();
-    fd.append('file', f);
-    fetch('/api/ugobongo-bot/upload', { method: 'POST', body: fd }).then(function (r) { return r.json(); }).then(function (d) {
-      if (d.url) { pendingAttachment = { url: d.url, name: f.name }; renderAttachPreview(); }
-      else addMsg('error', d.error || 'Upload failed.');
-    });
+    // Read entirely client-side -- never sent to any server, never
+    // touches R2. For images this becomes an inline preview only visible
+    // in this browser tab; for other file types it's just a name chip.
+    var reader = new FileReader();
+    reader.onload = function () {
+      pendingAttachment = { dataUrl: reader.result, name: f.name, isImage: f.type.indexOf('image/') === 0 };
+      renderAttachPreview();
+    };
+    reader.onerror = function () { addMsg('error', 'Could not read ' + f.name + '.'); };
+    reader.readAsDataURL(f);
   });
 
   imageBtn.addEventListener('click', function () {
@@ -157,8 +163,14 @@ export async function onRequestGet({ request, env }) {
     if (!text && !pendingAttachment) return;
     input.value = '';
     var displayText = text + (pendingAttachment ? (text ? '\\n' : '') + '[attached: ' + pendingAttachment.name + ']' : '');
-    addMsg('user', displayText);
-    var content = text + (pendingAttachment ? '\\n\\n[Attached file: ' + pendingAttachment.url + ']' : '');
+    // The attachment image (if any) is shown only in this browser's own
+    // chat log via its data: URL -- it's never part of what's sent to the
+    // server/model below.
+    addMsg('user', displayText, pendingAttachment && pendingAttachment.isImage ? pendingAttachment.dataUrl : null);
+    // The bot's underlying model is text-only and this bot never uploads
+    // anywhere, so the model just gets told a file was attached by name --
+    // it can't actually see file contents.
+    var content = text + (pendingAttachment ? '\\n\\n[User attached a local file named "' + pendingAttachment.name + '" -- its contents were not sent to you.]' : '');
     history.push({ role: 'user', content: content });
     pendingAttachment = null;
     renderAttachPreview();
