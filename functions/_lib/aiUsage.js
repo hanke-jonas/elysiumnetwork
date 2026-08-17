@@ -20,10 +20,11 @@ const OUTPUT_NEURONS_PER_TOKEN = 204805 / 1_000_000;
 // estimate since this model's cost is near-deterministic at fixed settings.
 export const IMAGE_GEN_NEURON_ESTIMATE = 45;
 
-// 8,000, not 10,000 -- a deliberate safety margin below the real free
-// allocation, so estimation error or a burst of requests can't cross into
-// billable territory.
-export const DAILY_NEURON_CAP = 8000;
+// 9,500, not 10,000 -- still a deliberate safety margin below the real
+// free allocation, so estimation error or a burst of requests can't cross
+// into billable territory, just a smaller one than before now that
+// per-message cost has been trimmed elsewhere.
+export const DAILY_NEURON_CAP = 9500;
 
 // Once usage crosses this fraction of the cap, callers should surface a
 // warning ("almost at today's limit") instead of only failing silently once

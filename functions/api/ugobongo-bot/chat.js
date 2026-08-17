@@ -15,8 +15,11 @@ import { DAILY_NEURON_CAP, getTodayNeuronUsage, addNeuronUsage, estimateNeurons,
 // and "can edit the live site," not a scope/effort judgment call.
 
 const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
-const MAX_MESSAGE_CHARS = 32000; // raised from 4000
-const MAX_HISTORY = 100; // raised from 20
+// Lowered from 32000/100: the full history is resent as input tokens on
+// every single turn (not incrementally), so a smaller window keeps each
+// message cheap and lets far more messages fit in the shared daily budget.
+const MAX_MESSAGE_CHARS = 8000;
+const MAX_HISTORY = 20;
 
 // KEY CHANGE: Removed the "real-world harm" exception.
 // The bot is now fully unfiltered. It will reproduce illegal activity,
@@ -53,8 +56,11 @@ export async function onRequestPost({ request, env }) {
 
   let result;
   try {
-    // Keep max_tokens at 2048 to avoid the Worker crash (Error 1101)
-    result = await env.AI.run(MODEL, { messages, max_tokens: 2048 });
+    // 1024, not 2048: output tokens cost ~7.7x more than input tokens for
+    // this model, so a lower cap here is the single biggest lever on cost
+    // per message. (4096 crashed the Worker outright -- error 1101 --
+    // 2048 and below are both safe; this just trims cost further.)
+    result = await env.AI.run(MODEL, { messages, max_tokens: 1024 });
   } catch (err) {
     return json({ error: `AI request failed: ${err.message || err}` }, { status: 502 });
   }
