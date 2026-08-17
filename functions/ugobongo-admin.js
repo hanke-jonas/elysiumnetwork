@@ -502,9 +502,18 @@ export async function onRequestGet({ request, env }) {
   var pendingAttachment = null; // { url, name }
 
   function updateChatBudget(budget) {
-    var remaining = Math.max(0, budget.cap - budget.used);
-    document.getElementById('chatBudget').textContent =
-      'Free daily AI budget: ' + remaining + ' / ' + budget.cap + ' left (resets midnight UTC)';
+    var el = document.getElementById('chatBudget');
+    var remaining = budget.remaining != null ? budget.remaining : Math.max(0, budget.cap - budget.used);
+    if (remaining <= 0) {
+      el.textContent = '⛔ Daily AI budget used up for today — resets at midnight UTC.';
+      el.style.color = '#c0392b';
+    } else if (budget.warning) {
+      el.textContent = '⚠️ Almost at today\\'s free AI limit: ' + remaining + ' / ' + budget.cap + ' left.';
+      el.style.color = '#b06a00';
+    } else {
+      el.textContent = 'Free daily AI budget: ' + remaining + ' / ' + budget.cap + ' left (resets midnight UTC)';
+      el.style.color = '';
+    }
   }
 
   function addChatMsg(role, text, extraClass) {

@@ -1,7 +1,7 @@
 import { requireUgobongoAdmin } from '../../_lib/ugobongoAuth.js';
 import { json, badRequest, randomId } from '../../_lib/http.js';
 import { readConfig, saveConfig } from '../../_lib/ugobongoConfig.js';
-import { DAILY_NEURON_CAP, getTodayNeuronUsage, addNeuronUsage, estimateNeurons } from '../../_lib/aiUsage.js';
+import { DAILY_NEURON_CAP, getTodayNeuronUsage, addNeuronUsage, estimateNeurons, budgetInfo } from '../../_lib/aiUsage.js';
 import { fetchAndExtractText } from '../../_lib/webFetch.js';
 
 const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
@@ -94,7 +94,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
 
       let usedSoFar = await getTodayNeuronUsage(env);
       if (usedSoFar >= DAILY_NEURON_CAP) {
-        await send({ type: 'error', error: "Daily AI usage budget reached — resets at midnight UTC. No charge was made; this limit exists to keep usage inside Cloudflare's free allocation.", budget: { used: usedSoFar, cap: DAILY_NEURON_CAP } });
+        await send({ type: 'error', error: "Daily AI usage budget reached — resets at midnight UTC. No charge was made; this limit exists to keep usage inside Cloudflare's free allocation.", budget: budgetInfo(usedSoFar) });
         return;
       }
 
@@ -114,7 +114,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
         try {
           result = await env.AI.run(MODEL, { messages, max_tokens: 2048 });
         } catch (err) {
-          await send({ type: 'error', error: `AI request failed: ${err.message || err}`, budget: { used: Math.round(usedSoFar), cap: DAILY_NEURON_CAP } });
+          await send({ type: 'error', error: `AI request failed: ${err.message || err}`, budget: budgetInfo(usedSoFar) });
           return;
         }
 
@@ -132,7 +132,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
           try { target = JSON.parse(fetchMatch[1]).url; } catch { /* ignore, handled below */ }
           if (target) {
             if (usedSoFar >= DAILY_NEURON_CAP) {
-              await send({ type: 'error', error: 'Daily AI usage budget reached mid-response — resets at midnight UTC.', budget: { used: Math.round(usedSoFar), cap: DAILY_NEURON_CAP } });
+              await send({ type: 'error', error: 'Daily AI usage budget reached mid-response — resets at midnight UTC.', budget: budgetInfo(usedSoFar) });
               return;
             }
             await send({ type: 'status', text: `Reading ${target}…` });
@@ -154,7 +154,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
             finalText = raw.replace(JSON_ACTION_RE, '').trim();
             await env.DB.prepare("INSERT INTO ugobongo_chat_messages (id, session_id, role, content) VALUES (?, ?, 'assistant', ?)")
               .bind(randomId(), sessionId, finalText).run();
-            await send({ type: 'error', error: `Proposed change was invalid, not saved: ${err.message || err}`, budget: { used: Math.round(usedSoFar), cap: DAILY_NEURON_CAP } });
+            await send({ type: 'error', error: `Proposed change was invalid, not saved: ${err.message || err}`, budget: budgetInfo(usedSoFar) });
             return;
           }
         }
@@ -166,7 +166,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
       await env.DB.prepare("INSERT INTO ugobongo_chat_messages (id, session_id, role, content) VALUES (?, ?, 'assistant', ?)")
         .bind(randomId(), sessionId, finalText || '(no reply)').run();
 
-      await send({ type: 'done', reply: finalText, applied, config: newConfig, budget: { used: Math.round(usedSoFar), cap: DAILY_NEURON_CAP } });
+      await send({ type: 'done', reply: finalText, applied, config: newConfig, budget: budgetInfo(usedSoFar) });
     } catch (err) {
       await send({ type: 'error', error: `Unexpected error: ${err.message || err}` });
     } finally {
