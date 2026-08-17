@@ -26,7 +26,10 @@ export async function onRequestPost({ request, env }) {
 
   let result;
   try {
-    result = await env.AI.run(MODEL, { prompt, num_steps: 4 });
+    // The model's real parameter is "steps" (max 8) -- "num_steps" isn't a
+    // recognized field for this model and was causing every call to fail
+    // with a raw platform error instead of a normal response.
+    result = await env.AI.run(MODEL, { prompt, steps: 4 });
   } catch (err) {
     return json({ error: `Image generation failed: ${err.message || err}` }, { status: 502 });
   }
@@ -38,7 +41,7 @@ export async function onRequestPost({ request, env }) {
   if (!base64) return json({ error: 'Image generation returned no image.' }, { status: 502 });
 
   return json({
-    image_url: `data:image/png;base64,${base64}`,
+    image_url: `data:image/jpeg;base64,${base64}`,
     budget: budgetInfo(usedSoFar + IMAGE_GEN_NEURON_ESTIMATE),
   });
 }
