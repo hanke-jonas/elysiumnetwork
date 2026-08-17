@@ -111,13 +111,20 @@ function renderBlock(block) {
 }
 
 export async function onRequestGet({ env, request }) {
-  // Authenticated preview mode (?preview=1), linked from /ugobongo-admin's
-  // "Preview live page" button: skips both the server delay and the
-  // client-side loading screen so an editor can see the real page instantly.
-  // Gated behind the same admin credentials so the public joke page still
-  // always shows its full loading sequence.
+  // Password-protected: real, named-individual satirical content sitting
+  // on the NGO's own public domain is a real reputational/legal exposure
+  // if a random visitor or search crawler stumbles onto it, so this page
+  // now requires the same admin login as everything else under /ugobongo
+  // rather than relying on the URL being obscure.
+  const denied = requireUgobongoAdmin(request, env);
+  if (denied) return denied;
+
+  // ?preview=1 (linked from /ugobongo-admin's "Preview live page" button)
+  // additionally skips both the server delay and the client-side loading
+  // screen, now redundant with the auth requirement above but kept for the
+  // loading-screen bypass itself.
   const url = new URL(request.url);
-  const isPreview = url.searchParams.get('preview') === '1' && !requireUgobongoAdmin(request, env);
+  const isPreview = url.searchParams.get('preview') === '1';
 
   let cfg = null;
   if (env.DB) {
