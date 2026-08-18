@@ -60,17 +60,13 @@ export async function onRequestPost({ request, env }) {
     // this model, so a lower cap here is the single biggest lever on cost
     // per message. (4096 crashed the Worker outright -- error 1101 --
     // 2048 and below are both safe; this just trims cost further.)
-    result = await env.AI.run(MODEL, { messages, max_tokens: 1024 });
-  } catch (err) {
-    return json({ error: `AI request failed: ${err.message || err}` }, { status: 502 });
+    result = await env.AI.run(MODEL, { messages });
+  } catch (e) {
+    return json({ error: e.message }, { status: 500 });
   }
 
-  const neurons = estimateNeurons(result && result.usage) || (JSON.stringify(messages).length / 4) * (26668 / 1_000_000);
-  // still track usage if you want metrics; remove the next line if you don't care
-  await addNeuronUsage(env, neurons);
+  // Increment the neuron counter only on success
+  await addNeuronUsage(env, estimateNeurons(result));
 
-  return json({
-    reply: (result && result.response) || '(no reply)',
-    budget: budgetInfo(usedSoFar + neurons)
-  });
+  return json(result);
 }
