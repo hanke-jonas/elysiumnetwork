@@ -592,7 +592,14 @@
       }).then(function(res){ return res.json().then(function(data){ return {ok: res.ok, data: data}; }); })
         .then(function(r){
           if (!r.ok) { msg.textContent = r.data.error || 'Something went wrong — please try again.'; return; }
-          msg.textContent = r.data.alreadySubscribed ? "You're already subscribed." : 'Check your inbox to confirm your subscription.';
+          if (r.data.alreadySubscribed) {
+            msg.textContent = "You're already subscribed.";
+          } else {
+            msg.textContent = "You're on the list — saved.";
+            if (window.elysiumShowEggToast) {
+              window.elysiumShowEggToast('<div style="max-width:22rem;margin:0 auto"><span class="stamp" style="border-color:var(--mint);color:var(--mint-ink);background:#fff">Got it — you\'re on the list</span><p style="margin-top:.6rem;font-size:.82rem;color:var(--muted);line-height:1.4">Confirmation emails aren\'t wired up yet, so don\'t wait on one — you\'re subscribed either way.</p></div>');
+            }
+          }
           newsletterForm.reset();
         })
         .catch(function(){ msg.textContent = 'Something went wrong — please try again.'; })
