@@ -1,7 +1,7 @@
 ---
 layout: base.njk
 title: "Submit your DOTS profile — Elysium+ Network"
-description: "Enter your one-time access code to add your photo and story to the DOTS alumni gallery."
+description: "Enter your personal access code to add your photo and story to the DOTS alumni gallery."
 permalink: /dots/alumni/submit/
 ---
 <section class="bg-paper">
@@ -15,7 +15,7 @@ permalink: /dots/alumni/submit/
     <h1 class="h-hero mt-4" style="font-size:2.25rem" id="pageHeading">Add your page</h1>
 
     <div class="card p-8 mt-8 max-w-md" id="codeCard">
-      <p class="text-muted leading-relaxed mb-5">Enter the one-time access code we shared with you.</p>
+      <p class="text-muted leading-relaxed mb-5">Enter your personal access code. It's yours to keep — the same code creates your page the first time and lets you edit it any time after.</p>
       <form id="code-form" class="flex flex-col gap-4">
         <div>
           <label class="form-label" for="code">Access code</label>
@@ -29,116 +29,60 @@ permalink: /dots/alumni/submit/
     <div class="card p-8 mt-8" id="formCard" hidden>
       <p class="text-sm text-muted mb-5" id="editionLabel">Submissions are reviewed before they go live, so it may take a little while to appear.</p>
       <p class="text-sm mt-1 mb-5" id="pendingEditNotice" hidden style="color:var(--coral-ink)">You already have a change waiting for review — submitting again updates that same proposal rather than adding a new one.</p>
-      <form id="alumni-form" class="flex flex-col gap-4" enctype="multipart/form-data">
+
+      <p class="text-xs text-muted mb-4">This is your whole page, one section at a time — drag to reorder anything, including your name, photo and bio. Your name, photo and bio are required (shown in every gallery listing), so those three can be edited and repositioned but not removed entirely; everything else is fully optional.</p>
+
+      <form id="alumni-form" class="flex flex-col gap-3">
         <input type="hidden" id="hiddenCode" name="code">
-        <div>
-          <label class="form-label" for="name">Your name</label>
-          <input class="input" type="text" id="name" name="name" maxlength="100" required>
-        </div>
-        <div class="grid sm:grid-cols-3 gap-3">
-          <div>
-            <label class="form-label" for="pronouns">Pronouns <span class="text-muted font-normal">(optional)</span></label>
-            <input class="input" type="text" id="pronouns" name="pronouns" maxlength="30" placeholder="she/her">
-            <p class="text-xs text-muted mt-1">Shown right next to your name.</p>
-          </div>
-          <div>
-            <label class="form-label" for="current_role">What you're up to now <span class="text-muted font-normal">(optional)</span></label>
-            <input class="input" type="text" id="current_role" name="current_role" maxlength="120" placeholder="Studying law in Warsaw">
-            <p class="text-xs text-muted mt-1">A subtitle under your name — job, studies, a project.</p>
-          </div>
-          <div>
-            <label class="form-label" for="location">Based in <span class="text-muted font-normal">(optional)</span></label>
-            <input class="input" type="text" id="location" name="location" maxlength="80" placeholder="Warsaw, Poland">
-            <p class="text-xs text-muted mt-1">Where you live now.</p>
-          </div>
-        </div>
-        <div>
-          <label class="form-label" for="quote">A quote or bit of advice <span class="text-muted font-normal">(optional)</span></label>
-          <input class="input" type="text" id="quote" name="quote" maxlength="300" placeholder="One line for future participants — advice, a favourite memory, anything.">
-          <p class="text-xs text-muted mt-1">Shown as a pull-quote on your page. This is the bit that makes it feel like you.</p>
-        </div>
-        <div>
-          <label class="form-label" for="bio">Mini bio</label>
-          <textarea class="input" id="bio" name="bio" rows="3" maxlength="600" required placeholder="A sentence or two — shown on the gallery card."></textarea>
-          <p class="text-xs text-muted mt-1">Required. Keep it short — this is the preview shown on the gallery, not your whole story.</p>
-        </div>
-        <div>
-          <label class="form-label" for="story">Your DOTS story <span class="text-muted font-normal">(optional)</span></label>
-          <textarea class="input" id="story" name="story" rows="6" maxlength="4000" placeholder="The longer version — what you took away from it, a favourite moment, anything you want future participants to know. Only shown if you don't use the page builder below."></textarea>
-          <p class="text-xs text-muted mt-1">Only shown on your page if you don't add sections in the page builder below.</p>
-        </div>
-        <div>
-          <label class="form-label" for="photo">Main photo</label>
-          <div id="mainPhotoPreviewWrap" hidden class="mb-2">
-            <img id="mainPhotoPreview" class="max-h-28 rounded-lg border-2 border-ink object-cover" alt="">
-          </div>
-          <input class="input" type="file" id="photo" name="photo" accept="image/jpeg,image/png,image/webp">
-          <p class="text-xs text-muted mt-1" id="mainPhotoHint">JPEG, PNG, or WebP — 5MB maximum. Shown on the gallery card and your page.</p>
-        </div>
-        <div>
-          <label class="form-label" for="photos">More photos <span class="text-muted font-normal">(optional)</span></label>
-          <div id="extraPhotosPreviewWrap" hidden class="flex flex-wrap gap-2 mb-2"></div>
-          <input class="input" type="file" id="photos" name="photos" accept="image/jpeg,image/png,image/webp" multiple>
-          <p class="text-xs text-muted mt-1" id="extraPhotosHint">Up to 4 extra photos for your own page (only shown if you don't use the page builder below).</p>
-        </div>
-        <div class="grid sm:grid-cols-3 gap-3">
-          <div>
-            <label class="form-label" for="instagram">Instagram <span class="text-muted font-normal">(optional)</span></label>
-            <input class="input" type="text" id="instagram" name="instagram" placeholder="instagram.com/you">
-          </div>
-          <div>
-            <label class="form-label" for="linkedin">LinkedIn <span class="text-muted font-normal">(optional)</span></label>
-            <input class="input" type="text" id="linkedin" name="linkedin" placeholder="linkedin.com/in/you">
-          </div>
-          <div>
-            <label class="form-label" for="website">Website <span class="text-muted font-normal">(optional)</span></label>
-            <input class="input" type="text" id="website" name="website" placeholder="your-site.com">
-          </div>
-        </div>
+        <div id="blocksList" class="flex flex-col gap-3 mb-2"></div>
 
-        <div class="card p-5 mt-2" style="background:var(--paper-2)" id="blocksCard">
-          <p class="form-label mb-1">Build your page</p>
-          <p class="text-xs text-muted mb-4">This is where you design your whole page, section by section, in any order you like. Once you add anything here, it becomes your entire page — your story and extra photos above only show up if you skip this and leave it empty.</p>
-
-          <div id="blocksList" class="flex flex-col gap-3 mb-4"></div>
-
-          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="heading">
-              <span class="block font-semibold text-sm">+ Heading</span>
-              <span class="block text-xs text-muted mt-0.5">A short section title</span>
-            </button>
-            <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="paragraph">
-              <span class="block font-semibold text-sm">+ Text</span>
-              <span class="block text-xs text-muted mt-0.5">A paragraph of writing</span>
-            </button>
-            <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="image">
-              <span class="block font-semibold text-sm">+ Image</span>
-              <span class="block text-xs text-muted mt-0.5">One photo, with a caption</span>
-            </button>
-            <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="gallery">
-              <span class="block font-semibold text-sm">+ Gallery</span>
-              <span class="block text-xs text-muted mt-0.5">A grid of several photos</span>
-            </button>
-            <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="button">
-              <span class="block font-semibold text-sm">+ Button</span>
-              <span class="block text-xs text-muted mt-0.5">A link people can click, e.g. to your website</span>
-            </button>
-            <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="spacer">
-              <span class="block font-semibold text-sm">+ Spacer</span>
-              <span class="block text-xs text-muted mt-0.5">Blank space between sections</span>
-            </button>
-          </div>
-          <input type="hidden" id="blocksInput" name="blocks">
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="quote">
+            <span class="block font-semibold text-sm">+ Quote</span>
+            <span class="block text-xs text-muted mt-0.5">A line of advice or a memory</span>
+          </button>
+          <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="subtitle">
+            <span class="block font-semibold text-sm">+ What &amp; where</span>
+            <span class="block text-xs text-muted mt-0.5">What you're up to, where you're based</span>
+          </button>
+          <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="links">
+            <span class="block font-semibold text-sm">+ Links</span>
+            <span class="block text-xs text-muted mt-0.5">Instagram, LinkedIn, your website</span>
+          </button>
+          <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="heading">
+            <span class="block font-semibold text-sm">+ Heading</span>
+            <span class="block text-xs text-muted mt-0.5">A short section title</span>
+          </button>
+          <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="paragraph">
+            <span class="block font-semibold text-sm">+ Text</span>
+            <span class="block text-xs text-muted mt-0.5">A paragraph of writing</span>
+          </button>
+          <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="image">
+            <span class="block font-semibold text-sm">+ Image</span>
+            <span class="block text-xs text-muted mt-0.5">One photo, with a caption</span>
+          </button>
+          <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="gallery">
+            <span class="block font-semibold text-sm">+ Gallery</span>
+            <span class="block text-xs text-muted mt-0.5">A grid of several photos</span>
+          </button>
+          <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="button">
+            <span class="block font-semibold text-sm">+ Button</span>
+            <span class="block text-xs text-muted mt-0.5">A clickable link, e.g. to your website</span>
+          </button>
+          <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="spacer">
+            <span class="block font-semibold text-sm">+ Spacer</span>
+            <span class="block text-xs text-muted mt-0.5">Blank space between sections</span>
+          </button>
         </div>
+        <input type="hidden" id="blocksInput" name="blocks">
 
         <!-- Honeypot: hidden from real visitors via CSS, invisible to screen
-             readers via aria-hidden — a bot filling this out is the tell.
-             Named separately from the real "website" field above. -->
+             readers via aria-hidden — a bot filling this out is the tell. -->
         <div style="position:absolute;left:-9999px;top:-9999px" aria-hidden="true">
           <label for="website_hp">Leave this field blank</label>
           <input type="text" id="website_hp" name="website_hp" tabindex="-1" autocomplete="off">
         </div>
-        <button type="submit" id="submit-btn" class="btn btn-accent w-full justify-center mt-1">Submit</button>
+        <button type="submit" id="submit-btn" class="btn btn-accent w-full justify-center mt-3">Submit</button>
       </form>
       <p id="status-msg" role="status" aria-live="polite" class="text-sm mt-4"></p>
 
@@ -159,7 +103,6 @@ permalink: /dots/alumni/submit/
 (function () {
   var mode = 'create';
 
-  var pageWrap = document.getElementById('pageWrap');
   var pageHeading = document.getElementById('pageHeading');
   var codeCard = document.getElementById('codeCard');
   var codeForm = document.getElementById('code-form');
@@ -177,130 +120,26 @@ permalink: /dots/alumni/submit/
   var hiddenCode = document.getElementById('hiddenCode');
   var alumniForm = document.getElementById('alumni-form');
 
-  var nameInput = document.getElementById('name');
-  var pronounsInput = document.getElementById('pronouns');
-  var currentRoleInput = document.getElementById('current_role');
-  var locationInput = document.getElementById('location');
-  var quoteInput = document.getElementById('quote');
-  var bioInput = document.getElementById('bio');
-  var storyInput = document.getElementById('story');
-  var instagramInput = document.getElementById('instagram');
-  var linkedinInput = document.getElementById('linkedin');
-  var websiteInput = document.getElementById('website');
-
-  var photoInput = document.getElementById('photo');
-  var mainPhotoPreview = document.getElementById('mainPhotoPreview');
-  var mainPhotoPreviewWrap = document.getElementById('mainPhotoPreviewWrap');
-  var mainPhotoHint = document.getElementById('mainPhotoHint');
-  var extraPhotosPreviewWrap = document.getElementById('extraPhotosPreviewWrap');
-  var extraPhotosHint = document.getElementById('extraPhotosHint');
-
-  function applyCurrent(current) {
-    nameInput.value = current.name || '';
-    pronounsInput.value = current.pronouns || '';
-    currentRoleInput.value = current.currentRole || '';
-    locationInput.value = current.location || '';
-    quoteInput.value = current.quote || '';
-    bioInput.value = current.bio || '';
-    storyInput.value = current.story || '';
-    (current.links || []).forEach(function (l) {
-      if (l.label === 'Instagram') instagramInput.value = l.url || '';
-      if (l.label === 'LinkedIn') linkedinInput.value = l.url || '';
-      if (l.label === 'Website') websiteInput.value = l.url || '';
-    });
-    if (current.photoUrl) {
-      mainPhotoPreview.src = current.photoUrl;
-      mainPhotoPreviewWrap.hidden = false;
-    }
-    photoInput.removeAttribute('required');
-    mainPhotoHint.textContent = 'Leave blank to keep your current photo.';
-    if (current.photos && current.photos.length) {
-      extraPhotosPreviewWrap.innerHTML = '';
-      current.photos.forEach(function (url) {
-        var img = document.createElement('img');
-        img.src = url;
-        img.alt = '';
-        img.style.cssText = 'width:3.5rem;height:3.5rem;border-radius:.5rem;object-fit:cover;border:2px solid var(--ink)';
-        extraPhotosPreviewWrap.appendChild(img);
-      });
-      extraPhotosPreviewWrap.hidden = false;
-    }
-    extraPhotosHint.textContent = 'These are your current extra photos. Choosing new files replaces all of them.';
-    if (current.blocks && current.blocks.length) {
-      blocks = current.blocks.map(function (b) { return Object.assign({}, b); });
-      renderBlocks();
-    }
-  }
-
-  function checkCode(code) {
-    codeBtn.disabled = true;
-    codeStatus.style.color = 'unset';
-    codeStatus.textContent = 'Checking…';
-
-    fetch('/api/dots-alumni/check-code', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: code }),
-    }).then(function (res) { return res.json(); }).then(function (data) {
-      codeBtn.disabled = false;
-      if (!data.valid) {
-        codeStatus.style.color = 'var(--coral-ink)';
-        codeStatus.textContent = data.error || 'That code is not valid.';
-        return;
-      }
-      hiddenCode.value = code;
-      mode = data.mode || 'create';
-      if (mode === 'edit') {
-        photoInput.removeAttribute('required');
-        pageHeading.textContent = 'Edit your page';
-        editionLabel.textContent = 'Changes are reviewed before they go live, so your current page stays up until then.';
-        document.getElementById('submit-btn').textContent = 'Propose changes';
-        pendingEditNotice.hidden = !data.hasPendingEdit;
-        if (data.current) applyCurrent(data.current);
-
-        deleteSection.hidden = false;
-        deletePendingNotice.hidden = !data.hasPendingDeletion;
-        deletePrompt.hidden = !!data.hasPendingDeletion;
-      } else {
-        photoInput.setAttribute('required', 'required');
-      }
-      codeCard.hidden = true;
-      formCard.hidden = false;
-    }).catch(function () {
-      codeBtn.disabled = false;
-      codeStatus.style.color = 'var(--coral-ink)';
-      codeStatus.textContent = 'Network error. Please try again.';
-    });
-  }
-
-  codeForm.addEventListener('submit', function (e) {
-    e.preventDefault();
-    checkCode(codeInput.value.trim().toUpperCase());
-  });
-
-  // Convenience: a shared link like /dots/alumni/submit/?code=ABCD1234
-  // jumps straight to checking the code.
-  var prefill = new URLSearchParams(location.search).get('code');
-  if (prefill) {
-    codeInput.value = prefill.toUpperCase();
-    checkCode(prefill.toUpperCase());
-  }
-
-  // --- Block builder -------------------------------------------------
-  // A small self-contained page builder: `blocks` is the single source of
-  // truth (matches functions/_lib/dotsBlocks.js's shape exactly), inputs
-  // mutate it in place via oninput so free typing never triggers a
-  // re-render (which would steal focus); re-render only happens on
-  // structural changes (add/remove/move/upload) since those are discrete
-  // clicks, not keystrokes.
+  // --- Block builder ---------------------------------------------------
+  // `blocks` is the single source of truth for the ENTIRE page now,
+  // including identity (matches functions/_lib/dotsBlocks.js's shape
+  // exactly) -- name/photo/bio are required block types (pre-seeded,
+  // not removable, but freely reorderable like everything else).
   var blocks = [];
   var blocksList = document.getElementById('blocksList');
   var blocksInput = document.getElementById('blocksInput');
   var dragIndex = null;
+  var REQUIRED_TYPES = { name: true, photo: true, bio: true };
 
   function uid() { return 'b' + Math.random().toString(36).slice(2, 10); }
 
   function newBlock(type) {
+    if (type === 'name') return { id: uid(), type: type, text: '', pronouns: '' };
+    if (type === 'photo') return { id: uid(), type: type, url: '' };
+    if (type === 'bio') return { id: uid(), type: type, text: '' };
+    if (type === 'quote') return { id: uid(), type: type, text: '' };
+    if (type === 'subtitle') return { id: uid(), type: type, role: '', location: '' };
+    if (type === 'links') return { id: uid(), type: type, instagram: '', linkedin: '', website: '' };
     if (type === 'heading') return { id: uid(), type: type, text: '' };
     if (type === 'paragraph') return { id: uid(), type: type, text: '' };
     if (type === 'image') return { id: uid(), type: type, url: '', caption: '' };
@@ -321,15 +160,20 @@ permalink: /dots/alumni/submit/
   }
 
   function blockLabel(type) {
-    return { heading: 'Heading', paragraph: 'Text', image: 'Image', gallery: 'Gallery', button: 'Button', spacer: 'Spacer' }[type] || type;
+    return {
+      name: 'Name', photo: 'Photo', bio: 'Bio', quote: 'Quote', subtitle: "What & where", links: 'Links',
+      heading: 'Heading', paragraph: 'Text', image: 'Image', gallery: 'Gallery', button: 'Button', spacer: 'Spacer',
+    }[type] || type;
   }
 
   function renderBlocks() {
     blocksList.innerHTML = '';
     blocks.forEach(function (block, index) {
+      var required = !!REQUIRED_TYPES[block.type];
       var card = document.createElement('div');
-      card.className = 'rounded-xl border-2 border-ink p-4';
-      card.style.background = '#fff';
+      card.className = 'rounded-xl border-2 p-4';
+      card.style.background = required ? 'var(--paper-2)' : '#fff';
+      card.style.borderColor = 'var(--ink)';
       card.draggable = true;
       card.dataset.index = String(index);
 
@@ -350,6 +194,7 @@ permalink: /dots/alumni/submit/
       var tag = document.createElement('span');
       tag.className = 'tag';
       tag.textContent = '⠿ ' + blockLabel(block.type);
+      if (required) tag.style.background = 'var(--sun)';
       head.appendChild(tag);
 
       var controls = document.createElement('div');
@@ -374,24 +219,133 @@ permalink: /dots/alumni/submit/
         blocks.splice(index + 1, 0, blocks.splice(index, 1)[0]);
         renderBlocks();
       });
-      var removeBtn = document.createElement('button');
-      removeBtn.type = 'button';
-      removeBtn.className = 'btn btn-coral !py-1 !px-2 text-xs';
-      removeBtn.textContent = 'Remove';
-      removeBtn.addEventListener('click', function () {
-        blocks.splice(index, 1);
-        renderBlocks();
-      });
       controls.appendChild(upBtn);
       controls.appendChild(downBtn);
-      controls.appendChild(removeBtn);
+      if (!required) {
+        var removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'btn btn-coral !py-1 !px-2 text-xs';
+        removeBtn.textContent = 'Remove';
+        removeBtn.addEventListener('click', function () {
+          blocks.splice(index, 1);
+          renderBlocks();
+        });
+        controls.appendChild(removeBtn);
+      } else {
+        var reqLabel = document.createElement('span');
+        reqLabel.className = 'text-xs text-muted';
+        reqLabel.style.padding = '0 .4rem';
+        reqLabel.textContent = 'Required';
+        controls.appendChild(reqLabel);
+      }
       head.appendChild(controls);
       card.appendChild(head);
 
       var body = document.createElement('div');
       body.className = 'flex flex-col gap-2';
 
-      if (block.type === 'heading') {
+      if (block.type === 'name') {
+        var nameIn = document.createElement('input');
+        nameIn.className = 'input';
+        nameIn.type = 'text';
+        nameIn.maxLength = 100;
+        nameIn.placeholder = 'Your name';
+        nameIn.value = block.text || '';
+        nameIn.addEventListener('input', function () { block.text = nameIn.value; syncBlocksInput(); });
+        var pronounsIn = document.createElement('input');
+        pronounsIn.className = 'input';
+        pronounsIn.type = 'text';
+        pronounsIn.maxLength = 30;
+        pronounsIn.placeholder = 'Pronouns (optional), e.g. she/her';
+        pronounsIn.value = block.pronouns || '';
+        pronounsIn.addEventListener('input', function () { block.pronouns = pronounsIn.value; syncBlocksInput(); });
+        body.appendChild(nameIn);
+        body.appendChild(pronounsIn);
+      } else if (block.type === 'photo') {
+        if (block.url) {
+          var photoPrev = document.createElement('img');
+          photoPrev.src = block.url;
+          photoPrev.alt = '';
+          photoPrev.style.cssText = 'max-height:8rem;border-radius:.5rem;border:2px solid var(--ink);object-fit:cover';
+          body.appendChild(photoPrev);
+        }
+        var photoFileIn = document.createElement('input');
+        photoFileIn.className = 'input';
+        photoFileIn.type = 'file';
+        photoFileIn.accept = 'image/jpeg,image/png,image/webp';
+        var photoStatus = document.createElement('p');
+        photoStatus.className = 'text-xs text-muted';
+        photoStatus.textContent = block.url ? 'Choose a new file to replace your photo.' : 'JPEG, PNG, or WebP — 5MB maximum. Shown on the gallery card and your page.';
+        photoFileIn.addEventListener('change', function () {
+          if (!photoFileIn.files[0]) return;
+          photoStatus.textContent = 'Uploading…';
+          uploadBlockImage(photoFileIn.files[0], function (url, err) {
+            if (!url) { photoStatus.style.color = 'var(--coral-ink)'; photoStatus.textContent = err || 'Upload failed.'; return; }
+            block.url = url;
+            syncBlocksInput();
+            renderBlocks();
+          });
+        });
+        body.appendChild(photoFileIn);
+        body.appendChild(photoStatus);
+      } else if (block.type === 'bio') {
+        var bioIn = document.createElement('textarea');
+        bioIn.className = 'input';
+        bioIn.rows = 3;
+        bioIn.maxLength = 600;
+        bioIn.placeholder = 'A sentence or two — shown on the gallery card.';
+        bioIn.value = block.text || '';
+        bioIn.addEventListener('input', function () { block.text = bioIn.value; syncBlocksInput(); });
+        body.appendChild(bioIn);
+      } else if (block.type === 'quote') {
+        var quoteIn = document.createElement('input');
+        quoteIn.className = 'input';
+        quoteIn.type = 'text';
+        quoteIn.maxLength = 300;
+        quoteIn.placeholder = 'A line of advice, a favourite memory — shown as a pull-quote.';
+        quoteIn.value = block.text || '';
+        quoteIn.addEventListener('input', function () { block.text = quoteIn.value; syncBlocksInput(); });
+        body.appendChild(quoteIn);
+      } else if (block.type === 'subtitle') {
+        var roleIn = document.createElement('input');
+        roleIn.className = 'input';
+        roleIn.type = 'text';
+        roleIn.maxLength = 120;
+        roleIn.placeholder = "What you're up to now, e.g. Studying law in Warsaw";
+        roleIn.value = block.role || '';
+        roleIn.addEventListener('input', function () { block.role = roleIn.value; syncBlocksInput(); });
+        var locIn = document.createElement('input');
+        locIn.className = 'input';
+        locIn.type = 'text';
+        locIn.maxLength = 80;
+        locIn.placeholder = 'Where you live now, e.g. Warsaw, Poland';
+        locIn.value = block.location || '';
+        locIn.addEventListener('input', function () { block.location = locIn.value; syncBlocksInput(); });
+        body.appendChild(roleIn);
+        body.appendChild(locIn);
+      } else if (block.type === 'links') {
+        var igIn = document.createElement('input');
+        igIn.className = 'input';
+        igIn.type = 'text';
+        igIn.placeholder = 'Instagram, e.g. instagram.com/you';
+        igIn.value = block.instagram || '';
+        igIn.addEventListener('input', function () { block.instagram = igIn.value; syncBlocksInput(); });
+        var liIn = document.createElement('input');
+        liIn.className = 'input';
+        liIn.type = 'text';
+        liIn.placeholder = 'LinkedIn, e.g. linkedin.com/in/you';
+        liIn.value = block.linkedin || '';
+        liIn.addEventListener('input', function () { block.linkedin = liIn.value; syncBlocksInput(); });
+        var webIn = document.createElement('input');
+        webIn.className = 'input';
+        webIn.type = 'text';
+        webIn.placeholder = 'Website, e.g. your-site.com';
+        webIn.value = block.website || '';
+        webIn.addEventListener('input', function () { block.website = webIn.value; syncBlocksInput(); });
+        body.appendChild(igIn);
+        body.appendChild(liIn);
+        body.appendChild(webIn);
+      } else if (block.type === 'heading') {
         var hIn = document.createElement('input');
         hIn.className = 'input';
         hIn.type = 'text';
@@ -533,7 +487,7 @@ permalink: /dots/alumni/submit/
   }
 
   function syncBlocksInput() {
-    blocksInput.value = blocks.length ? JSON.stringify(blocks) : '';
+    blocksInput.value = JSON.stringify(blocks);
   }
 
   document.querySelectorAll('[data-add]').forEach(function (btn) {
@@ -543,13 +497,123 @@ permalink: /dots/alumni/submit/
     });
   });
 
+  // --- Prefill / migration ----------------------------------------------
+  // Builds the unified block list an existing entry should start from.
+  // If it was already created/edited under this system, `current.blocks`
+  // already has a 'name' block and is used as-is. Otherwise (an entry
+  // that predates the unified builder) this synthesizes the equivalent
+  // blocks from the old flat fields, so opening the edit form is itself
+  // the migration -- nothing is lost, nothing needs a separate one-time
+  // script.
+  function isUnified(list) {
+    return Array.isArray(list) && list.some(function (b) { return b.type === 'name'; });
+  }
+
+  function buildBlocksFromCurrent(current) {
+    if (isUnified(current.blocks)) {
+      return current.blocks.map(function (b) { return Object.assign({}, b); });
+    }
+    var out = [
+      { id: uid(), type: 'name', text: current.name || '', pronouns: current.pronouns || '' },
+      { id: uid(), type: 'photo', url: current.photoUrl || '' },
+      { id: uid(), type: 'bio', text: current.bio || '' },
+    ];
+    if (current.currentRole || current.location) {
+      out.push({ id: uid(), type: 'subtitle', role: current.currentRole || '', location: current.location || '' });
+    }
+    if (current.quote) out.push({ id: uid(), type: 'quote', text: current.quote });
+    if (current.links && current.links.length) {
+      var lb = { id: uid(), type: 'links', instagram: '', linkedin: '', website: '' };
+      current.links.forEach(function (l) {
+        if (l.label === 'Instagram') lb.instagram = l.url || '';
+        if (l.label === 'LinkedIn') lb.linkedin = l.url || '';
+        if (l.label === 'Website') lb.website = l.url || '';
+      });
+      out.push(lb);
+    }
+    if (current.story) out.push({ id: uid(), type: 'paragraph', text: current.story });
+    if (current.photos && current.photos.length) out.push({ id: uid(), type: 'gallery', images: current.photos.slice() });
+    if (current.blocks && current.blocks.length) out.push.apply(out, current.blocks.map(function (b) { return Object.assign({}, b); }));
+    return out;
+  }
+
+  function checkCode(code) {
+    codeBtn.disabled = true;
+    codeStatus.style.color = 'unset';
+    codeStatus.textContent = 'Checking…';
+
+    fetch('/api/dots-alumni/check-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: code }),
+    }).then(function (res) { return res.json(); }).then(function (data) {
+      codeBtn.disabled = false;
+      if (!data.valid) {
+        codeStatus.style.color = 'var(--coral-ink)';
+        codeStatus.textContent = data.error || 'That code is not valid.';
+        return;
+      }
+      hiddenCode.value = code;
+      mode = data.mode || 'create';
+      if (mode === 'edit') {
+        pageHeading.textContent = 'Edit your page';
+        editionLabel.textContent = 'Changes are reviewed before they go live, so your current page stays up until then.';
+        document.getElementById('submit-btn').textContent = 'Propose changes';
+        pendingEditNotice.hidden = !data.hasPendingEdit;
+        if (data.current) {
+          blocks = buildBlocksFromCurrent(data.current);
+          renderBlocks();
+        }
+        deleteSection.hidden = false;
+        deletePendingNotice.hidden = !data.hasPendingDeletion;
+        deletePrompt.hidden = !!data.hasPendingDeletion;
+      } else {
+        blocks = [newBlock('name'), newBlock('photo'), newBlock('bio')];
+        renderBlocks();
+      }
+      codeCard.hidden = true;
+      formCard.hidden = false;
+    }).catch(function () {
+      codeBtn.disabled = false;
+      codeStatus.style.color = 'var(--coral-ink)';
+      codeStatus.textContent = 'Network error. Please try again.';
+    });
+  }
+
+  codeForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    checkCode(codeInput.value.trim().toUpperCase());
+  });
+
+  // Convenience: a shared link like /dots/alumni/submit/?code=ABCD1234
+  // jumps straight to checking the code.
+  var prefill = new URLSearchParams(location.search).get('code');
+  if (prefill) {
+    codeInput.value = prefill.toUpperCase();
+    checkCode(prefill.toUpperCase());
+  }
+
   // --- Submission ------------------------------------------------------
   alumniForm.addEventListener('submit', function (e) {
     e.preventDefault();
 
+    var missing = [];
+    var hasName = blocks.some(function (b) { return b.type === 'name' && b.text && b.text.trim(); });
+    var hasPhoto = blocks.some(function (b) { return b.type === 'photo' && b.url; });
+    var hasBio = blocks.some(function (b) { return b.type === 'bio' && b.text && b.text.trim(); });
+    if (!hasName) missing.push('a name');
+    if (!hasPhoto) missing.push('a photo');
+    if (!hasBio) missing.push('a bio');
+
     var form = e.target;
     var statusMsg = document.getElementById('status-msg');
     var submitBtn = document.getElementById('submit-btn');
+
+    if (missing.length) {
+      statusMsg.style.color = 'var(--coral-ink)';
+      statusMsg.textContent = 'Your page needs ' + missing.join(', ') + ' before you can submit.';
+      return;
+    }
 
     statusMsg.style.color = 'unset';
     statusMsg.textContent = mode === 'edit' ? 'Submitting your changes…' : 'Submitting…';

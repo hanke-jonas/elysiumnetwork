@@ -9,6 +9,9 @@ eleventyComputed:
   title: "{{ person.name }} — DOTS Alumni — Elysium+ Network"
   description: "{{ person.bio }}"
 ---
+{% set unified = false %}
+{% for block in person.blocks %}{% if block.type == "name" %}{% set unified = true %}{% endif %}{% endfor %}
+
 <section class="bg-paper">
   <div class="max-w-5xl mx-auto px-5 sm:px-8 pt-10 pb-20">
     <nav class="mono text-xs text-muted mb-8 uppercase tracking-wider">
@@ -17,6 +20,66 @@ eleventyComputed:
       <span class="text-ink/90">{{ person.name }}</span>
     </nav>
 
+    {% if unified %}
+    <!-- Entry built (or migrated on first edit) through the unified page
+         builder -- name/photo/bio/etc are block types too, so everything
+         renders from one ordered loop in whatever order the participant
+         chose, instead of a fixed header plus a separate blocks section.
+         See functions/_lib/dotsBlocks.js. -->
+    <div class="space-y-8">
+      {% for block in person.blocks %}
+        {% if block.type == "name" %}
+        <h1 class="h-hero">{{ block.text }}{% if block.pronouns %} <span class="text-muted" style="font-size:.5em;font-weight:600">({{ block.pronouns }})</span>{% endif %}</h1>
+        {% elif block.type == "photo" %}
+        {% if block.url %}<img src="{{ block.url | faceCrop(1400, 480) }}" alt="{{ person.name }}" loading="lazy" class="max-h-[480px] object-cover w-full rounded-2xl border-2 border-ink" style="aspect-ratio:1400/480">{% endif %}
+        {% elif block.type == "bio" %}
+        <p class="text-lg text-muted leading-relaxed max-w-3xl">{{ block.text }}</p>
+        {% elif block.type == "subtitle" %}
+        <div>
+          {% if block.role %}<p class="text-lg font-semibold">{{ block.role }}</p>{% endif %}
+          {% if block.location %}<p class="text-sm text-muted mt-1">{{ block.location }}</p>{% endif %}
+        </div>
+        {% elif block.type == "quote" %}
+        <blockquote class="card p-6 max-w-3xl" style="transform:rotate(-.5deg)">
+          <p class="font-display text-4xl leading-none" style="color:var(--coral)">&ldquo;</p>
+          <p class="text-lg leading-relaxed -mt-3" style="font-style:italic">{{ block.text }}</p>
+        </blockquote>
+        {% elif block.type == "links" %}
+        <div class="flex flex-wrap gap-3">
+          {% if block.instagram %}<a href="{{ block.instagram }}" target="_blank" rel="noopener" class="btn">Instagram {% icon "arrow-ur", "w-4 h-4" %}</a>{% endif %}
+          {% if block.linkedin %}<a href="{{ block.linkedin }}" target="_blank" rel="noopener" class="btn">LinkedIn {% icon "arrow-ur", "w-4 h-4" %}</a>{% endif %}
+          {% if block.website %}<a href="{{ block.website }}" target="_blank" rel="noopener" class="btn">Website {% icon "arrow-ur", "w-4 h-4" %}</a>{% endif %}
+        </div>
+        {% elif block.type == "heading" %}
+        <h2 class="h-card">{{ block.text }}</h2>
+        {% elif block.type == "paragraph" %}
+        <p class="text-muted leading-relaxed whitespace-pre-line max-w-3xl">{{ block.text }}</p>
+        {% elif block.type == "image" %}
+        <div>
+          {% if block.url %}<img src="{{ block.url | faceCrop(900, 420) }}" alt="{{ block.caption or '' }}" loading="lazy" class="w-full max-h-[420px] object-cover rounded-2xl border-2 border-ink">{% endif %}
+          {% if block.caption %}<p class="text-sm text-muted mt-2">{{ block.caption }}</p>{% endif %}
+        </div>
+        {% elif block.type == "gallery" %}
+        <div class="grid gap-4 sm:grid-cols-3">
+          {% for url in block.images %}
+          <img src="{{ url | faceCrop(480, 360) }}" alt="" loading="lazy" class="aspect-[4/3] w-full object-cover rounded-2xl border-2 border-ink">
+          {% endfor %}
+        </div>
+        {% elif block.type == "button" %}
+        <a href="{{ block.href }}" target="_blank" rel="noopener" class="btn btn-accent">{{ block.label }}</a>
+        {% elif block.type == "spacer" %}
+        <div style="height:{{ block.height or 40 }}px"></div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <!-- Legacy entry, created before the unified builder -- unchanged
+         rendering: fixed header fields, then either its old-style
+         free-form blocks (heading/paragraph/image/gallery/button/spacer
+         only) or the plain story/photos fallback. Editing this entry
+         once migrates it to the branch above -- see
+         buildBlocksFromCurrent in src/dots/alumni-submit.njk. -->
     {% if person.photoUrl %}
     <img src="{{ person.photoUrl | faceCrop(1400, 480) }}" alt="{{ person.name }}" width="1400" height="480" class="max-h-[480px] object-cover w-full rounded-2xl border-2 border-ink mb-8" style="aspect-ratio:1400/480">
     {% endif %}
@@ -41,8 +104,6 @@ eleventyComputed:
     {% endif %}
 
     {% if person.blocks and person.blocks.length > 0 %}
-    <!-- Free-form mini-page content from the participant's own block
-         builder -- fully replaces the story/photos grid below once set. -->
     <div class="mt-10 space-y-8">
       {% for block in person.blocks %}
         {% if block.type == "heading" %}
@@ -87,6 +148,7 @@ eleventyComputed:
     </div>
     {% endif %}
 
+    {% endif %}
     {% endif %}
 
     <div class="mt-12">

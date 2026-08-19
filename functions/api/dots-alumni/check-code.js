@@ -31,11 +31,11 @@ export async function onRequestPost({ request, env }) {
     if (!row.dots_alumni_id) {
       // Used, but never actually produced an entry (shouldn't normally
       // happen given how submit.js claims a code, but fail safe).
-      return json({ valid: false, error: 'That code has already been used.' });
+      return json({ valid: false, error: "This code isn't linked to an entry — get in touch with staff if that seems wrong." });
     }
 
     const alumnus = await env.DB.prepare('SELECT * FROM dots_alumni WHERE id = ?').bind(row.dots_alumni_id).first();
-    if (!alumnus) return json({ valid: false, error: 'That code has already been used.' });
+    if (!alumnus) return json({ valid: false, error: 'The entry this code belonged to no longer exists — get in touch with staff if that seems wrong.' });
 
     const pendingEdit = await env.DB.prepare(
       "SELECT type, proposed_json FROM dots_alumni_edits WHERE alumni_id = ? AND status = 'pending'",
