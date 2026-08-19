@@ -131,15 +131,18 @@ export async function onRequestPost({ request, env }) {
     };
 
     if (existingEdit) {
+      // type is reset to 'edit' explicitly -- this also covers "changed my
+      // mind": submitting an edit here overwrites a previously pending
+      // deletion request on the same row (see request-deletion.js).
       await env.DB.prepare(
-        "UPDATE dots_alumni_edits SET proposed_json = ?, submitted_at = datetime('now') WHERE id = ?",
+        "UPDATE dots_alumni_edits SET type = 'edit', proposed_json = ?, submitted_at = datetime('now') WHERE id = ?",
       ).bind(JSON.stringify(proposed), existingEdit.id).run();
       return json({ ok: true, id: existingEdit.id });
     }
 
     const id = randomId();
     await env.DB.prepare(
-      "INSERT INTO dots_alumni_edits (id, alumni_id, proposed_json, status) VALUES (?, ?, ?, 'pending')",
+      "INSERT INTO dots_alumni_edits (id, alumni_id, type, proposed_json, status) VALUES (?, ?, 'edit', ?, 'pending')",
     ).bind(id, current.id, JSON.stringify(proposed)).run();
 
     return json({ ok: true, id }, { status: 201 });

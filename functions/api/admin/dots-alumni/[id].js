@@ -73,11 +73,15 @@ export async function onRequestDelete({ request, env, params, waitUntil }) {
   try {
     const staff = await requireStaff(request, env);
     if (staff instanceof Response) return staff;
-    // The access code that produced this entry references it
-    // (dots_access_codes.dots_alumni_id) for staff's own traceability --
-    // detach that reference first so the foreign key doesn't block the
-    // delete. The code itself (and the fact it's used) stays intact.
+    // Two other tables reference this row and must be cleared first or the
+    // delete hits a FOREIGN KEY constraint: the access code that produced
+    // this entry (dots_access_codes.dots_alumni_id, for staff's own
+    // traceability -- detached, not deleted, so the code and the fact it's
+    // used stay intact) and any edit proposals ever submitted against it
+    // (dots_alumni_edits.alumni_id -- deleted outright, since a proposal
+    // about a now-gone entry has nothing left to apply to).
     await env.DB.prepare('UPDATE dots_access_codes SET dots_alumni_id = NULL WHERE dots_alumni_id = ?').bind(params.id).run();
+    await env.DB.prepare('DELETE FROM dots_alumni_edits WHERE alumni_id = ?').bind(params.id).run();
     await env.DB.prepare('DELETE FROM dots_alumni WHERE id = ?').bind(params.id).run();
     waitUntil(scheduleRebuild(env));
     return json({ ok: true });

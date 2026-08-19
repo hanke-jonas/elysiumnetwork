@@ -266,10 +266,17 @@ CREATE INDEX IF NOT EXISTS idx_dots_alumni_status ON dots_alumni(status, edition
 -- -- staff review and approve/reject in /admin/dots-edits/, same
 -- moderation principle as the original submission. `proposed_json` holds
 -- the complete proposed dots_alumni field set (not a partial diff) so
--- approval is a straight copy.
+-- approval is a straight copy. `type` = 'delete' (from
+-- functions/api/dots-alumni/request-deletion.js) means the participant
+-- asked to have their whole entry removed instead -- proposed_json is just
+-- '{}' in that case, and approving deletes the dots_alumni row rather than
+-- updating it. Only one pending row per alumni_id at a time: submitting an
+-- edit while a deletion is pending converts it back to 'edit' (changed
+-- their mind), and vice versa -- see the upsert logic in both endpoints.
 CREATE TABLE IF NOT EXISTS dots_alumni_edits (
   id TEXT PRIMARY KEY,
   alumni_id TEXT NOT NULL REFERENCES dots_alumni(id),
+  type TEXT NOT NULL DEFAULT 'edit', -- 'edit' | 'delete'
   proposed_json TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'pending', -- 'pending' | 'approved' | 'rejected'
   submitted_at TEXT NOT NULL DEFAULT (datetime('now')),

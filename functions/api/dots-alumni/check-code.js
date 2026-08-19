@@ -38,11 +38,14 @@ export async function onRequestPost({ request, env }) {
     if (!alumnus) return json({ valid: false, error: 'That code has already been used.' });
 
     const pendingEdit = await env.DB.prepare(
-      "SELECT proposed_json FROM dots_alumni_edits WHERE alumni_id = ? AND status = 'pending'",
+      "SELECT type, proposed_json FROM dots_alumni_edits WHERE alumni_id = ? AND status = 'pending'",
     ).bind(alumnus.id).first();
+    const pendingDeletion = Boolean(pendingEdit && pendingEdit.type === 'delete');
 
+    // A pending deletion's proposed_json is just '{}' -- prefill from the
+    // still-live data in that case, not the empty placeholder.
     let source = alumnus;
-    if (pendingEdit) {
+    if (pendingEdit && !pendingDeletion) {
       try { source = JSON.parse(pendingEdit.proposed_json); } catch { source = alumnus; }
     }
 
@@ -50,7 +53,8 @@ export async function onRequestPost({ request, env }) {
       valid: true,
       mode: 'edit',
       edition: row.edition,
-      hasPendingEdit: Boolean(pendingEdit),
+      hasPendingEdit: Boolean(pendingEdit) && !pendingDeletion,
+      hasPendingDeletion: pendingDeletion,
       current: {
         name: source.name,
         pronouns: source.pronouns,

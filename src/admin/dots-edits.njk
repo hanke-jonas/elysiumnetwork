@@ -7,7 +7,7 @@ permalink: /admin/dots-edits/
   <div>
     <p class="eyebrow" style="color:var(--coral-ink)">Admin</p>
     <h1 class="h-sec mt-1">DOTS Edit proposals</h1>
-    <p class="text-sm text-muted mt-1">Alumni reuse their access code to propose changes to their own page. Nothing here goes live until you approve it.</p>
+    <p class="text-sm text-muted mt-1">Alumni reuse their access code to propose changes to their own page, or to ask for it to be removed. Nothing here happens until you approve it.</p>
   </div>
 </div>
 
@@ -17,12 +17,13 @@ permalink: /admin/dots-edits/
       <tr>
         <th>Photo</th>
         <th>Name</th>
+        <th>Type</th>
         <th>Submitted</th>
         <th></th>
       </tr>
     </thead>
     <tbody id="editsTbody">
-      <tr><td colspan="4" class="text-muted">Loading…</td></tr>
+      <tr><td colspan="5" class="text-muted">Loading…</td></tr>
     </tbody>
   </table>
 </div>
@@ -55,6 +56,7 @@ permalink: /admin/dots-edits/
 (function () {
   var items = [];
   var reviewingId = null;
+  var reviewingItem = null;
 
   var tbody = document.getElementById('editsTbody');
   var tableStatus = document.getElementById('tableStatus');
@@ -82,31 +84,45 @@ permalink: /admin/dots-edits/
 
   // Mirrors the block/fallback branch in src/dots/alumni-profile.njk so
   // staff see the same shape the public page will render, for both the
-  // "currently live" and "proposed" sides of the review.
-  function renderProfile(data) {
+  // "currently live" and "proposed" sides of the review. `compareTo`, when
+  // given, is the OTHER side's data -- any field that differs from it gets
+  // a highlight, so staff see what actually changed instead of having to
+  // read both columns line by line themselves.
+  function changed(a, b) { return String(a == null ? '' : a) !== String(b == null ? '' : b); }
+  function hl(isChanged, html) {
+    if (!isChanged) return html;
+    return '<div style="background:var(--sun);border-radius:.5rem;padding:.3rem .5rem;margin:0 -.5rem">' + html + '</div>';
+  }
+
+  function renderProfile(data, compareTo) {
     var html = '';
     if (data.photo_url) {
-      html += '<img src="' + esc(data.photo_url) + '" alt="" style="width:100%;max-height:16rem;object-fit:cover;border-radius:1rem;border:2px solid var(--ink);margin-bottom:1.5rem">';
+      html += hl(compareTo && changed(data.photo_url, compareTo.photo_url),
+        '<img src="' + esc(data.photo_url) + '" alt="" style="width:100%;max-height:16rem;object-fit:cover;border-radius:1rem;border:2px solid var(--ink);margin-bottom:1.5rem">');
     }
-    html += '<h2 class="h-card">' + esc(data.name) + (data.pronouns ? ' <span class="text-muted" style="font-size:.6em">(' + esc(data.pronouns) + ')</span>' : '') + '</h2>';
-    if (data.current_role) html += '<p class="font-semibold mt-1">' + esc(data.current_role) + '</p>';
-    if (data.location) html += '<p class="text-sm text-muted">' + esc(data.location) + '</p>';
-    html += '<p class="mt-3 text-muted leading-relaxed">' + esc(data.bio) + '</p>';
-    if (data.quote) html += '<blockquote class="card p-3 mt-3 text-sm" style="border-left:3px solid var(--coral-ink);font-style:italic">“' + esc(data.quote) + '”</blockquote>';
+    html += hl(compareTo && (changed(data.name, compareTo.name) || changed(data.pronouns, compareTo.pronouns)),
+      '<h2 class="h-card">' + esc(data.name) + (data.pronouns ? ' <span class="text-muted" style="font-size:.6em">(' + esc(data.pronouns) + ')</span>' : '') + '</h2>');
+    if (data.current_role) html += hl(compareTo && changed(data.current_role, compareTo.current_role), '<p class="font-semibold mt-1">' + esc(data.current_role) + '</p>');
+    if (data.location) html += hl(compareTo && changed(data.location, compareTo.location), '<p class="text-sm text-muted">' + esc(data.location) + '</p>');
+    html += hl(compareTo && changed(data.bio, compareTo.bio), '<p class="mt-3 text-muted leading-relaxed">' + esc(data.bio) + '</p>');
+    if (data.quote) html += hl(compareTo && changed(data.quote, compareTo.quote), '<blockquote class="card p-3 mt-3 text-sm" style="border-left:3px solid var(--coral-ink);font-style:italic">“' + esc(data.quote) + '”</blockquote>');
 
     var links = [];
     try { links = JSON.parse(data.links_json || '[]'); } catch (e) {}
     if (links.length) {
-      html += '<div class="flex flex-wrap gap-2 mt-4">';
-      links.forEach(function (l) { html += '<span class="btn !py-1 !px-2.5 text-xs" style="pointer-events:none">' + esc(l.label) + '</span>'; });
-      html += '</div>';
+      var linksHtml = '<div class="flex flex-wrap gap-2 mt-4">';
+      links.forEach(function (l) { linksHtml += '<span class="btn !py-1 !px-2.5 text-xs" style="pointer-events:none">' + esc(l.label) + '</span>'; });
+      linksHtml += '</div>';
+      html += hl(compareTo && changed(data.links_json, compareTo.links_json), linksHtml);
     }
 
     var blocks = null;
     try { blocks = JSON.parse(data.blocks_json || 'null'); } catch (e) {}
+    var blocksChanged = compareTo && changed(data.blocks_json, compareTo.blocks_json);
 
     if (blocks && blocks.length) {
       html += '<div class="mt-6 space-y-4">';
+      if (blocksChanged) html += '<span class="tag" style="background:var(--sun)">Page builder changed</span>';
       blocks.forEach(function (block) {
         if (block.type === 'heading') html += '<h3 class="h-card">' + esc(block.text) + '</h3>';
         else if (block.type === 'paragraph') html += '<p class="text-muted leading-relaxed" style="white-space:pre-line">' + esc(block.text) + '</p>';
@@ -118,7 +134,8 @@ permalink: /admin/dots-edits/
           block.images.forEach(function (url) { html += '<img src="' + esc(url) + '" alt="" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:.5rem;border:2px solid var(--ink)">'; });
           html += '</div>';
         } else if (block.type === 'button') {
-          html += '<span class="btn btn-accent !py-1.5 !px-3 text-xs" style="pointer-events:none">' + esc(block.label) + '</span>';
+          html += '<div><span class="btn btn-accent !py-1.5 !px-3 text-xs" style="pointer-events:none">' + esc(block.label) + '</span>' +
+            '<p class="text-xs text-muted mt-1">&rarr; ' + esc(block.href || '(no link set)') + '</p></div>';
         } else if (block.type === 'spacer') {
           html += '<div style="height:' + (Number(block.height) || 40) + 'px"></div>';
         }
@@ -126,15 +143,18 @@ permalink: /admin/dots-edits/
       html += '</div>';
     } else {
       if (data.story) {
-        html += '<div class="card p-4 mt-6"><p class="text-xs font-bold uppercase tracking-wide mb-2 text-muted">Story</p><p class="text-sm text-muted leading-relaxed" style="white-space:pre-line">' + esc(data.story) + '</p></div>';
+        html += hl(compareTo && changed(data.story, compareTo.story),
+          '<div class="card p-4 mt-6"><p class="text-xs font-bold uppercase tracking-wide mb-2 text-muted">Story</p><p class="text-sm text-muted leading-relaxed" style="white-space:pre-line">' + esc(data.story) + '</p></div>');
       }
       var photos = [];
       try { photos = JSON.parse(data.photos_json || '[]'); } catch (e) {}
       if (photos.length) {
-        html += '<div class="mt-6"><p class="text-xs font-bold uppercase tracking-wide mb-2 text-muted">More photos</p><div class="grid gap-2" style="grid-template-columns:repeat(auto-fill,minmax(6rem,1fr))">';
-        photos.forEach(function (url) { html += '<img src="' + esc(url) + '" alt="" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:.5rem;border:2px solid var(--ink)">'; });
-        html += '</div></div>';
+        var photosHtml = '<div class="mt-6"><p class="text-xs font-bold uppercase tracking-wide mb-2 text-muted">More photos</p><div class="grid gap-2" style="grid-template-columns:repeat(auto-fill,minmax(6rem,1fr))">';
+        photos.forEach(function (url) { photosHtml += '<img src="' + esc(url) + '" alt="" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:.5rem;border:2px solid var(--ink)">'; });
+        photosHtml += '</div></div>';
+        html += hl(compareTo && changed(data.photos_json, compareTo.photos_json), photosHtml);
       }
+      if (blocksChanged) html += '<p class="text-xs mt-4"><span class="tag" style="background:var(--sun)">Page builder changed</span></p>';
     }
 
     return html;
@@ -142,16 +162,29 @@ permalink: /admin/dots-edits/
 
   function openReview(item) {
     reviewingId = item.id;
-    reviewCurrent.innerHTML = renderProfile({
+    reviewingItem = item;
+    var currentData = {
       name: item.current_name, pronouns: item.current_pronouns,
       current_role: item.current_current_role, location: item.current_location,
       quote: item.current_quote, bio: item.current_bio, story: item.current_story,
       photo_url: item.current_photo_url, photos_json: item.current_photos_json,
       links_json: item.current_links_json, blocks_json: item.current_blocks_json,
-    });
+    };
     var proposed = {};
     try { proposed = JSON.parse(item.proposed_json); } catch (e) {}
-    reviewProposed.innerHTML = renderProfile(proposed);
+
+    if (item.type === 'delete') {
+      reviewCurrent.innerHTML = renderProfile(currentData);
+      reviewProposed.innerHTML = '<div class="card p-6" style="background:var(--coral)22"><p class="font-semibold" style="color:var(--coral-ink)">This person has asked to have their page removed entirely.</p><p class="text-sm text-muted mt-2">Approving will permanently delete their entry from the site.</p></div>';
+      approveBtn.textContent = 'Approve deletion';
+      rejectBtn.textContent = 'Keep page live';
+    } else {
+      reviewCurrent.innerHTML = renderProfile(currentData, proposed);
+      reviewProposed.innerHTML = renderProfile(proposed, currentData);
+      approveBtn.textContent = 'Approve & publish';
+      rejectBtn.textContent = 'Reject';
+    }
+
     reviewStatus.textContent = '';
     reviewOverlay.style.display = 'block';
   }
@@ -161,6 +194,7 @@ permalink: /admin/dots-edits/
     reviewCurrent.innerHTML = '';
     reviewProposed.innerHTML = '';
     reviewingId = null;
+    reviewingItem = null;
   }
 
   reviewCloseBtn.addEventListener('click', closeReview);
@@ -168,6 +202,7 @@ permalink: /admin/dots-edits/
 
   function decide(action) {
     if (!reviewingId) return;
+    var isDelete = reviewingItem && reviewingItem.type === 'delete';
     approveBtn.disabled = true;
     rejectBtn.disabled = true;
     reviewStatus.textContent = 'Saving…';
@@ -181,21 +216,28 @@ permalink: /admin/dots-edits/
         return;
       }
       closeReview();
-      setTableStatus(action === 'approve' ? 'Approved and published.' : 'Rejected.');
+      if (action === 'approve') {
+        setTableStatus(isDelete ? 'Entry deleted.' : 'Approved and published.');
+      } else {
+        setTableStatus(isDelete ? 'Kept live.' : 'Rejected.');
+      }
       load();
     });
   }
 
   approveBtn.addEventListener('click', function () { decide('approve'); });
   rejectBtn.addEventListener('click', function () {
-    confirmDialog('Reject this proposal? The participant\'s live page stays unchanged.', 'Reject').then(function (ok) {
+    var msg = reviewingItem && reviewingItem.type === 'delete'
+      ? 'Keep this entry live? The removal request will be dismissed.'
+      : 'Reject this proposal? The participant\'s live page stays unchanged.';
+    confirmDialog(msg, reviewingItem && reviewingItem.type === 'delete' ? 'Keep it' : 'Reject').then(function (ok) {
       if (ok) decide('reject');
     });
   });
 
   function render() {
     if (!items.length) {
-      tbody.innerHTML = '<tr><td colspan="4" class="text-muted">No pending proposals.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="text-muted">No pending proposals.</td></tr>';
       return;
     }
     tbody.innerHTML = '';
@@ -213,6 +255,19 @@ permalink: /admin/dots-edits/
       var tdName = document.createElement('td');
       tdName.textContent = item.current_name;
       tr.appendChild(tdName);
+
+      var tdType = document.createElement('td');
+      var typeTag = document.createElement('span');
+      typeTag.className = 'tag';
+      if (item.type === 'delete') {
+        typeTag.textContent = 'Deletion request';
+        typeTag.style.background = 'var(--coral)';
+      } else {
+        typeTag.textContent = 'Edit';
+        typeTag.style.background = 'var(--paper-2)';
+      }
+      tdType.appendChild(typeTag);
+      tr.appendChild(tdType);
 
       var tdSubmitted = document.createElement('td');
       tdSubmitted.textContent = formatDate(item.submitted_at);

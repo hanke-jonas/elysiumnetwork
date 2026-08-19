@@ -16,10 +16,17 @@ const PROPOSED_FIELD_MAP = {
   blocks_json: 'blocks_json',
 };
 
-// Approve copies proposed_json's fields onto the live dots_alumni row and
-// closes out the edit; reject just closes it out. Neither ever touches
-// dots_alumni.status -- an edit proposal can't un-publish or re-queue an
-// already-published entry, it only changes its content.
+// Approve on an 'edit' row copies proposed_json's fields onto the live
+// dots_alumni row; approve on a 'delete' row (see
+// functions/api/dots-alumni/request-deletion.js) deletes it outright,
+// same FK-safe order as the direct admin delete in
+// functions/api/admin/dots-alumni/[id].js (detach the access code's
+// reference first, then remove any other pending edits on this alumnus so
+// none are left pointing at a now-missing row). Reject just closes the
+// review out either way -- the live entry (or lack of one) is untouched.
+// Neither ever touches dots_alumni.status -- an edit proposal can't
+// un-publish or re-queue an already-published entry, it only changes its
+// content.
 export async function onRequestPut({ request, env, params, waitUntil }) {
   try {
     const staff = await requireStaff(request, env);
@@ -33,6 +40,14 @@ export async function onRequestPut({ request, env, params, waitUntil }) {
     const edit = await env.DB.prepare('SELECT * FROM dots_alumni_edits WHERE id = ?').bind(params.id).first();
     if (!edit) return json({ error: 'Not found' }, { status: 404 });
     if (edit.status !== 'pending') return badRequest('This proposal has already been reviewed.');
+
+    if (body.action === 'approve' && edit.type === 'delete') {
+      await env.DB.prepare('UPDATE dots_access_codes SET dots_alumni_id = NULL WHERE dots_alumni_id = ?').bind(edit.alumni_id).run();
+      await env.DB.prepare('DELETE FROM dots_alumni_edits WHERE alumni_id = ?').bind(edit.alumni_id).run();
+      await env.DB.prepare('DELETE FROM dots_alumni WHERE id = ?').bind(edit.alumni_id).run();
+      waitUntil(scheduleRebuild(env));
+      return json({ ok: true });
+    }
 
     if (body.action === 'approve') {
       let proposed;
