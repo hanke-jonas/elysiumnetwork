@@ -129,6 +129,13 @@
   .nav-item-drop:hover .nav-drop, .nav-item-drop:focus-within .nav-drop, .nav-item-drop.open .nav-drop{ opacity:1; visibility:visible; transform:translateX(-50%) translateY(0) rotate(-1deg); }
   .nav-drop a{ display:flex; align-items:center; gap:.65rem; padding:.55rem .7rem; border-radius:.55rem; font-size:.9rem; font-weight:600; color:var(--ink); }
   .nav-drop a:hover{ background:var(--paper-2); }
+  .nav-drop-mega{ min-width:34rem; display:grid; grid-template-columns:1.1fr 1fr; gap:.25rem 1rem; padding:.75rem; }
+  .nav-drop-links{ display:flex; flex-direction:column; }
+  .nav-drop-label{ font-family:"JetBrains Mono",monospace; text-transform:uppercase; letter-spacing:.1em; font-size:.65rem; font-weight:700; color:var(--color-muted); padding:.7rem .7rem .25rem; }
+  .nav-drop-label:first-child{ padding-top:.15rem; }
+  .nav-drop-divider{ border:none; border-top:1px solid var(--line); margin:.5rem .7rem; }
+  .nav-drop-cta{ color:var(--coral-ink) !important; }
+  .nav-drop-feature{ border:2px solid var(--ink); border-radius:.7rem; padding:1.1rem; background:var(--paper-2); display:flex; flex-direction:column; gap:.5rem; }
 
   .mmenu{ position:fixed; inset:0; z-index:90; background:var(--paper); opacity:0; visibility:hidden; transition:opacity .3s, visibility .3s; overflow-y:auto; overscroll-behavior:contain; }
   .mmenu.open{ opacity:1; visibility:visible; }

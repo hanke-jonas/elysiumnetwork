@@ -67,6 +67,17 @@ module.exports = function (eleventyConfig) {
     return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
   });
 
+  // Nunjucks (unlike Jinja2) never shipped selectattr/rejectattr, so this
+  // is the plain way to find "the one call to feature" in a nav dropdown:
+  // prefer an open call, then one coming up, and only fall back to
+  // whatever's first (which could be closed) so the panel is never empty
+  // (calls.js's fallback data guarantees the array itself is never empty)
+  // -- never surface a closed call ahead of a live/upcoming one.
+  eleventyConfig.addFilter('firstOpenOrFirst', function (arr) {
+    if (!Array.isArray(arr) || !arr.length) return null;
+    return arr.find((c) => c.status === 'open') || arr.find((c) => c.status === 'coming_up') || arr[0];
+  });
+
   eleventyConfig.addPassthroughCopy('src/robots.txt');
   eleventyConfig.addPassthroughCopy('src/_redirects');
   eleventyConfig.addPassthroughCopy('src/assets');

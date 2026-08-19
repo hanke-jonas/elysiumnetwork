@@ -89,14 +89,28 @@
           {% endfor %}
         </div>
       </div>
+      {% set featuredCall = calls | firstOpenOrFirst %}
       <div class="nav-item-drop relative">
         <a href="/calls/" class="nav-link nav-drop-btn inline-flex items-center gap-1.5" aria-haspopup="true" aria-expanded="false">Get Involved {% icon "chevron", "w-3.5 h-3.5" %}</a>
-        <div class="nav-drop">
-          <a href="/calls/">{% icon "compass", "w-4 h-4 shrink-0" %}<span class="flex-1 min-w-0"><span class="block font-semibold">Active calls</span></span></a>
-          <a href="/dots/">{% icon "vote", "w-4 h-4 shrink-0" %}<span class="flex-1 min-w-0"><span class="block font-semibold">DOTS</span><span class="block text-[11px] opacity-60">Berlin to Strasbourg, by rail</span></span></a>
-          <a href="/events/">{% icon "calendar", "w-4 h-4 shrink-0" %}<span class="flex-1 min-w-0"><span class="block font-semibold">Events</span></span></a>
-          <a href="/resources/">{% icon "box", "w-4 h-4 shrink-0" %}<span class="flex-1 min-w-0"><span class="block font-semibold">Resources</span></span></a>
-          <a href="/support/">{% icon "heart", "w-4 h-4 shrink-0" %}<span class="flex-1 min-w-0"><span class="block font-semibold">Support Us</span></span></a>
+        <div class="nav-drop nav-drop-mega">
+          <div class="nav-drop-links">
+            <p class="nav-drop-label">Opportunities</p>
+            <a href="/calls/">{% icon "compass", "w-4 h-4 shrink-0" %}<span class="flex-1 min-w-0"><span class="block font-semibold">Active Calls</span></span>{% if featuredCall.status == "open" %}<span class="tag shrink-0" style="font-size:.6rem;padding:.2rem .55rem;background:var(--mint)">Open</span>{% endif %}</a>
+            <a href="/dots/">{% icon "vote", "w-4 h-4 shrink-0" %}<span class="flex-1 min-w-0"><span class="block font-semibold">DOTS</span><span class="block text-[11px] opacity-60">Berlin to Strasbourg, by rail</span></span></a>
+            <p class="nav-drop-label">Explore</p>
+            <a href="/events/">{% icon "calendar", "w-4 h-4 shrink-0" %}<span class="flex-1 min-w-0"><span class="block font-semibold">Events</span></span></a>
+            <a href="/resources/">{% icon "box", "w-4 h-4 shrink-0" %}<span class="flex-1 min-w-0"><span class="block font-semibold">Resources</span></span></a>
+            <hr class="nav-drop-divider">
+            <a href="/support/" class="nav-drop-cta">{% icon "heart", "w-4 h-4 shrink-0" %}<span class="flex-1 min-w-0"><span class="block font-semibold">Support Us</span></span>{% icon "arrow", "w-3.5 h-3.5 shrink-0" %}</a>
+          </div>
+          {% if featuredCall %}
+          <div class="nav-drop-feature">
+            <p class="mono text-[10px] font-bold uppercase tracking-wide" style="color:{% if featuredCall.status == 'open' %}var(--mint-ink){% else %}var(--blue-ink){% endif %}">{% if featuredCall.status == 'open' %}Open now{% elif featuredCall.status == 'coming_up' %}Coming up{% else %}Featured{% endif %}</p>
+            <p class="font-display font-bold leading-tight">{{ featuredCall.title }}</p>
+            <p class="text-[11px] opacity-60">{{ featuredCall.deadline }}</p>
+            <a href="/calls/" class="btn !py-1.5 !px-3 text-xs mt-1 self-start">See all calls {% icon "arrow", "w-3.5 h-3.5" %}</a>
+          </div>
+          {% endif %}
         </div>
       </div>
       <div class="nav-item-drop relative">
@@ -160,24 +174,37 @@
           <span class="flex items-baseline gap-4"><span class="idx">03</span> Get Involved</span>
           {% icon "chevron", "w-7 h-7 shrink-0 self-center group-open:rotate-180 transition-transform" %}
         </summary>
-        <div class="mmenu-sub grid gap-3">
-          <a href="/calls/" class="flex items-center gap-3 rounded-xl border-2 border-ink bg-white px-4 py-3.5 active:translate-y-0.5 transition">
-            <span class="w-10 h-10 rounded-lg grid place-items-center border-2 border-ink shrink-0" style="background:var(--paper-2)">{% icon "compass", "w-4 h-4" %}</span>
-            <span class="font-display font-bold">Active calls</span>
+        <div class="mmenu-sub">
+          {% if featuredCall %}
+          <a href="/calls/" class="block rounded-xl border-2 border-ink px-4 py-3.5 mb-3" style="background:var(--paper-2)">
+            <span class="mono text-[10px] font-bold uppercase tracking-wide" style="color:{% if featuredCall.status == 'open' %}var(--mint-ink){% else %}var(--blue-ink){% endif %}">{% if featuredCall.status == 'open' %}Open now{% elif featuredCall.status == 'coming_up' %}Coming up{% else %}Featured{% endif %}</span>
+            <span class="block font-display font-bold leading-tight mt-1">{{ featuredCall.title }}</span>
+            <span class="block text-xs opacity-60 mt-0.5">{{ featuredCall.deadline }}</span>
           </a>
-          <a href="/dots/" class="flex items-center gap-3 rounded-xl border-2 border-ink bg-white px-4 py-3.5 active:translate-y-0.5 transition">
-            <span class="w-10 h-10 rounded-lg grid place-items-center border-2 border-ink shrink-0" style="background:var(--paper-2)">{% icon "vote", "w-4 h-4" %}</span>
-            <span class="min-w-0"><span class="block font-display font-bold leading-tight">DOTS</span><span class="block text-xs opacity-60 leading-tight mt-0.5">Berlin to Strasbourg, by rail</span></span>
-          </a>
-          <a href="/events/" class="flex items-center gap-3 rounded-xl border-2 border-ink bg-white px-4 py-3.5 active:translate-y-0.5 transition">
-            <span class="w-10 h-10 rounded-lg grid place-items-center border-2 border-ink shrink-0" style="background:var(--paper-2)">{% icon "calendar", "w-4 h-4" %}</span>
-            <span class="font-display font-bold">Events</span>
-          </a>
-          <a href="/resources/" class="flex items-center gap-3 rounded-xl border-2 border-ink bg-white px-4 py-3.5 active:translate-y-0.5 transition">
-            <span class="w-10 h-10 rounded-lg grid place-items-center border-2 border-ink shrink-0" style="background:var(--paper-2)">{% icon "box", "w-4 h-4" %}</span>
-            <span class="font-display font-bold">Resources</span>
-          </a>
-          <a href="/support/" class="flex items-center gap-3 rounded-xl border-2 border-ink bg-white px-4 py-3.5 active:translate-y-0.5 transition">
+          {% endif %}
+          <p class="nav-drop-label" style="padding-left:0">Opportunities</p>
+          <div class="grid grid-cols-2 gap-3">
+            <a href="/calls/" class="flex items-center gap-3 rounded-xl border-2 border-ink bg-white px-4 py-3.5 active:translate-y-0.5 transition">
+              <span class="w-10 h-10 rounded-lg grid place-items-center border-2 border-ink shrink-0" style="background:var(--paper-2)">{% icon "compass", "w-4 h-4" %}</span>
+              <span class="font-display font-bold">Active calls</span>
+            </a>
+            <a href="/dots/" class="flex items-center gap-3 rounded-xl border-2 border-ink bg-white px-4 py-3.5 active:translate-y-0.5 transition">
+              <span class="w-10 h-10 rounded-lg grid place-items-center border-2 border-ink shrink-0" style="background:var(--paper-2)">{% icon "vote", "w-4 h-4" %}</span>
+              <span class="min-w-0"><span class="block font-display font-bold leading-tight">DOTS</span><span class="block text-xs opacity-60 leading-tight mt-0.5">Berlin to Strasbourg, by rail</span></span>
+            </a>
+          </div>
+          <p class="nav-drop-label" style="padding-left:0">Explore</p>
+          <div class="grid grid-cols-2 gap-3">
+            <a href="/events/" class="flex items-center gap-3 rounded-xl border-2 border-ink bg-white px-4 py-3.5 active:translate-y-0.5 transition">
+              <span class="w-10 h-10 rounded-lg grid place-items-center border-2 border-ink shrink-0" style="background:var(--paper-2)">{% icon "calendar", "w-4 h-4" %}</span>
+              <span class="font-display font-bold">Events</span>
+            </a>
+            <a href="/resources/" class="flex items-center gap-3 rounded-xl border-2 border-ink bg-white px-4 py-3.5 active:translate-y-0.5 transition">
+              <span class="w-10 h-10 rounded-lg grid place-items-center border-2 border-ink shrink-0" style="background:var(--paper-2)">{% icon "box", "w-4 h-4" %}</span>
+              <span class="font-display font-bold">Resources</span>
+            </a>
+          </div>
+          <a href="/support/" class="flex items-center gap-3 rounded-xl border-2 border-ink bg-white px-4 py-3.5 active:translate-y-0.5 transition mt-3">
             <span class="w-10 h-10 rounded-lg grid place-items-center border-2 border-ink shrink-0" style="background:var(--paper-2)">{% icon "heart", "w-4 h-4" %}</span>
             <span class="font-display font-bold">Support Us</span>
           </a>
