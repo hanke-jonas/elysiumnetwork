@@ -93,5 +93,10 @@ export async function onRequestGet({ request, env, params, waitUntil }) {
   }
 
   const raw = await serveRaw(env, key, waitUntil);
-  return raw || new Response('Not found', { status: 404 });
+  // Explicit no-store: this zone's cache rules key on path only (ignoring
+  // query strings) for this route, so an uncached-by-default error
+  // response is what stops one transient transform failure (a cold start,
+  // a hiccup in the resize pipeline) from getting stuck serving 404 to
+  // every other ?w=&h= variant of the same path for its full cache TTL.
+  return raw || new Response('Not found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
 }
