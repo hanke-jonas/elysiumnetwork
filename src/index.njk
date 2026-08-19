@@ -29,9 +29,9 @@ permalink: /
   </div>
 
   <div class="border-t-2 border-ink bg-ink">
-    <div class="max-w-[1400px] mx-auto px-5 sm:px-8 grid grid-cols-2 sm:grid-cols-4 divide-x-2 divide-white/15">
-      {% set stats = [[site.branches.length | string, "countries, one network", "globe"],["20+","Erasmus+ projects joined","compass"],[site.team.length | string,"people running it","id"],["2020","founded as a school initiative","spark"]] %}
-      {% set spal = ["var(--blue)","var(--coral)","var(--mint)","var(--sun)"] %}
+    <div class="max-w-[1400px] mx-auto px-5 sm:px-8 grid grid-cols-3 divide-x-2 divide-white/15">
+      {% set stats = [[site.branches.length | string, "countries, one network", "globe"],["20+","Erasmus+ projects joined","compass"],["2020","founded as a school initiative","spark"]] %}
+      {% set spal = ["var(--blue)","var(--coral)","var(--sun)"] %}
       {% for s in stats %}
       <div class="px-5 sm:px-8 py-8 sm:py-9 reveal reveal-d{{ loop.index }}">
         <div class="w-9 h-9 rounded-lg grid place-items-center border-2 border-paper/25 mb-3" style="color:{{ spal[loop.index0] }}">{% icon s[2], "w-4.5 h-4.5" %}</div>
@@ -159,61 +159,6 @@ permalink: /
     </div>
   </div>
 </section>
-
-{% if site.team.length > 0 %}
-<section class="bg-paper border-b-2 border-ink overflow-hidden">
-  <div class="max-w-[1400px] mx-auto px-5 sm:px-8 py-20 sm:py-24">
-    <div class="flex flex-wrap items-end justify-between gap-4 reveal">
-      <div class="max-w-xl">
-        <p class="eyebrow" style="color:var(--coral-ink)">Not an institution — people</p>
-        <h2 class="h-sec mt-3">Who's actually behind this</h2>
-      </div>
-      <div class="flex items-center gap-2">
-        <button type="button" id="teamPrev" class="carousel-arrow" aria-label="Previous">{% icon "arrow", "w-4 h-4 rotate-180" %}</button>
-        <button type="button" id="teamNext" class="carousel-arrow" aria-label="Next">{% icon "arrow", "w-4 h-4" %}</button>
-        <a href="/about/" class="btn ml-2">Meet everyone {% icon "arrow", "w-4 h-4" %}</a>
-      </div>
-    </div>
-    <div class="mt-12 carousel-track" id="teamTrack">
-      {% set trot = ["-2deg","1.5deg","-1deg","2deg","-1.5deg",".5deg"] %}
-      {% for m in site.team %}
-      <a href="/about/" class="card overflow-hidden carousel-item block" style="width:260px;transform:rotate({{ trot[loop.index0 % trot.length] }})">
-        <img src="{{ m.image }}" alt="{{ m.name }}" width="260" height="260" loading="lazy" class="w-full aspect-square object-cover border-b-2 border-ink" style="object-position:center {{ m.focalY }}">
-        <div class="p-4">
-          <h3 class="font-display text-lg font-bold leading-tight">{{ m.name }}</h3>
-          <p class="text-sm font-bold mt-0.5" style="color:var(--coral-ink)">{{ m.role }}</p>
-        </div>
-      </a>
-      {% endfor %}
-    </div>
-  </div>
-</section>
-
-<script>
-  (function(){
-    var track = document.getElementById('teamTrack');
-    var prev = document.getElementById('teamPrev');
-    var next = document.getElementById('teamNext');
-    if (!track || !prev || !next) return;
-
-    function step(){
-      var first = track.querySelector('.carousel-item');
-      if (!first) return track.clientWidth;
-      var gap = parseFloat(getComputedStyle(track).columnGap || 24);
-      return first.getBoundingClientRect().width + gap;
-    }
-    function atEnd(){ return track.scrollLeft + track.clientWidth >= track.scrollWidth - 4; }
-    function atStart(){ return track.scrollLeft <= 4; }
-    var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    function goTo(target){
-      target = Math.max(0, Math.min(target, track.scrollWidth - track.clientWidth));
-      track.scrollTo({ left: target, behavior: reduceMotion ? 'instant' : 'smooth' });
-    }
-    next.addEventListener('click', function(){ goTo(atEnd() ? 0 : track.scrollLeft + step()); });
-    prev.addEventListener('click', function(){ goTo(atStart() ? track.scrollWidth : track.scrollLeft - step()); });
-  })();
-</script>
-{% endif %}
 
 <section class="bg-paper-2 border-b-2 border-ink">
   <div class="max-w-[1400px] mx-auto px-5 sm:px-8 py-20 sm:py-24 space-y-6">
