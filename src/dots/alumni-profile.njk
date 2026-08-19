@@ -10,7 +10,7 @@ eleventyComputed:
   description: "{{ person.bio }}"
 ---
 <section class="bg-paper">
-  <div class="max-w-3xl mx-auto px-5 sm:px-6 pt-10 pb-20">
+  <div class="max-w-5xl mx-auto px-5 sm:px-8 pt-10 pb-20">
     <nav class="mono text-xs text-muted mb-8 uppercase tracking-wider">
       <a href="/" class="hover:underline">Home</a> <span class="mx-1 opacity-40">/</span>
       <a href="/dots/alumni/" class="hover:underline">DOTS Alumni</a> <span class="mx-1 opacity-40">/</span>
@@ -18,12 +18,11 @@ eleventyComputed:
     </nav>
 
     {% if person.photoUrl %}
-    <img src="{{ person.photoUrl }}" alt="{{ person.name }}" width="1200" height="420" class="max-h-[420px] object-cover w-full rounded-2xl border-2 border-ink mb-8" style="aspect-ratio:1200/420">
+    <img src="{{ person.photoUrl }}" alt="{{ person.name }}" width="1400" height="480" class="max-h-[480px] object-cover w-full rounded-2xl border-2 border-ink mb-8" style="aspect-ratio:1400/480">
     {% endif %}
 
-    <span class="tag">Edition {{ person.edition }}</span>
-    <h1 class="h-hero mt-4">{{ person.name }}</h1>
-    <p class="mt-4 text-lg text-muted leading-relaxed">{{ person.bio }}</p>
+    <h1 class="h-hero">{{ person.name }}</h1>
+    <p class="mt-4 text-lg text-muted leading-relaxed max-w-3xl">{{ person.bio }}</p>
 
     {% if person.links.length > 0 %}
     <div class="flex flex-wrap gap-3 mt-6">
@@ -34,16 +33,16 @@ eleventyComputed:
     {% endif %}
 
     {% if person.story %}
-    <div class="card p-8 mt-10">
+    <div class="card p-8 sm:p-10 mt-10">
       <h2 class="h-card mb-3">Their story</h2>
-      <p class="text-muted leading-relaxed whitespace-pre-line">{{ person.story }}</p>
+      <p class="text-muted leading-relaxed whitespace-pre-line max-w-3xl">{{ person.story }}</p>
     </div>
     {% endif %}
 
     {% if person.photos.length > 0 %}
     <div class="mt-10">
       <h2 class="h-card mb-4">More photos</h2>
-      <div class="grid gap-4 sm:grid-cols-2">
+      <div class="grid gap-4 sm:grid-cols-3">
         {% for photo in person.photos %}
         <img src="{{ photo }}" alt="" width="640" height="480" loading="lazy" class="aspect-[4/3] w-full object-cover rounded-2xl border-2 border-ink">
         {% endfor %}

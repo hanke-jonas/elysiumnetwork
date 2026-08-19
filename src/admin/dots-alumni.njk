@@ -82,6 +82,18 @@ permalink: /admin/dots-alumni/
 </div>
 <p id="tableStatus" role="status" aria-live="polite" class="mt-3 text-sm"></p>
 
+<div id="previewOverlay" style="display:none; position:fixed; inset:0; background:rgba(25,23,18,.6); z-index:100; overflow-y:auto;">
+  <div style="max-width:56rem; margin:2.5rem auto; padding:0 1rem 3rem;">
+    <div class="flex justify-end mb-3">
+      <button type="button" id="previewCloseBtn" class="btn">{% icon "close", "w-4 h-4" %} Close preview</button>
+    </div>
+    <div class="rounded-2xl border-2 border-ink overflow-hidden" style="background:#fff">
+      <div id="previewBody" style="max-width:52rem; margin:0 auto; padding:2.5rem 2rem 3rem;"></div>
+    </div>
+    <div class="flex items-center gap-3 mt-4 justify-center" id="previewActions"></div>
+  </div>
+</div>
+
 <script>
 (function () {
   var items = [];
@@ -148,6 +160,88 @@ permalink: /admin/dots-alumni/
     return 'var(--paper-2)';
   }
 
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]; }); }
+
+  // Renders the same visual shape as the real public page
+  // (src/dots/alumni-profile.njk), from the raw list-row data -- so staff
+  // can see exactly what a submission will look like before it's ever
+  // built into a static page, since pending entries don't have a live URL
+  // yet.
+  function renderPreview(item) {
+    var photos = [];
+    var links = [];
+    try { photos = JSON.parse(item.photos_json || '[]'); } catch (e) {}
+    try { links = JSON.parse(item.links_json || '[]'); } catch (e) {}
+
+    var html = '';
+    if (item.photo_url) {
+      html += '<img src="' + esc(item.photo_url) + '" alt="" style="width:100%;max-height:22rem;object-fit:cover;border-radius:1rem;border:2px solid var(--ink);margin-bottom:2rem">';
+    }
+    html += '<h1 class="h-hero">' + esc(item.name) + '</h1>';
+    html += '<p class="mt-4 text-lg text-muted leading-relaxed">' + esc(item.bio) + '</p>';
+
+    if (links.length) {
+      html += '<div class="flex flex-wrap gap-3 mt-6">';
+      links.forEach(function (l) {
+        html += '<span class="btn" style="pointer-events:none">' + esc(l.label) + '</span>';
+      });
+      html += '</div>';
+    }
+
+    if (item.story) {
+      html += '<div class="card p-6 mt-8"><h2 class="h-card mb-3">Their story</h2><p class="text-muted leading-relaxed" style="white-space:pre-line">' + esc(item.story) + '</p></div>';
+    }
+
+    if (photos.length) {
+      html += '<div class="mt-8"><h2 class="h-card mb-4">More photos</h2><div class="grid gap-3" style="grid-template-columns:repeat(auto-fill,minmax(9rem,1fr))">';
+      photos.forEach(function (url) {
+        html += '<img src="' + esc(url) + '" alt="" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:.75rem;border:2px solid var(--ink)">';
+      });
+      html += '</div></div>';
+    }
+
+    return html;
+  }
+
+  var previewOverlay = document.getElementById('previewOverlay');
+  var previewBody = document.getElementById('previewBody');
+  var previewActions = document.getElementById('previewActions');
+  var previewCloseBtn = document.getElementById('previewCloseBtn');
+
+  function openPreview(item) {
+    previewBody.innerHTML = renderPreview(item);
+    previewActions.innerHTML = '';
+    if (item.status !== 'published') {
+      var approveBtn = document.createElement('button');
+      approveBtn.type = 'button';
+      approveBtn.className = 'btn btn-accent';
+      approveBtn.textContent = 'Approve';
+      approveBtn.addEventListener('click', function () {
+        setStatus(item.id, 'published', approveBtn);
+        closePreview();
+      });
+      previewActions.appendChild(approveBtn);
+    }
+    var editFromPreviewBtn = document.createElement('button');
+    editFromPreviewBtn.type = 'button';
+    editFromPreviewBtn.className = 'btn';
+    editFromPreviewBtn.textContent = 'Edit';
+    editFromPreviewBtn.addEventListener('click', function () { closePreview(); showForm(item); });
+    previewActions.appendChild(editFromPreviewBtn);
+
+    previewOverlay.style.display = 'block';
+  }
+
+  function closePreview() {
+    previewOverlay.style.display = 'none';
+    previewBody.innerHTML = '';
+  }
+
+  previewCloseBtn.addEventListener('click', closePreview);
+  previewOverlay.addEventListener('click', function (e) {
+    if (e.target === previewOverlay) closePreview();
+  });
+
   function render() {
     if (!items.length) {
       tbody.innerHTML = '<tr><td colspan="7" class="text-muted">No submissions yet.</td></tr>';
@@ -193,10 +287,17 @@ permalink: /admin/dots-alumni/
       var tdActions = document.createElement('td');
       tdActions.style.whiteSpace = 'nowrap';
 
+      var previewBtn = document.createElement('button');
+      previewBtn.type = 'button';
+      previewBtn.className = 'btn !py-1.5 !px-3 text-xs';
+      previewBtn.textContent = 'Preview';
+      previewBtn.addEventListener('click', function () { openPreview(item); });
+      tdActions.appendChild(previewBtn);
+
       if (item.status !== 'published') {
         var approveBtn = document.createElement('button');
         approveBtn.type = 'button';
-        approveBtn.className = 'btn btn-accent !py-1.5 !px-3 text-xs';
+        approveBtn.className = 'btn btn-accent !py-1.5 !px-3 text-xs ml-2';
         approveBtn.textContent = 'Approve';
         approveBtn.addEventListener('click', function () { setStatus(item.id, 'published', approveBtn); });
         tdActions.appendChild(approveBtn);

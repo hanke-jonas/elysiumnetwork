@@ -27,7 +27,7 @@ permalink: /dots/alumni/submit/
     </div>
 
     <div class="card p-8 mt-8" id="formCard" hidden>
-      <p class="text-sm text-muted mb-5">Edition <strong id="editionLabel"></strong> — submissions are reviewed before they go live, so it may take a little while to appear.</p>
+      <p class="text-sm text-muted mb-5" id="editionLabel">Submissions are reviewed before they go live, so it may take a little while to appear.</p>
       <form id="alumni-form" class="flex flex-col gap-4" enctype="multipart/form-data">
         <input type="hidden" id="hiddenCode" name="code">
         <div>
@@ -88,7 +88,6 @@ permalink: /dots/alumni/submit/
   var codeBtn = document.getElementById('code-btn');
   var codeStatus = document.getElementById('code-status');
   var formCard = document.getElementById('formCard');
-  var editionLabel = document.getElementById('editionLabel');
   var hiddenCode = document.getElementById('hiddenCode');
 
   function checkCode(code) {
@@ -108,7 +107,6 @@ permalink: /dots/alumni/submit/
         return;
       }
       hiddenCode.value = code;
-      editionLabel.textContent = data.edition;
       codeCard.hidden = true;
       formCard.hidden = false;
     }).catch(function () {

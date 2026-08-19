@@ -1,5 +1,6 @@
 import { requireStaff } from '../../../_lib/guard.js';
 import { badRequest, json, randomId } from '../../../_lib/http.js';
+import { scheduleRebuild } from '../../../_lib/rebuild.js';
 
 // Same shape as functions/api/admin/blog/index.js and for the same reason:
 // a public GET (?status=published) that never leaks drafts, vs. a
@@ -24,7 +25,7 @@ export async function onRequestGet({ request, env }) {
   }
 }
 
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost({ request, env, waitUntil }) {
   try {
     const staff = await requireStaff(request, env);
     if (staff instanceof Response) return staff;
@@ -51,6 +52,7 @@ export async function onRequestPost({ request, env }) {
       category || null, finalStatus, publishedAt
     ).run();
 
+    waitUntil(scheduleRebuild(env));
     return json({ id }, { status: 201 });
   } catch (err) {
     return json({ error: 'Unexpected server error', detail: String(err) }, { status: 500 });

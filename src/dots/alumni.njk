@@ -8,7 +8,7 @@ permalink: /dots/alumni/
 
 <section class="relative overflow-hidden bg-paper border-b-2 border-ink">
   <div class="relative max-w-4xl mx-auto px-5 sm:px-6 pt-14 pb-16">
-    <p class="eyebrow" style="color:var(--blue-ink)">Democracy on TrackS · Edition One</p>
+    <p class="eyebrow" style="color:var(--blue-ink)">Democracy on TrackS</p>
     <h1 class="h-hero mt-4">Meet the <mark>DOTS alumni</mark></h1>
     <p class="mt-6 text-lg text-muted max-w-2xl leading-relaxed">Five seats, one ten-day rail journey from Berlin to Strasbourg. Here's who took part.</p>
   </div>
@@ -28,7 +28,6 @@ permalink: /dots/alumni/
         <div class="aspect-[4/3] w-full" style="background:{{ cardAccents[loop.index0 % cardAccents.length] }}"></div>
         {% endif %}
         <div class="p-6">
-          <span class="tag mb-3 inline-block">Edition {{ person.edition }}</span>
           <h2 class="h-card group-hover:underline underline-offset-2">{{ person.name }}</h2>
           <p class="mt-2 text-muted leading-relaxed">{{ person.bio }}</p>
         </div>

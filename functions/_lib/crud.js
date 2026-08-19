@@ -4,6 +4,7 @@
 // interpolating them into SQL is safe — only values are ever parameterized.
 import { requireStaff } from './guard.js';
 import { json, badRequest, randomId } from './http.js';
+import { scheduleRebuild } from './rebuild.js';
 
 function parseRow(row, jsonFields) {
   const out = { ...row };
@@ -25,7 +26,7 @@ export function makeListCreate(table, pk, fields, jsonFields = []) {
     return json({ items: rows.results.map((r) => parseRow(r, jsonFields)) });
   }
 
-  async function onRequestPost({ request, env }) {
+  async function onRequestPost({ request, env, waitUntil }) {
     const staff = await requireStaff(request, env);
     if (staff instanceof Response) return staff;
     const body = await request.json().catch(() => null);
@@ -48,6 +49,7 @@ export function makeListCreate(table, pk, fields, jsonFields = []) {
       if (isUniqueViolation(err)) return badRequest(`A ${table.slice(0, -1)} with this ${pk} already exists`);
       return json({ error: 'Unexpected server error', detail: String(err) }, { status: 500 });
     }
+    waitUntil(scheduleRebuild(env));
     return json({ [pk]: id }, { status: 201 });
   }
 
@@ -55,7 +57,7 @@ export function makeListCreate(table, pk, fields, jsonFields = []) {
 }
 
 export function makeUpdateDelete(table, pk, fields, jsonFields = []) {
-  async function onRequestPut({ request, env, params }) {
+  async function onRequestPut({ request, env, params, waitUntil }) {
     const staff = await requireStaff(request, env);
     if (staff instanceof Response) return staff;
     const body = await request.json().catch(() => null);
@@ -79,13 +81,15 @@ export function makeUpdateDelete(table, pk, fields, jsonFields = []) {
       if (isUniqueViolation(err)) return badRequest(`A ${table.slice(0, -1)} with this ${pk} already exists`);
       return json({ error: 'Unexpected server error', detail: String(err) }, { status: 500 });
     }
+    waitUntil(scheduleRebuild(env));
     return json({ ok: true });
   }
 
-  async function onRequestDelete({ request, env, params }) {
+  async function onRequestDelete({ request, env, params, waitUntil }) {
     const staff = await requireStaff(request, env);
     if (staff instanceof Response) return staff;
     await env.DB.prepare(`DELETE FROM ${table} WHERE ${pk} = ?`).bind(params.id).run();
+    waitUntil(scheduleRebuild(env));
     return json({ ok: true });
   }
 

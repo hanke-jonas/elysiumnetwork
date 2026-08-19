@@ -1,5 +1,6 @@
 import { requireStaff } from '../../../_lib/guard.js';
 import { badRequest, json } from '../../../_lib/http.js';
+import { scheduleRebuild } from '../../../_lib/rebuild.js';
 
 const FIELD_MAP = {
   title: 'title',
@@ -23,7 +24,7 @@ export async function onRequestGet({ request, env, params }) {
   }
 }
 
-export async function onRequestPut({ request, env, params }) {
+export async function onRequestPut({ request, env, params, waitUntil }) {
   try {
     const staff = await requireStaff(request, env);
     if (staff instanceof Response) return staff;
@@ -53,17 +54,19 @@ export async function onRequestPut({ request, env, params }) {
     values.push(params.id);
 
     await env.DB.prepare(`UPDATE resources SET ${sets.join(', ')} WHERE id = ?`).bind(...values).run();
+    waitUntil(scheduleRebuild(env));
     return json({ ok: true });
   } catch (err) {
     return json({ error: 'Unexpected server error', detail: String(err) }, { status: 500 });
   }
 }
 
-export async function onRequestDelete({ request, env, params }) {
+export async function onRequestDelete({ request, env, params, waitUntil }) {
   try {
     const staff = await requireStaff(request, env);
     if (staff instanceof Response) return staff;
     await env.DB.prepare('DELETE FROM resources WHERE id = ?').bind(params.id).run();
+    waitUntil(scheduleRebuild(env));
     return json({ ok: true });
   } catch (err) {
     return json({ error: 'Unexpected server error', detail: String(err) }, { status: 500 });

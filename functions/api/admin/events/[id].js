@@ -1,5 +1,6 @@
 import { requireStaff } from '../../../_lib/guard.js';
 import { badRequest, json } from '../../../_lib/http.js';
+import { scheduleRebuild } from '../../../_lib/rebuild.js';
 
 const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const FIELD_MAP = {
@@ -28,7 +29,7 @@ export async function onRequestGet({ request, env, params }) {
   }
 }
 
-export async function onRequestPut({ request, env, params }) {
+export async function onRequestPut({ request, env, params, waitUntil }) {
   try {
     const staff = await requireStaff(request, env);
     if (staff instanceof Response) return staff;
@@ -59,13 +60,14 @@ export async function onRequestPut({ request, env, params }) {
       if (String(err).includes('UNIQUE constraint failed')) return badRequest('An event with this slug already exists');
       throw err;
     }
+    waitUntil(scheduleRebuild(env));
     return json({ ok: true });
   } catch (err) {
     return json({ error: 'Unexpected server error', detail: String(err) }, { status: 500 });
   }
 }
 
-export async function onRequestDelete({ request, env, params }) {
+export async function onRequestDelete({ request, env, params, waitUntil }) {
   try {
     const staff = await requireStaff(request, env);
     if (staff instanceof Response) return staff;
@@ -76,6 +78,7 @@ export async function onRequestDelete({ request, env, params }) {
       env.DB.prepare('DELETE FROM event_rsvps WHERE event_id = ?').bind(params.id),
       env.DB.prepare('DELETE FROM events WHERE id = ?').bind(params.id),
     ]);
+    waitUntil(scheduleRebuild(env));
     return json({ ok: true });
   } catch (err) {
     return json({ error: 'Unexpected server error', detail: String(err) }, { status: 500 });

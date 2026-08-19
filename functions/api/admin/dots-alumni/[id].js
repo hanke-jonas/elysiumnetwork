@@ -1,5 +1,6 @@
 import { requireStaff } from '../../../_lib/guard.js';
 import { badRequest, json } from '../../../_lib/http.js';
+import { scheduleRebuild } from '../../../_lib/rebuild.js';
 
 const FIELD_MAP = {
   edition: 'edition',
@@ -23,7 +24,7 @@ export async function onRequestGet({ request, env, params }) {
   }
 }
 
-export async function onRequestPut({ request, env, params }) {
+export async function onRequestPut({ request, env, params, waitUntil }) {
   try {
     const staff = await requireStaff(request, env);
     if (staff instanceof Response) return staff;
@@ -54,17 +55,24 @@ export async function onRequestPut({ request, env, params }) {
     values.push(params.id);
 
     await env.DB.prepare(`UPDATE dots_alumni SET ${sets.join(', ')} WHERE id = ?`).bind(...values).run();
+    waitUntil(scheduleRebuild(env));
     return json({ ok: true });
   } catch (err) {
     return json({ error: 'Unexpected server error', detail: String(err) }, { status: 500 });
   }
 }
 
-export async function onRequestDelete({ request, env, params }) {
+export async function onRequestDelete({ request, env, params, waitUntil }) {
   try {
     const staff = await requireStaff(request, env);
     if (staff instanceof Response) return staff;
+    // The access code that produced this entry references it
+    // (dots_access_codes.dots_alumni_id) for staff's own traceability --
+    // detach that reference first so the foreign key doesn't block the
+    // delete. The code itself (and the fact it's used) stays intact.
+    await env.DB.prepare('UPDATE dots_access_codes SET dots_alumni_id = NULL WHERE dots_alumni_id = ?').bind(params.id).run();
     await env.DB.prepare('DELETE FROM dots_alumni WHERE id = ?').bind(params.id).run();
+    waitUntil(scheduleRebuild(env));
     return json({ ok: true });
   } catch (err) {
     return json({ error: 'Unexpected server error', detail: String(err) }, { status: 500 });

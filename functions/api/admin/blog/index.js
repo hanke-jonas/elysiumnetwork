@@ -1,5 +1,6 @@
 import { requireStaff } from '../../../_lib/guard.js';
 import { badRequest, json, randomId } from '../../../_lib/http.js';
+import { scheduleRebuild } from '../../../_lib/rebuild.js';
 
 const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
@@ -30,7 +31,7 @@ export async function onRequestGet({ request, env }) {
   }
 }
 
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost({ request, env, waitUntil }) {
   try {
     const staff = await requireStaff(request, env);
     if (staff instanceof Response) return staff;
@@ -65,6 +66,7 @@ export async function onRequestPost({ request, env }) {
       throw err;
     }
 
+    waitUntil(scheduleRebuild(env));
     return json({ id }, { status: 201 });
   } catch (err) {
     return json({ error: 'Unexpected server error', detail: String(err) }, { status: 500 });
