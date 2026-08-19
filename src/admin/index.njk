@@ -23,9 +23,10 @@ permalink: /admin/
 </div>
 
 <div class="card p-6 mb-10">
-  <h2 class="h-card">Publish changes to the live site</h2>
-  <p class="mt-2 text-muted leading-relaxed max-w-2xl">Every edit here — branches, team, calls, FAQs, blog posts, resources, events — saves straight to the database, but the public site is a static build — none of it appears there until you publish. Click below to trigger a fresh build.</p>
-  <button id="rebuildBtn" type="button" class="btn btn-accent mt-4">Publish changes to the live site {% icon "arrow", "w-4 h-4" %}</button>
+  <h2 class="h-card">Publishing is automatic</h2>
+  <p class="mt-2 text-muted leading-relaxed max-w-2xl">Every save here — branches, team, calls, FAQs, blog posts, resources, events, DOTS alumni — now triggers a fresh build on its own. Changes are usually live within a minute or two, with nothing to click.</p>
+  <button id="rebuildBtn" type="button" class="btn mt-4 !py-2 !px-3 text-sm">Force a rebuild now {% icon "arrow", "w-3.5 h-3.5" %}</button>
+  <p class="mt-2 text-xs text-muted">Only useful if you don't want to wait for the automatic one — e.g. right before sharing a link.</p>
   <p role="status" aria-live="polite" id="rebuildStatus" class="mt-3 text-sm"></p>
 </div>
 
