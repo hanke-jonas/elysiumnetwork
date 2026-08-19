@@ -101,15 +101,33 @@ permalink: /admin/dots-alumni/
 
     <div class="card p-5" style="background:var(--paper-2)">
       <p class="form-label mb-1">Page builder</p>
-      <p class="text-xs text-muted mb-4">Optional. When this has any sections, it fully replaces the story/photos/links above on their individual page.</p>
+      <p class="text-xs text-muted mb-4">This designs their whole individual page, section by section. Once it has anything in it, it fully replaces the story/photos/links fields above on their page — those only show up as a simple fallback if this is left empty.</p>
       <div id="blocksList" class="flex flex-col gap-3 mb-4"></div>
-      <div class="flex flex-wrap gap-2">
-        <button type="button" class="btn !py-1.5 !px-3 text-xs" data-add="heading">+ Heading</button>
-        <button type="button" class="btn !py-1.5 !px-3 text-xs" data-add="paragraph">+ Text</button>
-        <button type="button" class="btn !py-1.5 !px-3 text-xs" data-add="image">+ Image</button>
-        <button type="button" class="btn !py-1.5 !px-3 text-xs" data-add="gallery">+ Gallery</button>
-        <button type="button" class="btn !py-1.5 !px-3 text-xs" data-add="button">+ Button</button>
-        <button type="button" class="btn !py-1.5 !px-3 text-xs" data-add="spacer">+ Spacer</button>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="heading">
+          <span class="block font-semibold text-sm">+ Heading</span>
+          <span class="block text-xs text-muted mt-0.5">A short section title</span>
+        </button>
+        <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="paragraph">
+          <span class="block font-semibold text-sm">+ Text</span>
+          <span class="block text-xs text-muted mt-0.5">A paragraph of writing</span>
+        </button>
+        <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="image">
+          <span class="block font-semibold text-sm">+ Image</span>
+          <span class="block text-xs text-muted mt-0.5">One photo, with a caption</span>
+        </button>
+        <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="gallery">
+          <span class="block font-semibold text-sm">+ Gallery</span>
+          <span class="block text-xs text-muted mt-0.5">A grid of several photos</span>
+        </button>
+        <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="button">
+          <span class="block font-semibold text-sm">+ Button</span>
+          <span class="block text-xs text-muted mt-0.5">A clickable link, e.g. to their website</span>
+        </button>
+        <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="spacer">
+          <span class="block font-semibold text-sm">+ Spacer</span>
+          <span class="block text-xs text-muted mt-0.5">Blank space between sections</span>
+        </button>
       </div>
     </div>
 

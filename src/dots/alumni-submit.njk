@@ -97,18 +97,36 @@ permalink: /dots/alumni/submit/
         </div>
 
         <div class="card p-5 mt-2" style="background:var(--paper-2)" id="blocksCard">
-          <p class="form-label mb-1">Build your page <span class="text-muted font-normal">(optional)</span></p>
-          <p class="text-xs text-muted mb-4">Add sections to your individual page — headings, text, photos, buttons — in any order. Leave this empty to just use your bio, story and photos above instead.</p>
+          <p class="form-label mb-1">Build your page</p>
+          <p class="text-xs text-muted mb-4">This is where you design your whole page, section by section, in any order you like. Once you add anything here, it becomes your entire page — your story and extra photos above only show up if you skip this and leave it empty.</p>
 
           <div id="blocksList" class="flex flex-col gap-3 mb-4"></div>
 
-          <div class="flex flex-wrap gap-2">
-            <button type="button" class="btn !py-1.5 !px-3 text-xs" data-add="heading">+ Heading</button>
-            <button type="button" class="btn !py-1.5 !px-3 text-xs" data-add="paragraph">+ Text</button>
-            <button type="button" class="btn !py-1.5 !px-3 text-xs" data-add="image">+ Image</button>
-            <button type="button" class="btn !py-1.5 !px-3 text-xs" data-add="gallery">+ Gallery</button>
-            <button type="button" class="btn !py-1.5 !px-3 text-xs" data-add="button">+ Button</button>
-            <button type="button" class="btn !py-1.5 !px-3 text-xs" data-add="spacer">+ Spacer</button>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="heading">
+              <span class="block font-semibold text-sm">+ Heading</span>
+              <span class="block text-xs text-muted mt-0.5">A short section title</span>
+            </button>
+            <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="paragraph">
+              <span class="block font-semibold text-sm">+ Text</span>
+              <span class="block text-xs text-muted mt-0.5">A paragraph of writing</span>
+            </button>
+            <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="image">
+              <span class="block font-semibold text-sm">+ Image</span>
+              <span class="block text-xs text-muted mt-0.5">One photo, with a caption</span>
+            </button>
+            <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="gallery">
+              <span class="block font-semibold text-sm">+ Gallery</span>
+              <span class="block text-xs text-muted mt-0.5">A grid of several photos</span>
+            </button>
+            <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="button">
+              <span class="block font-semibold text-sm">+ Button</span>
+              <span class="block text-xs text-muted mt-0.5">A link people can click, e.g. to your website</span>
+            </button>
+            <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="spacer">
+              <span class="block font-semibold text-sm">+ Spacer</span>
+              <span class="block text-xs text-muted mt-0.5">Blank space between sections</span>
+            </button>
           </div>
           <input type="hidden" id="blocksInput" name="blocks">
         </div>
@@ -123,9 +141,19 @@ permalink: /dots/alumni/submit/
         <button type="submit" id="submit-btn" class="btn btn-accent w-full justify-center mt-1">Submit</button>
       </form>
       <p id="status-msg" role="status" aria-live="polite" class="text-sm mt-4"></p>
+
+      <div id="deleteSection" hidden class="mt-8 pt-6 text-center" style="border-top:1px solid var(--line)">
+        <p id="deletePendingNotice" hidden class="text-sm" style="color:var(--coral-ink)">Your removal request is awaiting review — your page stays up until then.</p>
+        <div id="deletePrompt">
+          <p class="text-xs text-muted mb-2">Want your page taken down instead of edited?</p>
+          <button type="button" id="requestDeleteBtn" class="btn btn-coral !py-1.5 !px-3 text-xs">Request removal</button>
+        </div>
+        <p id="delete-status" role="status" aria-live="polite" class="text-sm mt-2"></p>
+      </div>
     </div>
   </div>
 </section>
+{% include "dialog.njk" %}
 
 <script>
 (function () {
@@ -141,6 +169,11 @@ permalink: /dots/alumni/submit/
   var formCard = document.getElementById('formCard');
   var editionLabel = document.getElementById('editionLabel');
   var pendingEditNotice = document.getElementById('pendingEditNotice');
+  var deleteSection = document.getElementById('deleteSection');
+  var deletePendingNotice = document.getElementById('deletePendingNotice');
+  var deletePrompt = document.getElementById('deletePrompt');
+  var requestDeleteBtn = document.getElementById('requestDeleteBtn');
+  var deleteStatus = document.getElementById('delete-status');
   var hiddenCode = document.getElementById('hiddenCode');
   var alumniForm = document.getElementById('alumni-form');
 
@@ -224,6 +257,10 @@ permalink: /dots/alumni/submit/
         document.getElementById('submit-btn').textContent = 'Propose changes';
         pendingEditNotice.hidden = !data.hasPendingEdit;
         if (data.current) applyCurrent(data.current);
+
+        deleteSection.hidden = false;
+        deletePendingNotice.hidden = !data.hasPendingDeletion;
+        deletePrompt.hidden = !!data.hasPendingDeletion;
       } else {
         photoInput.setAttribute('required', 'required');
       }
@@ -541,6 +578,39 @@ permalink: /dots/alumni/submit/
       submitBtn.disabled = false;
       statusMsg.style.color = 'var(--coral-ink)';
       statusMsg.textContent = 'Network error. Please try again.';
+    });
+  });
+
+  requestDeleteBtn.addEventListener('click', function () {
+    confirmDialog(
+      'Ask staff to remove your page? This asks for review, same as an edit — your page stays live until they approve it.',
+      'Request removal',
+    ).then(function (ok) {
+      if (!ok) return;
+      requestDeleteBtn.disabled = true;
+      deleteStatus.style.color = '';
+      deleteStatus.textContent = 'Sending…';
+      fetch('/api/dots-alumni/request-deletion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: hiddenCode.value }),
+      }).then(function (res) {
+        return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+      }).then(function (r) {
+        requestDeleteBtn.disabled = false;
+        if (!r.ok) {
+          deleteStatus.style.color = 'var(--coral-ink)';
+          deleteStatus.textContent = (r.data && r.data.error) || 'Something went wrong.';
+          return;
+        }
+        deleteStatus.textContent = '';
+        deletePendingNotice.hidden = false;
+        deletePrompt.hidden = true;
+      }).catch(function () {
+        requestDeleteBtn.disabled = false;
+        deleteStatus.style.color = 'var(--coral-ink)';
+        deleteStatus.textContent = 'Network error. Please try again.';
+      });
     });
   });
 })();
