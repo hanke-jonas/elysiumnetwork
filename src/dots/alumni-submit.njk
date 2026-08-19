@@ -28,19 +28,44 @@ permalink: /dots/alumni/submit/
 
     <div class="card p-8 mt-8" id="formCard" hidden>
       <p class="text-sm text-muted mb-5" id="editionLabel">Submissions are reviewed before they go live, so it may take a little while to appear.</p>
+      <p class="text-sm mt-1 mb-5" id="pendingEditNotice" hidden style="color:var(--coral-ink)">You already have a change waiting for review — submitting again updates that same proposal rather than adding a new one.</p>
       <form id="alumni-form" class="flex flex-col gap-4" enctype="multipart/form-data">
         <input type="hidden" id="hiddenCode" name="code">
         <div>
           <label class="form-label" for="name">Your name</label>
           <input class="input" type="text" id="name" name="name" maxlength="100" required>
         </div>
+        <div class="grid sm:grid-cols-3 gap-3">
+          <div>
+            <label class="form-label" for="pronouns">Pronouns <span class="text-muted font-normal">(optional)</span></label>
+            <input class="input" type="text" id="pronouns" name="pronouns" maxlength="30" placeholder="she/her">
+            <p class="text-xs text-muted mt-1">Shown right next to your name.</p>
+          </div>
+          <div>
+            <label class="form-label" for="current_role">What you're up to now <span class="text-muted font-normal">(optional)</span></label>
+            <input class="input" type="text" id="current_role" name="current_role" maxlength="120" placeholder="Studying law in Warsaw">
+            <p class="text-xs text-muted mt-1">A subtitle under your name — job, studies, a project.</p>
+          </div>
+          <div>
+            <label class="form-label" for="location">Based in <span class="text-muted font-normal">(optional)</span></label>
+            <input class="input" type="text" id="location" name="location" maxlength="80" placeholder="Warsaw, Poland">
+            <p class="text-xs text-muted mt-1">Where you live now.</p>
+          </div>
+        </div>
+        <div>
+          <label class="form-label" for="quote">A quote or bit of advice <span class="text-muted font-normal">(optional)</span></label>
+          <input class="input" type="text" id="quote" name="quote" maxlength="300" placeholder="One line for future participants — advice, a favourite memory, anything.">
+          <p class="text-xs text-muted mt-1">Shown as a pull-quote on your page. This is the bit that makes it feel like you.</p>
+        </div>
         <div>
           <label class="form-label" for="bio">Mini bio</label>
           <textarea class="input" id="bio" name="bio" rows="3" maxlength="600" required placeholder="A sentence or two — shown on the gallery card."></textarea>
+          <p class="text-xs text-muted mt-1">Required. Keep it short — this is the preview shown on the gallery, not your whole story.</p>
         </div>
         <div>
           <label class="form-label" for="story">Your DOTS story <span class="text-muted font-normal">(optional)</span></label>
           <textarea class="input" id="story" name="story" rows="6" maxlength="4000" placeholder="The longer version — what you took away from it, a favourite moment, anything you want future participants to know. Only shown if you don't use the page builder below."></textarea>
+          <p class="text-xs text-muted mt-1">Only shown on your page if you don't add sections in the page builder below.</p>
         </div>
         <div>
           <label class="form-label" for="photo">Main photo</label>
@@ -115,10 +140,15 @@ permalink: /dots/alumni/submit/
   var codeStatus = document.getElementById('code-status');
   var formCard = document.getElementById('formCard');
   var editionLabel = document.getElementById('editionLabel');
+  var pendingEditNotice = document.getElementById('pendingEditNotice');
   var hiddenCode = document.getElementById('hiddenCode');
   var alumniForm = document.getElementById('alumni-form');
 
   var nameInput = document.getElementById('name');
+  var pronounsInput = document.getElementById('pronouns');
+  var currentRoleInput = document.getElementById('current_role');
+  var locationInput = document.getElementById('location');
+  var quoteInput = document.getElementById('quote');
   var bioInput = document.getElementById('bio');
   var storyInput = document.getElementById('story');
   var instagramInput = document.getElementById('instagram');
@@ -134,6 +164,10 @@ permalink: /dots/alumni/submit/
 
   function applyCurrent(current) {
     nameInput.value = current.name || '';
+    pronounsInput.value = current.pronouns || '';
+    currentRoleInput.value = current.currentRole || '';
+    locationInput.value = current.location || '';
+    quoteInput.value = current.quote || '';
     bioInput.value = current.bio || '';
     storyInput.value = current.story || '';
     (current.links || []).forEach(function (l) {
@@ -188,6 +222,7 @@ permalink: /dots/alumni/submit/
         pageHeading.textContent = 'Edit your page';
         editionLabel.textContent = 'Changes are reviewed before they go live, so your current page stays up until then.';
         document.getElementById('submit-btn').textContent = 'Propose changes';
+        pendingEditNotice.hidden = !data.hasPendingEdit;
         if (data.current) applyCurrent(data.current);
       } else {
         photoInput.setAttribute('required', 'required');

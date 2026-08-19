@@ -28,7 +28,8 @@ permalink: /dots/alumni/
         <div class="aspect-[4/3] w-full" style="background:{{ cardAccents[loop.index0 % cardAccents.length] }}"></div>
         {% endif %}
         <div class="p-6">
-          <h2 class="h-card group-hover:underline underline-offset-2">{{ person.name }}</h2>
+          <h2 class="h-card group-hover:underline underline-offset-2">{{ person.name }}{% if person.pronouns %} <span class="text-muted" style="font-size:.6em;font-weight:600">({{ person.pronouns }})</span>{% endif %}</h2>
+          {% if person.currentRole %}<p class="text-sm font-semibold mt-1">{{ person.currentRole }}</p>{% endif %}
           <p class="mt-2 text-muted leading-relaxed">{{ person.bio }}</p>
         </div>
       </a>

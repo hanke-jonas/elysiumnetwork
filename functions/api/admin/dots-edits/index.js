@@ -16,7 +16,9 @@ export async function onRequestGet({ request, env }) {
 
     const rows = await env.DB.prepare(
       `SELECT e.id, e.alumni_id, e.proposed_json, e.status, e.submitted_at, e.reviewed_at,
-              a.name AS current_name, a.bio AS current_bio, a.story AS current_story,
+              a.name AS current_name, a.pronouns AS current_pronouns,
+              a.current_role AS current_current_role, a.location AS current_location,
+              a.quote AS current_quote, a.bio AS current_bio, a.story AS current_story,
               a.photo_url AS current_photo_url, a.photos_json AS current_photos_json,
               a.links_json AS current_links_json, a.blocks_json AS current_blocks_json,
               a.slug AS alumni_slug

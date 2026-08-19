@@ -7,7 +7,7 @@ permalink: /admin/dots-alumni/
   <div>
     <p class="eyebrow" style="color:var(--coral-ink)">Admin</p>
     <h1 class="h-sec mt-1">DOTS Alumni</h1>
-    <p class="text-sm text-muted mt-1">Submissions come in from the public form at /dots/alumni/ — approve one to put it live, or edit it first if it needs a fix.</p>
+    <p class="text-sm text-muted mt-1">Submissions come in from the public form at /dots/alumni/ — approve one to put it live. Every field a participant can fill in is editable here too, including their extra photos, links and page-builder sections.</p>
   </div>
 </div>
 
@@ -22,20 +22,43 @@ permalink: /admin/dots-alumni/
       <div>
         <label class="form-label" for="f_edition">Edition</label>
         <input class="input" type="text" id="f_edition" name="edition" required>
+        <p class="text-xs text-muted mt-1">Which DOTS cohort they took part in — not currently shown publicly, kept for your own records.</p>
       </div>
+    </div>
+    <div class="grid sm:grid-cols-3 gap-4">
+      <div>
+        <label class="form-label" for="f_pronouns">Pronouns</label>
+        <input class="input" type="text" id="f_pronouns" name="pronouns" placeholder="she/her">
+        <p class="text-xs text-muted mt-1">Optional. Shown right next to their name.</p>
+      </div>
+      <div>
+        <label class="form-label" for="f_current_role">What they're up to now</label>
+        <input class="input" type="text" id="f_current_role" name="current_role" placeholder="Studying law in Warsaw">
+        <p class="text-xs text-muted mt-1">Optional. Shown as a subtitle under their name.</p>
+      </div>
+      <div>
+        <label class="form-label" for="f_location">Based in</label>
+        <input class="input" type="text" id="f_location" name="location" placeholder="Warsaw, Poland">
+        <p class="text-xs text-muted mt-1">Optional. Where they live now.</p>
+      </div>
+    </div>
+    <div>
+      <label class="form-label" for="f_quote">Quote</label>
+      <input class="input" type="text" id="f_quote" name="quote" placeholder="A line of advice for future participants, or a favourite memory">
+      <p class="text-xs text-muted mt-1">Optional. Shown as a pull-quote on their page — this is what makes a profile feel personal, so it's worth asking for.</p>
     </div>
     <div>
       <label class="form-label" for="f_bio">Bio</label>
       <textarea class="input" id="f_bio" name="bio" rows="4" required></textarea>
-      <p class="text-xs text-muted mt-1">The short summary shown on the gallery card.</p>
+      <p class="text-xs text-muted mt-1">Required. The short summary shown on the gallery card — one or two sentences.</p>
     </div>
     <div>
-      <label class="form-label" for="f_story">Story (optional)</label>
+      <label class="form-label" for="f_story">Story</label>
       <textarea class="input" id="f_story" name="story" rows="6"></textarea>
-      <p class="text-xs text-muted mt-1">The longer reflection shown only on their individual page. Additional photos and social links are submitted directly by the participant and aren't editable here — delete and ask them to resubmit if one needs fixing.</p>
+      <p class="text-xs text-muted mt-1">Optional. The longer reflection shown on their individual page — only used if they haven't built a custom page below.</p>
     </div>
     <div>
-      <label class="form-label">Photo</label>
+      <label class="form-label">Main photo</label>
       <div id="imageDropzone" class="rounded-xl border-2 border-dashed p-4 text-center cursor-pointer transition" style="background:var(--paper-2);border-color:rgba(25,23,18,.3)">
         <div id="imagePreviewWrap" hidden class="mb-2">
           <img id="imagePreview" class="mx-auto max-h-28 rounded-lg border-2 border-ink object-cover" alt="">
@@ -45,7 +68,51 @@ permalink: /admin/dots-alumni/
       <input type="file" id="f_photo_file" accept="image/*" style="display:none">
       <input type="hidden" id="f_photo_url" name="photo_url">
       <p id="imageUploadStatus" role="status" aria-live="polite" class="text-xs mt-1"></p>
+      <p class="text-xs text-muted mt-1">Required. Shown on the gallery card and at the top of their page.</p>
     </div>
+
+    <div>
+      <label class="form-label">More photos</label>
+      <p class="text-xs text-muted mb-2">Optional. Extra photos for their page — only used if they haven't built a custom page below.</p>
+      <div id="extraPhotosGrid" class="flex flex-wrap gap-2 mb-2"></div>
+      <input type="file" id="f_extra_photo_file" accept="image/*" multiple style="display:none">
+      <button type="button" id="addExtraPhotoBtn" class="btn !py-1.5 !px-3 text-xs">+ Add photo</button>
+      <p id="extraPhotoStatus" role="status" aria-live="polite" class="text-xs mt-1"></p>
+    </div>
+
+    <div>
+      <label class="form-label">Links</label>
+      <p class="text-xs text-muted mb-2">Optional. Shown as buttons on their page.</p>
+      <div class="grid sm:grid-cols-3 gap-3">
+        <div>
+          <label class="text-xs text-muted" for="f_link_instagram">Instagram</label>
+          <input class="input" type="text" id="f_link_instagram" placeholder="instagram.com/them">
+        </div>
+        <div>
+          <label class="text-xs text-muted" for="f_link_linkedin">LinkedIn</label>
+          <input class="input" type="text" id="f_link_linkedin" placeholder="linkedin.com/in/them">
+        </div>
+        <div>
+          <label class="text-xs text-muted" for="f_link_website">Website</label>
+          <input class="input" type="text" id="f_link_website" placeholder="their-site.com">
+        </div>
+      </div>
+    </div>
+
+    <div class="card p-5" style="background:var(--paper-2)">
+      <p class="form-label mb-1">Page builder</p>
+      <p class="text-xs text-muted mb-4">Optional. When this has any sections, it fully replaces the story/photos/links above on their individual page.</p>
+      <div id="blocksList" class="flex flex-col gap-3 mb-4"></div>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" class="btn !py-1.5 !px-3 text-xs" data-add="heading">+ Heading</button>
+        <button type="button" class="btn !py-1.5 !px-3 text-xs" data-add="paragraph">+ Text</button>
+        <button type="button" class="btn !py-1.5 !px-3 text-xs" data-add="image">+ Image</button>
+        <button type="button" class="btn !py-1.5 !px-3 text-xs" data-add="gallery">+ Gallery</button>
+        <button type="button" class="btn !py-1.5 !px-3 text-xs" data-add="button">+ Button</button>
+        <button type="button" class="btn !py-1.5 !px-3 text-xs" data-add="spacer">+ Spacer</button>
+      </div>
+    </div>
+
     <div>
       <label class="form-label" for="f_status">Status</label>
       <select class="input" id="f_status" name="status">
@@ -98,6 +165,8 @@ permalink: /admin/dots-alumni/
 (function () {
   var items = [];
   var editingId = null;
+  var blocks = [];
+  var extraPhotos = [];
 
   var formCard = document.getElementById('formCard');
   var form = document.getElementById('alumniForm');
@@ -109,10 +178,17 @@ permalink: /admin/dots-alumni/
 
   var f_name = document.getElementById('f_name');
   var f_edition = document.getElementById('f_edition');
+  var f_pronouns = document.getElementById('f_pronouns');
+  var f_current_role = document.getElementById('f_current_role');
+  var f_location = document.getElementById('f_location');
+  var f_quote = document.getElementById('f_quote');
   var f_bio = document.getElementById('f_bio');
   var f_story = document.getElementById('f_story');
   var f_photo_url = document.getElementById('f_photo_url');
   var f_status = document.getElementById('f_status');
+  var f_link_instagram = document.getElementById('f_link_instagram');
+  var f_link_linkedin = document.getElementById('f_link_linkedin');
+  var f_link_website = document.getElementById('f_link_website');
 
   function setFormStatus(msg, isError) {
     formStatus.textContent = msg || '';
@@ -124,25 +200,286 @@ permalink: /admin/dots-alumni/
     tableStatus.style.color = isError ? 'var(--coral-ink)' : '';
   }
 
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]; }); }
+
+  // --- Extra photos manager ------------------------------------------
+  var extraPhotosGrid = document.getElementById('extraPhotosGrid');
+  var extraPhotoFileInput = document.getElementById('f_extra_photo_file');
+  var addExtraPhotoBtn = document.getElementById('addExtraPhotoBtn');
+  var extraPhotoStatus = document.getElementById('extraPhotoStatus');
+
+  function renderExtraPhotos() {
+    extraPhotosGrid.innerHTML = '';
+    extraPhotos.forEach(function (url, idx) {
+      var wrap = document.createElement('div');
+      wrap.style.position = 'relative';
+      var img = document.createElement('img');
+      img.src = url;
+      img.alt = '';
+      img.style.cssText = 'width:4.5rem;height:4.5rem;border-radius:.5rem;object-fit:cover;border:2px solid var(--ink)';
+      wrap.appendChild(img);
+      var rmBtn = document.createElement('button');
+      rmBtn.type = 'button';
+      rmBtn.textContent = '×';
+      rmBtn.title = 'Remove';
+      rmBtn.style.cssText = 'position:absolute;top:-.4rem;right:-.4rem;width:1.25rem;height:1.25rem;border-radius:999px;background:var(--coral-ink);color:#fff;font-size:.75rem;line-height:1;border:none;cursor:pointer';
+      rmBtn.addEventListener('click', function () { extraPhotos.splice(idx, 1); renderExtraPhotos(); });
+      wrap.appendChild(rmBtn);
+      extraPhotosGrid.appendChild(wrap);
+    });
+  }
+
+  addExtraPhotoBtn.addEventListener('click', function () { extraPhotoFileInput.click(); });
+  extraPhotoFileInput.addEventListener('change', function () {
+    var files = Array.prototype.slice.call(extraPhotoFileInput.files);
+    if (!files.length) return;
+    extraPhotoStatus.style.color = '';
+    extraPhotoStatus.textContent = 'Uploading…';
+    var remaining = files.length;
+    files.forEach(function (file) {
+      var fd = new FormData();
+      fd.append('file', file);
+      adminFetch('/api/admin/upload', { method: 'POST', body: fd }).then(function (r) {
+        remaining -= 1;
+        if (r.ok) extraPhotos.push(r.data.url);
+        if (remaining === 0) {
+          extraPhotoStatus.textContent = '';
+          renderExtraPhotos();
+        }
+      });
+    });
+    extraPhotoFileInput.value = '';
+  });
+
+  // --- Block builder (same widget shapes as the public form/back end;
+  // see functions/_lib/dotsBlocks.js) -- staff uploads go through the
+  // generic admin upload endpoint since staff don't have a participant
+  // access code. ---------------------------------------------------------
+  var blocksList = document.getElementById('blocksList');
+
+  function uid() { return 'b' + Math.random().toString(36).slice(2, 10); }
+
+  function newBlock(type) {
+    if (type === 'heading') return { id: uid(), type: type, text: '' };
+    if (type === 'paragraph') return { id: uid(), type: type, text: '' };
+    if (type === 'image') return { id: uid(), type: type, url: '', caption: '' };
+    if (type === 'gallery') return { id: uid(), type: type, images: [] };
+    if (type === 'button') return { id: uid(), type: type, label: '', href: '' };
+    if (type === 'spacer') return { id: uid(), type: type, height: 40 };
+    return null;
+  }
+
+  function uploadAdminImage(file, onDone) {
+    var fd = new FormData();
+    fd.append('file', file);
+    adminFetch('/api/admin/upload', { method: 'POST', body: fd }).then(function (r) {
+      onDone(r.ok ? r.data.url : null, r.ok ? null : (r.data && r.data.error));
+    });
+  }
+
+  function blockLabel(type) {
+    return { heading: 'Heading', paragraph: 'Text', image: 'Image', gallery: 'Gallery', button: 'Button', spacer: 'Spacer' }[type] || type;
+  }
+
+  var dragIndex = null;
+
+  function renderBlocks() {
+    blocksList.innerHTML = '';
+    blocks.forEach(function (block, index) {
+      var card = document.createElement('div');
+      card.className = 'rounded-xl border-2 border-ink p-4';
+      card.style.background = '#fff';
+      card.draggable = true;
+      card.addEventListener('dragstart', function () { dragIndex = index; card.style.opacity = '.5'; });
+      card.addEventListener('dragend', function () { card.style.opacity = ''; });
+      card.addEventListener('dragover', function (e) { e.preventDefault(); });
+      card.addEventListener('drop', function (e) {
+        e.preventDefault();
+        if (dragIndex === null || dragIndex === index) return;
+        var moved = blocks.splice(dragIndex, 1)[0];
+        blocks.splice(index, 0, moved);
+        dragIndex = null;
+        renderBlocks();
+      });
+
+      var head = document.createElement('div');
+      head.className = 'flex items-center justify-between mb-3';
+      var tag = document.createElement('span');
+      tag.className = 'tag';
+      tag.textContent = '⠿ ' + blockLabel(block.type);
+      head.appendChild(tag);
+
+      var controls = document.createElement('div');
+      controls.className = 'flex items-center gap-1';
+      var upBtn = document.createElement('button');
+      upBtn.type = 'button'; upBtn.className = 'btn !py-1 !px-2 text-xs'; upBtn.textContent = '↑'; upBtn.disabled = index === 0;
+      upBtn.addEventListener('click', function () { if (index === 0) return; blocks.splice(index - 1, 0, blocks.splice(index, 1)[0]); renderBlocks(); });
+      var downBtn = document.createElement('button');
+      downBtn.type = 'button'; downBtn.className = 'btn !py-1 !px-2 text-xs'; downBtn.textContent = '↓'; downBtn.disabled = index === blocks.length - 1;
+      downBtn.addEventListener('click', function () { if (index === blocks.length - 1) return; blocks.splice(index + 1, 0, blocks.splice(index, 1)[0]); renderBlocks(); });
+      var removeBtn = document.createElement('button');
+      removeBtn.type = 'button'; removeBtn.className = 'btn btn-coral !py-1 !px-2 text-xs'; removeBtn.textContent = 'Remove';
+      removeBtn.addEventListener('click', function () { blocks.splice(index, 1); renderBlocks(); });
+      controls.appendChild(upBtn); controls.appendChild(downBtn); controls.appendChild(removeBtn);
+      head.appendChild(controls);
+      card.appendChild(head);
+
+      var body = document.createElement('div');
+      body.className = 'flex flex-col gap-2';
+
+      if (block.type === 'heading') {
+        var hIn = document.createElement('input');
+        hIn.className = 'input'; hIn.type = 'text'; hIn.maxLength = 200; hIn.placeholder = 'Section heading'; hIn.value = block.text || '';
+        hIn.addEventListener('input', function () { block.text = hIn.value; });
+        body.appendChild(hIn);
+      } else if (block.type === 'paragraph') {
+        var pIn = document.createElement('textarea');
+        pIn.className = 'input'; pIn.rows = 4; pIn.maxLength = 4000; pIn.placeholder = 'Write as much as you like…'; pIn.value = block.text || '';
+        pIn.addEventListener('input', function () { block.text = pIn.value; });
+        body.appendChild(pIn);
+      } else if (block.type === 'image') {
+        if (block.url) {
+          var prevImg = document.createElement('img');
+          prevImg.src = block.url; prevImg.alt = '';
+          prevImg.style.cssText = 'max-height:8rem;border-radius:.5rem;border:2px solid var(--ink);object-fit:cover';
+          body.appendChild(prevImg);
+        }
+        var fIn = document.createElement('input');
+        fIn.className = 'input'; fIn.type = 'file'; fIn.accept = 'image/jpeg,image/png,image/webp';
+        var upStatus = document.createElement('p');
+        upStatus.className = 'text-xs text-muted'; upStatus.textContent = block.url ? 'Choose a new file to replace this photo.' : '';
+        fIn.addEventListener('change', function () {
+          if (!fIn.files[0]) return;
+          upStatus.textContent = 'Uploading…';
+          uploadAdminImage(fIn.files[0], function (url, err) {
+            if (!url) { upStatus.style.color = 'var(--coral-ink)'; upStatus.textContent = err || 'Upload failed.'; return; }
+            block.url = url; renderBlocks();
+          });
+        });
+        body.appendChild(fIn); body.appendChild(upStatus);
+        var capIn = document.createElement('input');
+        capIn.className = 'input'; capIn.type = 'text'; capIn.maxLength = 300; capIn.placeholder = 'Caption (optional)'; capIn.value = block.caption || '';
+        capIn.addEventListener('input', function () { block.caption = capIn.value; });
+        body.appendChild(capIn);
+      } else if (block.type === 'gallery') {
+        if (block.images && block.images.length) {
+          var grid = document.createElement('div');
+          grid.className = 'flex flex-wrap gap-2';
+          block.images.forEach(function (url, imgIdx) {
+            var wrap = document.createElement('div');
+            wrap.style.position = 'relative';
+            var gImg = document.createElement('img');
+            gImg.src = url; gImg.alt = '';
+            gImg.style.cssText = 'width:4rem;height:4rem;border-radius:.5rem;object-fit:cover;border:2px solid var(--ink)';
+            wrap.appendChild(gImg);
+            var rmBtn = document.createElement('button');
+            rmBtn.type = 'button'; rmBtn.textContent = '×'; rmBtn.title = 'Remove photo';
+            rmBtn.style.cssText = 'position:absolute;top:-.4rem;right:-.4rem;width:1.25rem;height:1.25rem;border-radius:999px;background:var(--coral-ink);color:#fff;font-size:.75rem;line-height:1;border:none;cursor:pointer';
+            rmBtn.addEventListener('click', function () { block.images.splice(imgIdx, 1); renderBlocks(); });
+            wrap.appendChild(rmBtn);
+            grid.appendChild(wrap);
+          });
+          body.appendChild(grid);
+        }
+        var gIn = document.createElement('input');
+        gIn.className = 'input'; gIn.type = 'file'; gIn.accept = 'image/jpeg,image/png,image/webp'; gIn.multiple = true;
+        var gStatus = document.createElement('p');
+        gStatus.className = 'text-xs text-muted'; gStatus.textContent = 'Up to 12 photos.';
+        gIn.addEventListener('change', function () {
+          var files = Array.prototype.slice.call(gIn.files).slice(0, 12 - (block.images || []).length);
+          if (!files.length) return;
+          gStatus.textContent = 'Uploading…';
+          var remaining = files.length;
+          files.forEach(function (file) {
+            uploadAdminImage(file, function (url) {
+              if (url) { block.images = block.images || []; block.images.push(url); }
+              remaining -= 1;
+              if (remaining === 0) renderBlocks();
+            });
+          });
+        });
+        body.appendChild(gIn); body.appendChild(gStatus);
+      } else if (block.type === 'button') {
+        var lblIn = document.createElement('input');
+        lblIn.className = 'input'; lblIn.type = 'text'; lblIn.maxLength = 100; lblIn.placeholder = 'Button label'; lblIn.value = block.label || '';
+        lblIn.addEventListener('input', function () { block.label = lblIn.value; });
+        var hrefIn = document.createElement('input');
+        hrefIn.className = 'input mt-2'; hrefIn.type = 'text'; hrefIn.maxLength = 500; hrefIn.placeholder = 'Link (https://…)'; hrefIn.value = block.href || '';
+        hrefIn.addEventListener('input', function () { block.href = hrefIn.value; });
+        body.appendChild(lblIn); body.appendChild(hrefIn);
+      } else if (block.type === 'spacer') {
+        var hgtIn = document.createElement('input');
+        hgtIn.className = 'input'; hgtIn.type = 'number'; hgtIn.min = 0; hgtIn.max = 300; hgtIn.value = block.height || 40;
+        hgtIn.addEventListener('input', function () { block.height = Number(hgtIn.value) || 0; });
+        body.appendChild(hgtIn);
+      }
+
+      card.appendChild(body);
+      blocksList.appendChild(card);
+    });
+  }
+
+  document.querySelectorAll('[data-add]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var b = newBlock(btn.getAttribute('data-add'));
+      if (b) { blocks.push(b); renderBlocks(); }
+    });
+  });
+
+  // --- Edit form -------------------------------------------------------
+  function linksToFields(links) {
+    f_link_instagram.value = ''; f_link_linkedin.value = ''; f_link_website.value = '';
+    (links || []).forEach(function (l) {
+      if (l.label === 'Instagram') f_link_instagram.value = l.url || '';
+      if (l.label === 'LinkedIn') f_link_linkedin.value = l.url || '';
+      if (l.label === 'Website') f_link_website.value = l.url || '';
+    });
+  }
+
+  function fieldsToLinks() {
+    var out = [];
+    if (f_link_instagram.value.trim()) out.push({ label: 'Instagram', url: f_link_instagram.value.trim() });
+    if (f_link_linkedin.value.trim()) out.push({ label: 'LinkedIn', url: f_link_linkedin.value.trim() });
+    if (f_link_website.value.trim()) out.push({ label: 'Website', url: f_link_website.value.trim() });
+    return out;
+  }
+
   function showForm(item) {
     form.reset();
     setFormStatus('');
     editingId = item.id;
     f_name.value = item.name || '';
     f_edition.value = item.edition || '';
+    f_pronouns.value = item.pronouns || '';
+    f_current_role.value = item.current_role || '';
+    f_location.value = item.location || '';
+    f_quote.value = item.quote || '';
     f_bio.value = item.bio || '';
     f_story.value = item.story || '';
     f_photo_url.value = item.photo_url || '';
     setImagePreview(item.photo_url || '');
     f_status.value = item.status || 'pending';
+
+    linksToFields(safeParse(item.links_json, []));
+    extraPhotos = safeParse(item.photos_json, []);
+    renderExtraPhotos();
+    blocks = safeParse(item.blocks_json, []) || [];
+    renderBlocks();
+
     formCard.hidden = false;
     formCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function safeParse(str, fallback) {
+    try { return JSON.parse(str || 'null') || fallback; } catch (e) { return fallback; }
   }
 
   function hideForm() {
     formCard.hidden = true;
     form.reset();
     editingId = null;
+    blocks = [];
+    extraPhotos = [];
     setFormStatus('');
     setImagePreview('');
   }
@@ -160,44 +497,59 @@ permalink: /admin/dots-alumni/
     return 'var(--paper-2)';
   }
 
-  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]; }); }
-
   // Renders the same visual shape as the real public page
-  // (src/dots/alumni-profile.njk), from the raw list-row data -- so staff
-  // can see exactly what a submission will look like before it's ever
-  // built into a static page, since pending entries don't have a live URL
-  // yet.
+  // (src/dots/alumni-profile.njk), including page-builder sections, so
+  // staff can see exactly what a submission will look like before it's
+  // ever built into a static page.
   function renderPreview(item) {
-    var photos = [];
-    var links = [];
-    try { photos = JSON.parse(item.photos_json || '[]'); } catch (e) {}
-    try { links = JSON.parse(item.links_json || '[]'); } catch (e) {}
+    var links = safeParse(item.links_json, []);
+    var itemBlocks = safeParse(item.blocks_json, null);
 
     var html = '';
     if (item.photo_url) {
       html += '<img src="' + esc(item.photo_url) + '" alt="" style="width:100%;max-height:22rem;object-fit:cover;border-radius:1rem;border:2px solid var(--ink);margin-bottom:2rem">';
     }
-    html += '<h1 class="h-hero">' + esc(item.name) + '</h1>';
+    html += '<h1 class="h-hero">' + esc(item.name) + (item.pronouns ? ' <span class="text-muted" style="font-size:.55em">(' + esc(item.pronouns) + ')</span>' : '') + '</h1>';
+    if (item.current_role) html += '<p class="mt-2 text-lg font-semibold">' + esc(item.current_role) + '</p>';
+    if (item.location) html += '<p class="mt-1 text-sm text-muted">' + esc(item.location) + '</p>';
     html += '<p class="mt-4 text-lg text-muted leading-relaxed">' + esc(item.bio) + '</p>';
+    if (item.quote) html += '<blockquote class="card p-4 mt-4" style="border-left:4px solid var(--coral-ink)">“' + esc(item.quote) + '”</blockquote>';
 
     if (links.length) {
       html += '<div class="flex flex-wrap gap-3 mt-6">';
-      links.forEach(function (l) {
-        html += '<span class="btn" style="pointer-events:none">' + esc(l.label) + '</span>';
-      });
+      links.forEach(function (l) { html += '<span class="btn" style="pointer-events:none">' + esc(l.label) + '</span>'; });
       html += '</div>';
     }
 
-    if (item.story) {
-      html += '<div class="card p-6 mt-8"><h2 class="h-card mb-3">Their story</h2><p class="text-muted leading-relaxed" style="white-space:pre-line">' + esc(item.story) + '</p></div>';
-    }
-
-    if (photos.length) {
-      html += '<div class="mt-8"><h2 class="h-card mb-4">More photos</h2><div class="grid gap-3" style="grid-template-columns:repeat(auto-fill,minmax(9rem,1fr))">';
-      photos.forEach(function (url) {
-        html += '<img src="' + esc(url) + '" alt="" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:.75rem;border:2px solid var(--ink)">';
+    if (itemBlocks && itemBlocks.length) {
+      html += '<div class="mt-8 space-y-6">';
+      itemBlocks.forEach(function (block) {
+        if (block.type === 'heading') html += '<h2 class="h-card">' + esc(block.text) + '</h2>';
+        else if (block.type === 'paragraph') html += '<p class="text-muted leading-relaxed" style="white-space:pre-line">' + esc(block.text) + '</p>';
+        else if (block.type === 'image') {
+          if (block.url) html += '<img src="' + esc(block.url) + '" alt="" style="width:100%;max-height:20rem;object-fit:cover;border-radius:.75rem;border:2px solid var(--ink)">';
+          if (block.caption) html += '<p class="text-sm text-muted mt-1">' + esc(block.caption) + '</p>';
+        } else if (block.type === 'gallery' && Array.isArray(block.images)) {
+          html += '<div class="grid gap-3" style="grid-template-columns:repeat(auto-fill,minmax(8rem,1fr))">';
+          block.images.forEach(function (url) { html += '<img src="' + esc(url) + '" alt="" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:.5rem;border:2px solid var(--ink)">'; });
+          html += '</div>';
+        } else if (block.type === 'button') {
+          html += '<span class="btn btn-accent" style="pointer-events:none">' + esc(block.label) + '</span>';
+        } else if (block.type === 'spacer') {
+          html += '<div style="height:' + (Number(block.height) || 40) + 'px"></div>';
+        }
       });
-      html += '</div></div>';
+      html += '</div>';
+    } else {
+      if (item.story) {
+        html += '<div class="card p-6 mt-8"><h2 class="h-card mb-3">Their story</h2><p class="text-muted leading-relaxed" style="white-space:pre-line">' + esc(item.story) + '</p></div>';
+      }
+      var photos = safeParse(item.photos_json, []);
+      if (photos.length) {
+        html += '<div class="mt-8"><h2 class="h-card mb-4">More photos</h2><div class="grid gap-3" style="grid-template-columns:repeat(auto-fill,minmax(9rem,1fr))">';
+        photos.forEach(function (url) { html += '<img src="' + esc(url) + '" alt="" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:.75rem;border:2px solid var(--ink)">'; });
+        html += '</div></div>';
+      }
     }
 
     return html;
@@ -424,9 +776,16 @@ permalink: /admin/dots-alumni/
     var body = {
       name: f_name.value.trim(),
       edition: f_edition.value.trim(),
+      pronouns: f_pronouns.value.trim() || null,
+      current_role: f_current_role.value.trim() || null,
+      location: f_location.value.trim() || null,
+      quote: f_quote.value.trim() || null,
       bio: f_bio.value.trim(),
-      story: f_story.value.trim(),
+      story: f_story.value.trim() || null,
       photoUrl: f_photo_url.value.trim(),
+      photos_json: JSON.stringify(extraPhotos),
+      links_json: JSON.stringify(fieldsToLinks()),
+      blocks_json: blocks.length ? JSON.stringify(blocks) : null,
       status: f_status.value,
     };
 

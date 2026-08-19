@@ -238,6 +238,10 @@ CREATE TABLE IF NOT EXISTS dots_alumni (
   slug TEXT UNIQUE NOT NULL,
   edition TEXT NOT NULL,
   name TEXT NOT NULL,
+  pronouns TEXT, -- optional, shown next to the name
+  current_role TEXT, -- "what are you up to now" -- job/study/project, shown under the name
+  location TEXT, -- "based in" -- optional, distinct from `edition` (which branch/cohort)
+  quote TEXT, -- a favourite quote or one line of advice for future participants
   bio TEXT NOT NULL,
   story TEXT, -- longer personal reflection, shown only on the individual page
   photo_url TEXT NOT NULL, -- main/cover photo, shown on the gallery card

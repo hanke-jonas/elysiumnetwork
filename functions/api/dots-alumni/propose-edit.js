@@ -12,6 +12,10 @@ import { sanitizeBlocks } from '../../_lib/dotsBlocks.js';
 // keeps working as their ongoing edit key.
 const MAX_BYTES = 5 * 1024 * 1024;
 const MAX_NAME_CHARS = 100;
+const MAX_PRONOUNS_CHARS = 30;
+const MAX_ROLE_CHARS = 120;
+const MAX_LOCATION_CHARS = 80;
+const MAX_QUOTE_CHARS = 300;
 const MAX_BIO_CHARS = 600;
 const MAX_STORY_CHARS = 4000;
 const MAX_EXTRA_PHOTOS = 4;
@@ -56,7 +60,24 @@ export async function onRequestPost({ request, env }) {
     const current = await env.DB.prepare('SELECT * FROM dots_alumni WHERE id = ?').bind(codeRow.dots_alumni_id).first();
     if (!current) return badRequest('That entry no longer exists.');
 
+    // If an earlier visit already left a proposal awaiting review, this
+    // submission continues/replaces that same draft rather than stacking a
+    // second pending row -- so its still-unapproved photo/blocks/etc. are
+    // the fallback base, not the older live data (which would otherwise
+    // silently revert an in-review change whenever a field is omitted).
+    const existingEdit = await env.DB.prepare(
+      "SELECT id, proposed_json FROM dots_alumni_edits WHERE alumni_id = ? AND status = 'pending'",
+    ).bind(current.id).first();
+    let base = current;
+    if (existingEdit) {
+      try { base = JSON.parse(existingEdit.proposed_json); } catch { base = current; }
+    }
+
     const name = String(form.get('name') || '').trim().slice(0, MAX_NAME_CHARS);
+    const pronouns = String(form.get('pronouns') || '').trim().slice(0, MAX_PRONOUNS_CHARS);
+    const currentRole = String(form.get('current_role') || '').trim().slice(0, MAX_ROLE_CHARS);
+    const location = String(form.get('location') || '').trim().slice(0, MAX_LOCATION_CHARS);
+    const quote = String(form.get('quote') || '').trim().slice(0, MAX_QUOTE_CHARS);
     const bio = String(form.get('bio') || '').trim().slice(0, MAX_BIO_CHARS);
     const story = String(form.get('story') || '').trim().slice(0, MAX_STORY_CHARS);
     if (!name) return badRequest('Name is required');
@@ -66,7 +87,7 @@ export async function onRequestPost({ request, env }) {
     // already live", unlike the initial submission where a photo is
     // required.
     const file = form.get('photo');
-    let photoUrl = current.photo_url;
+    let photoUrl = base.photo_url;
     try {
       if (file && typeof file !== 'string') photoUrl = (await uploadImage(env, file)) || photoUrl;
     } catch (err) {
@@ -74,7 +95,7 @@ export async function onRequestPost({ request, env }) {
     }
 
     const extraFiles = form.getAll('photos').filter((f) => f && typeof f !== 'string').slice(0, MAX_EXTRA_PHOTOS);
-    let extraPhotoUrls = JSON.parse(current.photos_json || '[]');
+    let extraPhotoUrls = JSON.parse(base.photos_json || '[]');
     if (extraFiles.length) {
       try {
         extraPhotoUrls = [];
@@ -98,11 +119,23 @@ export async function onRequestPost({ request, env }) {
     }
 
     const proposed = {
-      name, bio, story: story || null, photo_url: photoUrl,
+      name,
+      pronouns: pronouns || null,
+      current_role: currentRole || null,
+      location: location || null,
+      quote: quote || null,
+      bio, story: story || null, photo_url: photoUrl,
       photos_json: JSON.stringify(extraPhotoUrls),
       links_json: JSON.stringify(links),
       blocks_json: blocks ? JSON.stringify(blocks) : null,
     };
+
+    if (existingEdit) {
+      await env.DB.prepare(
+        "UPDATE dots_alumni_edits SET proposed_json = ?, submitted_at = datetime('now') WHERE id = ?",
+      ).bind(JSON.stringify(proposed), existingEdit.id).run();
+      return json({ ok: true, id: existingEdit.id });
+    }
 
     const id = randomId();
     await env.DB.prepare(

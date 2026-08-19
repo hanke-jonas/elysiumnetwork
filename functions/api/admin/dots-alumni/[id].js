@@ -5,9 +5,16 @@ import { scheduleRebuild } from '../../../_lib/rebuild.js';
 const FIELD_MAP = {
   edition: 'edition',
   name: 'name',
+  pronouns: 'pronouns',
+  current_role: 'current_role',
+  location: 'location',
+  quote: 'quote',
   bio: 'bio',
   story: 'story',
   photoUrl: 'photo_url',
+  photos_json: 'photos_json',
+  links_json: 'links_json',
+  blocks_json: 'blocks_json',
   status: 'status',
 };
 const VALID_STATUSES = new Set(['pending', 'published', 'rejected']);

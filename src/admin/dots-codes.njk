@@ -130,9 +130,22 @@ permalink: /admin/dots-codes/
       tr.appendChild(tdSubmission);
 
       var tdActions = document.createElement('td');
+      tdActions.style.whiteSpace = 'nowrap';
+
+      var copyBtn = document.createElement('button');
+      copyBtn.type = 'button';
+      copyBtn.className = 'btn !py-1.5 !px-3 text-xs';
+      copyBtn.textContent = 'Copy link';
+      copyBtn.addEventListener('click', function () {
+        navigator.clipboard.writeText(location.origin + '/dots/alumni/submit/?code=' + item.code);
+        copyBtn.textContent = 'Copied!';
+        setTimeout(function () { copyBtn.textContent = 'Copy link'; }, 1500);
+      });
+      tdActions.appendChild(copyBtn);
+
       var delBtn = document.createElement('button');
       delBtn.type = 'button';
-      delBtn.className = 'btn btn-coral !py-1.5 !px-3 text-xs';
+      delBtn.className = 'btn btn-coral !py-1.5 !px-3 text-xs ml-2';
       delBtn.textContent = 'Revoke';
       delBtn.addEventListener('click', function () { revokeCode(item.id, item.code, delBtn); });
       tdActions.appendChild(delBtn);

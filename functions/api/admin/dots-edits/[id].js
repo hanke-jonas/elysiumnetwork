@@ -4,6 +4,10 @@ import { scheduleRebuild } from '../../../_lib/rebuild.js';
 
 const PROPOSED_FIELD_MAP = {
   name: 'name',
+  pronouns: 'pronouns',
+  current_role: 'current_role',
+  location: 'location',
+  quote: 'quote',
   bio: 'bio',
   story: 'story',
   photo_url: 'photo_url',
