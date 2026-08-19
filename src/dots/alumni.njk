@@ -36,7 +36,7 @@ permalink: /dots/alumni/
         <p class="text-lg leading-snug -mt-2">{{ person.quote }}</p>
         <div class="flex items-center gap-3 mt-5 pt-4" style="border-top:1px solid var(--line)">
           {% if person.photoUrl %}
-          <img src="{{ person.photoUrl }}" alt="" width="40" height="40" loading="lazy" class="w-10 h-10 rounded-full object-cover border-2 border-ink shrink-0">
+          <img src="{{ person.photoUrl | faceCrop(80, 80) }}" alt="" width="40" height="40" loading="lazy" class="w-10 h-10 rounded-full object-cover border-2 border-ink shrink-0">
           {% else %}
           <div class="w-10 h-10 rounded-full border-2 border-ink shrink-0" style="background:{{ cardAccents[loop.index0 % cardAccents.length] }}"></div>
           {% endif %}
@@ -61,7 +61,7 @@ permalink: /dots/alumni/
       {% for person in dotsAlumni %}
       <a href="/dots/alumni/{{ person.slug }}/" class="card overflow-hidden reveal block group flex flex-col">
         {% if person.photoUrl %}
-        <img src="{{ person.photoUrl }}" alt="{{ person.name }}" width="640" height="480" loading="lazy" class="aspect-[4/3] w-full object-cover">
+        <img src="{{ person.photoUrl | faceCrop(640, 480) }}" alt="{{ person.name }}" width="640" height="480" loading="lazy" class="aspect-[4/3] w-full object-cover">
         {% else %}
         <div class="aspect-[4/3] w-full" style="background:{{ cardAccents[loop.index0 % cardAccents.length] }}"></div>
         {% endif %}

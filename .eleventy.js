@@ -78,6 +78,18 @@ module.exports = function (eleventyConfig) {
     return arr.find((c) => c.status === 'open') || arr.find((c) => c.status === 'coming_up') || arr[0];
   });
 
+  // e.g. {{ person.photoUrl | faceCrop(640, 480) }} -- appends the query
+  // params functions/uploads/[[path]].js reads to serve an automatically
+  // face-cropped resize via Cloudflare's free Image Resizing, instead of
+  // plain CSS object-fit:cover risking cutting a face out of frame. A
+  // no-op for anything that isn't one of our own /uploads/ URLs (external
+  // links, data: URIs, a missing photo).
+  eleventyConfig.addFilter('faceCrop', function (url, width, height) {
+    if (!url || typeof url !== 'string' || !url.startsWith('/uploads/')) return url;
+    const sep = url.includes('?') ? '&' : '?';
+    return `${url}${sep}w=${width}&h=${height}&face=1`;
+  });
+
   eleventyConfig.addPassthroughCopy('src/robots.txt');
   eleventyConfig.addPassthroughCopy('src/_redirects');
   eleventyConfig.addPassthroughCopy('src/assets');
