@@ -18,6 +18,7 @@ module.exports = async function () {
     photoUrl: r.photo_url,
     photos: JSON.parse(r.photos_json || '[]'),
     links: JSON.parse(r.links_json || '[]'),
+    blocks: JSON.parse(r.blocks_json || 'null'),
     publishedAt: r.published_at,
   }));
 };

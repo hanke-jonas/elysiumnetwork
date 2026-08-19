@@ -1,5 +1,6 @@
 import { badRequest, json, randomId } from '../../_lib/http.js';
 import { bumpUsage } from '../../_lib/usage.js';
+import { sanitizeBlocks } from '../../_lib/dotsBlocks.js';
 
 // Public, unauthenticated (but invite-gated) submission for the DOTS
 // alumni gallery -- the first public upload endpoint in this codebase
@@ -94,6 +95,12 @@ export async function onRequestPost({ request, env }) {
       .map(([field, label]) => ({ label, url: normalizeUrl(form.get(field)) }))
       .filter((l) => l.url);
 
+    let blocks = null;
+    const rawBlocks = form.get('blocks');
+    if (rawBlocks) {
+      try { blocks = sanitizeBlocks(JSON.parse(rawBlocks)); } catch { blocks = null; }
+    }
+
     // Claimed last, right before the insert, and only if everything else
     // above already succeeded -- so a failed upload or validation error
     // never burns the participant's one-time code. The WHERE used_at IS
@@ -108,9 +115,9 @@ export async function onRequestPost({ request, env }) {
     const slug = `${slugify(name) || 'alumnus'}-${id.slice(0, 6)}`;
 
     await env.DB.prepare(
-      `INSERT INTO dots_alumni (id, slug, edition, name, bio, story, photo_url, photos_json, links_json, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
-    ).bind(id, slug, codeRow.edition, name, bio, story || null, photoUrl, JSON.stringify(extraPhotoUrls), JSON.stringify(links)).run();
+      `INSERT INTO dots_alumni (id, slug, edition, name, bio, story, photo_url, photos_json, links_json, blocks_json, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+    ).bind(id, slug, codeRow.edition, name, bio, story || null, photoUrl, JSON.stringify(extraPhotoUrls), JSON.stringify(links), blocks ? JSON.stringify(blocks) : null).run();
 
     await env.DB.prepare('UPDATE dots_access_codes SET dots_alumni_id = ? WHERE code = ?').bind(id, code).run();
 

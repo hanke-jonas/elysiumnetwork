@@ -243,11 +243,35 @@ CREATE TABLE IF NOT EXISTS dots_alumni (
   photo_url TEXT NOT NULL, -- main/cover photo, shown on the gallery card
   photos_json TEXT NOT NULL DEFAULT '[]', -- additional gallery photos for the individual page
   links_json TEXT NOT NULL DEFAULT '[]', -- [{label, url}, ...] optional social/contact links
+  -- Free-form mini-page content: {id, type, ...fields}, type is one of
+  -- 'heading' | 'paragraph' | 'image' | 'gallery' | 'button' | 'spacer'
+  -- (same widget shape as the ugobongo visual editor). When non-empty,
+  -- this fully replaces story/photos/links on the individual page --
+  -- those stay as the simple fallback for anyone who never touches the
+  -- block builder.
+  blocks_json TEXT,
   status TEXT NOT NULL DEFAULT 'pending', -- 'pending' | 'published' | 'rejected'
   submitted_at TEXT NOT NULL DEFAULT (datetime('now')),
   published_at TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_dots_alumni_status ON dots_alumni(status, edition);
+
+-- A participant's proposed change to their own already-approved entry,
+-- made by reusing their same access code (see
+-- functions/api/dots-alumni/propose-edit.js). Never applied automatically
+-- -- staff review and approve/reject in /admin/dots-edits/, same
+-- moderation principle as the original submission. `proposed_json` holds
+-- the complete proposed dots_alumni field set (not a partial diff) so
+-- approval is a straight copy.
+CREATE TABLE IF NOT EXISTS dots_alumni_edits (
+  id TEXT PRIMARY KEY,
+  alumni_id TEXT NOT NULL REFERENCES dots_alumni(id),
+  proposed_json TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending', -- 'pending' | 'approved' | 'rejected'
+  submitted_at TEXT NOT NULL DEFAULT (datetime('now')),
+  reviewed_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_dots_alumni_edits_status ON dots_alumni_edits(status);
 
 -- Invite-only gate for dots_alumni submissions: staff generate a code per
 -- real participant (in /admin/dots-codes/) and share it directly, rather

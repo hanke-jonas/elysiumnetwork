@@ -32,6 +32,35 @@ eleventyComputed:
     </div>
     {% endif %}
 
+    {% if person.blocks and person.blocks.length > 0 %}
+    <!-- Free-form mini-page content from the participant's own block
+         builder -- fully replaces the story/photos grid below once set. -->
+    <div class="mt-10 space-y-8">
+      {% for block in person.blocks %}
+        {% if block.type == "heading" %}
+        <h2 class="h-card">{{ block.text }}</h2>
+        {% elif block.type == "paragraph" %}
+        <p class="text-muted leading-relaxed whitespace-pre-line max-w-3xl">{{ block.text }}</p>
+        {% elif block.type == "image" %}
+        <div>
+          {% if block.url %}<img src="{{ block.url }}" alt="{{ block.caption or '' }}" loading="lazy" class="w-full max-h-[420px] object-cover rounded-2xl border-2 border-ink">{% endif %}
+          {% if block.caption %}<p class="text-sm text-muted mt-2">{{ block.caption }}</p>{% endif %}
+        </div>
+        {% elif block.type == "gallery" %}
+        <div class="grid gap-4 sm:grid-cols-3">
+          {% for url in block.images %}
+          <img src="{{ url }}" alt="" loading="lazy" class="aspect-[4/3] w-full object-cover rounded-2xl border-2 border-ink">
+          {% endfor %}
+        </div>
+        {% elif block.type == "button" %}
+        <a href="{{ block.href }}" target="_blank" rel="noopener" class="btn btn-accent">{{ block.label }}</a>
+        {% elif block.type == "spacer" %}
+        <div style="height:{{ block.height or 40 }}px"></div>
+        {% endif %}
+      {% endfor %}
+    </div>
+    {% else %}
+
     {% if person.story %}
     <div class="card p-8 sm:p-10 mt-10">
       <h2 class="h-card mb-3">Their story</h2>
@@ -48,6 +77,8 @@ eleventyComputed:
         {% endfor %}
       </div>
     </div>
+    {% endif %}
+
     {% endif %}
 
     <div class="mt-12">
