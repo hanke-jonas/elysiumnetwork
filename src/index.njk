@@ -8,19 +8,19 @@ permalink: /
   <div class="max-w-[1400px] mx-auto px-5 sm:px-8 pt-14 sm:pt-20 pb-14 grid lg:grid-cols-12 gap-8 items-center">
     <div class="lg:col-span-8">
       <div class="flex flex-wrap gap-2.5">
-        <div class="stamp reveal" style="border-color:var(--coral);color:var(--coral)">est. {{ site.founded_year }} · Chernihiv, Ukraine</div>
+        <div class="stamp" style="border-color:var(--coral);color:var(--coral)">est. {{ site.founded_year }} · Chernihiv, Ukraine</div>
         {% for br in site.branches %}{% if br.slug == 'ukraine' and br.esc %}
-        <a href="{{ br.esc.url }}" target="_blank" rel="noopener" class="stamp reveal" style="border-color:var(--mint);color:var(--mint-ink)">Accredited ESC {{ br.esc.role }}</a>
+        <a href="{{ br.esc.url }}" target="_blank" rel="noopener" class="stamp" style="border-color:var(--mint);color:var(--mint-ink)">Accredited ESC {{ br.esc.role }}</a>
         {% endif %}{% endfor %}
       </div>
-      <h1 class="h-hero mt-6 reveal reveal-d1">Young people move.<br>Europe <mark>changes.</mark></h1>
-      <p class="mt-7 text-lg sm:text-xl text-muted max-w-xl leading-relaxed reveal reveal-d2">Elysium+ sends young people across Ukraine, Poland, Italy and Germany through fully funded exchanges, training and non-formal education — built on inclusion, democracy and solidarity.</p>
-      <div class="mt-9 flex flex-wrap gap-3 reveal reveal-d3">
+      <h1 class="h-hero mt-6">Young people move.<br>Europe <mark>changes.</mark></h1>
+      <p class="mt-7 text-lg sm:text-xl text-muted max-w-xl leading-relaxed">Elysium+ sends young people across Ukraine, Poland, Italy and Germany through fully funded exchanges, training and non-formal education — built on inclusion, democracy and solidarity.</p>
+      <div class="mt-9 flex flex-wrap gap-3">
         <a href="{{ site.join_form }}" class="btn btn-accent magnetic">Join a project {% icon "arrow-ur", "w-4 h-4" %}</a>
         <a href="/calls/" class="btn magnetic">See active calls {% icon "arrow", "w-4 h-4" %}</a>
       </div>
     </div>
-    <div class="lg:col-span-4 flex justify-center reveal reveal-d2" id="heroParallax">
+    <div class="lg:col-span-4 flex justify-center" id="heroParallax">
       <div class="relative">
         <img src="{{ site.logo_hero }}" alt="Elysium+" width="320" height="320" class="w-48 sm:w-64 drop-shadow-[6px_10px_0_rgba(25,23,18,.15)]" id="heroHeart" style="transform:rotate(-4deg)">
         <span class="font-hand text-2xl absolute -bottom-3 -right-2 rotate-6" style="color:var(--coral)">that's us! ↴</span>
@@ -29,13 +29,14 @@ permalink: /
   </div>
 
   <div class="border-t-2 border-ink bg-ink">
-    <div class="max-w-[1400px] mx-auto px-5 sm:px-8 grid grid-cols-3 divide-x-2 divide-white/15">
-      {% set stats = [["4","countries"],["20+","Erasmus+ projects joined"],["2020","founded as a school initiative"]] %}
-      {% set spal = ["var(--blue)","var(--coral)","var(--sun)"] %}
+    <div class="max-w-[1400px] mx-auto px-5 sm:px-8 grid grid-cols-2 sm:grid-cols-4 divide-x-2 divide-white/15">
+      {% set stats = [[site.branches.length | string, "countries, one network", "globe"],["20+","Erasmus+ projects joined","compass"],[site.team.length | string,"people running it","id"],["2020","founded as a school initiative","spark"]] %}
+      {% set spal = ["var(--blue)","var(--coral)","var(--mint)","var(--sun)"] %}
       {% for s in stats %}
-      <div class="px-5 sm:px-8 py-7 reveal reveal-d{{ loop.index }}">
-        <p class="num count-up text-3xl sm:text-4xl font-bold" style="color:{{ spal[loop.index0] }}">{{ s[0] }}</p>
-        <p class="mt-1 text-xs sm:text-sm text-paper/70 leading-snug">{{ s[1] }}</p>
+      <div class="px-5 sm:px-8 py-8 sm:py-9 reveal reveal-d{{ loop.index }}">
+        <div class="w-9 h-9 rounded-lg grid place-items-center border-2 border-paper/25 mb-3" style="color:{{ spal[loop.index0] }}">{% icon s[2], "w-4.5 h-4.5" %}</div>
+        <p class="num count-up text-4xl sm:text-5xl font-bold" style="color:{{ spal[loop.index0] }}">{{ s[0] }}</p>
+        <p class="mt-1.5 text-xs sm:text-sm text-paper/70 leading-snug">{{ s[1] }}</p>
       </div>
       {% endfor %}
     </div>
@@ -159,20 +160,88 @@ permalink: /
   </div>
 </section>
 
+{% if site.team.length > 0 %}
+<section class="bg-paper border-b-2 border-ink overflow-hidden">
+  <div class="max-w-[1400px] mx-auto px-5 sm:px-8 py-20 sm:py-24">
+    <div class="flex flex-wrap items-end justify-between gap-4 reveal">
+      <div class="max-w-xl">
+        <p class="eyebrow" style="color:var(--coral-ink)">Not an institution — people</p>
+        <h2 class="h-sec mt-3">Who's actually behind this</h2>
+      </div>
+      <div class="flex items-center gap-2">
+        <button type="button" id="teamPrev" class="carousel-arrow" aria-label="Previous">{% icon "arrow", "w-4 h-4 rotate-180" %}</button>
+        <button type="button" id="teamNext" class="carousel-arrow" aria-label="Next">{% icon "arrow", "w-4 h-4" %}</button>
+        <a href="/about/" class="btn ml-2">Meet everyone {% icon "arrow", "w-4 h-4" %}</a>
+      </div>
+    </div>
+    <div class="mt-12 carousel-track" id="teamTrack">
+      {% set trot = ["-2deg","1.5deg","-1deg","2deg","-1.5deg",".5deg"] %}
+      {% for m in site.team %}
+      <a href="/about/" class="card overflow-hidden carousel-item block" style="width:260px;transform:rotate({{ trot[loop.index0 % trot.length] }})">
+        <img src="{{ m.image }}" alt="{{ m.name }}" width="260" height="260" loading="lazy" class="w-full aspect-square object-cover border-b-2 border-ink" style="object-position:center {{ m.focalY }}">
+        <div class="p-4">
+          <h3 class="font-display text-lg font-bold leading-tight">{{ m.name }}</h3>
+          <p class="text-sm font-bold mt-0.5" style="color:var(--coral-ink)">{{ m.role }}</p>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<script>
+  (function(){
+    var track = document.getElementById('teamTrack');
+    var prev = document.getElementById('teamPrev');
+    var next = document.getElementById('teamNext');
+    if (!track || !prev || !next) return;
+
+    function step(){
+      var first = track.querySelector('.carousel-item');
+      if (!first) return track.clientWidth;
+      var gap = parseFloat(getComputedStyle(track).columnGap || 24);
+      return first.getBoundingClientRect().width + gap;
+    }
+    function atEnd(){ return track.scrollLeft + track.clientWidth >= track.scrollWidth - 4; }
+    function atStart(){ return track.scrollLeft <= 4; }
+    var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function goTo(target){
+      target = Math.max(0, Math.min(target, track.scrollWidth - track.clientWidth));
+      track.scrollTo({ left: target, behavior: reduceMotion ? 'instant' : 'smooth' });
+    }
+    next.addEventListener('click', function(){ goTo(atEnd() ? 0 : track.scrollLeft + step()); });
+    prev.addEventListener('click', function(){ goTo(atStart() ? track.scrollWidth : track.scrollLeft - step()); });
+  })();
+</script>
+{% endif %}
+
 <section class="bg-paper-2 border-b-2 border-ink">
   <div class="max-w-[1400px] mx-auto px-5 sm:px-8 py-20 sm:py-24 space-y-6">
-    {% set featured = null %}
-    {% for c in calls %}{% if not featured and c.status != 'closed' %}{% set featured = c %}{% endif %}{% endfor %}
+    {% set featured = calls | firstOpenOrFirst %}
+    {% set otherCalls = [] %}
+    {% for c in calls %}{% if featured and c.status != 'closed' and c.id != featured.id %}{% set otherCalls = otherCalls.concat([c]) %}{% endif %}{% endfor %}
     {% if featured %}
     <div class="card !rounded-2xl overflow-hidden relative reveal">
       <div class="p-8 sm:p-12 grid lg:grid-cols-3 gap-8 items-center">
         <div class="lg:col-span-2">
-          <p class="eyebrow" style="color:var(--coral-ink)">Featured project</p>
+          <p class="eyebrow" style="color:var(--coral-ink)">{% if featured.status == 'open' %}Open now{% else %}Featured project{% endif %}</p>
           <h2 class="h-sec mt-4">{{ featured.title }}</h2>
           <p class="mt-4 text-muted text-lg leading-relaxed max-w-2xl">{{ featured.summary }}</p>
         </div>
         <div class="lg:justify-self-end"><a href="/calls/" class="btn btn-accent w-full lg:w-auto justify-center">See active calls {% icon "arrow", "w-4 h-4" %}</a></div>
       </div>
+    </div>
+    {% endif %}
+    {% if otherCalls.length > 0 %}
+    <div class="grid gap-5 sm:grid-cols-2">
+      {% set opal = ["var(--blue)","var(--mint)","var(--plum)"] %}
+      {% for c in otherCalls %}
+      <a href="/calls/" class="card p-6 block reveal reveal-d{{ loop.index }}">
+        <span class="tag" style="background:{{ opal[loop.index0 % opal.length] }}">{% if c.status == 'coming_up' %}Coming up{% else %}{{ c.status }}{% endif %}</span>
+        <h3 class="h-card mt-3">{{ c.title }}</h3>
+        <p class="mt-2 text-sm text-muted leading-relaxed">{{ c.deadline }}</p>
+      </a>
+      {% endfor %}
     </div>
     {% endif %}
     {% include "opportunity-portal-promo.njk" %}
