@@ -5,14 +5,52 @@ description: "Meet the participants of Democracy on TrackS (DOTS)."
 permalink: /dots/alumni/
 ---
 {% set cardAccents = ["var(--blue)", "var(--coral)", "var(--sun)", "var(--mint)", "var(--plum)"] %}
+{% set rot = ["-1.5deg","1deg","-.5deg","1.5deg","-1deg",".5deg"] %}
+{% set quoted = [] %}
+{% for person in dotsAlumni %}{% if person.quote %}{% set quoted = quoted.concat([person]) %}{% endif %}{% endfor %}
 
 <section class="relative overflow-hidden bg-paper border-b-2 border-ink">
   <div class="relative max-w-4xl mx-auto px-5 sm:px-6 pt-14 pb-16">
     <p class="eyebrow" style="color:var(--blue-ink)">Democracy on TrackS</p>
     <h1 class="h-hero mt-4">Meet the <mark>DOTS alumni</mark></h1>
-    <p class="mt-6 text-lg text-muted max-w-2xl leading-relaxed">Five seats, one ten-day rail journey from Berlin to Strasbourg. Here's who took part.</p>
+    <p class="mt-6 text-lg text-muted max-w-2xl leading-relaxed">Five seats, one ten-day rail journey from Berlin to Strasbourg. Here's who took part — in their own words.</p>
   </div>
 </section>
+
+{% if quoted.length > 0 %}
+<section class="bg-paper border-b-2 border-ink overflow-hidden">
+  <div class="max-w-7xl mx-auto px-5 sm:px-6 py-14">
+    <div class="flex items-center justify-between gap-4 mb-8">
+      <p class="eyebrow" style="color:var(--coral-ink)">In their words</p>
+      {% if quoted.length > 1 %}
+      <div class="flex gap-2">
+        <button type="button" id="quotesPrev" class="carousel-arrow" aria-label="Previous">{% icon "arrow", "w-4 h-4 rotate-180" %}</button>
+        <button type="button" id="quotesNext" class="carousel-arrow" aria-label="Next">{% icon "arrow", "w-4 h-4" %}</button>
+      </div>
+      {% endif %}
+    </div>
+    <div class="carousel-track" id="quotesTrack">
+      {% for person in quoted %}
+      <a href="/dots/alumni/{{ person.slug }}/" class="card p-6 carousel-item block" style="transform:rotate({{ rot[loop.index0 % rot.length] }})">
+        <p class="font-display text-4xl leading-none" style="color:{{ cardAccents[loop.index0 % cardAccents.length] }}">&ldquo;</p>
+        <p class="text-lg leading-snug -mt-2">{{ person.quote }}</p>
+        <div class="flex items-center gap-3 mt-5 pt-4" style="border-top:1px solid var(--line)">
+          {% if person.photoUrl %}
+          <img src="{{ person.photoUrl }}" alt="" width="40" height="40" loading="lazy" class="w-10 h-10 rounded-full object-cover border-2 border-ink shrink-0">
+          {% else %}
+          <div class="w-10 h-10 rounded-full border-2 border-ink shrink-0" style="background:{{ cardAccents[loop.index0 % cardAccents.length] }}"></div>
+          {% endif %}
+          <div class="min-w-0">
+            <p class="font-semibold text-sm truncate">{{ person.name }}</p>
+            {% if person.currentRole %}<p class="text-xs text-muted truncate">{{ person.currentRole }}</p>{% endif %}
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
 
 <section class="bg-paper">
   <div class="max-w-7xl mx-auto px-5 sm:px-6 py-16">
@@ -21,16 +59,21 @@ permalink: /dots/alumni/
     {% else %}
     <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {% for person in dotsAlumni %}
-      <a href="/dots/alumni/{{ person.slug }}/" class="card overflow-hidden reveal block group">
+      <a href="/dots/alumni/{{ person.slug }}/" class="card overflow-hidden reveal block group flex flex-col">
         {% if person.photoUrl %}
         <img src="{{ person.photoUrl }}" alt="{{ person.name }}" width="640" height="480" loading="lazy" class="aspect-[4/3] w-full object-cover">
         {% else %}
         <div class="aspect-[4/3] w-full" style="background:{{ cardAccents[loop.index0 % cardAccents.length] }}"></div>
         {% endif %}
-        <div class="p-6">
+        <div class="p-6 flex-1 flex flex-col">
           <h2 class="h-card group-hover:underline underline-offset-2">{{ person.name }}{% if person.pronouns %} <span class="text-muted" style="font-size:.6em;font-weight:600">({{ person.pronouns }})</span>{% endif %}</h2>
           {% if person.currentRole %}<p class="text-sm font-semibold mt-1">{{ person.currentRole }}</p>{% endif %}
           <p class="mt-2 text-muted leading-relaxed">{{ person.bio }}</p>
+          {% if person.quote %}
+          <p class="mt-4 pt-4 text-sm leading-snug" style="border-top:1px solid var(--line);font-style:italic">
+            <span class="font-hand text-xl align-middle" style="color:{{ cardAccents[loop.index0 % cardAccents.length] }}">&ldquo;</span>{{ person.quote }}<span class="font-hand text-xl align-middle" style="color:{{ cardAccents[loop.index0 % cardAccents.length] }}">&rdquo;</span>
+          </p>
+          {% endif %}
         </div>
       </a>
       {% endfor %}
@@ -47,3 +90,36 @@ permalink: /dots/alumni/
     <a href="/dots/alumni/submit/" class="btn btn-accent mt-6">Enter your code {% icon "arrow", "w-4 h-4" %}</a>
   </div>
 </section>
+
+{% if quoted.length > 1 %}
+<script>
+  (function(){
+    var track = document.getElementById('quotesTrack');
+    var prev = document.getElementById('quotesPrev');
+    var next = document.getElementById('quotesNext');
+    if (!track || !prev || !next) return;
+
+    function step(){
+      var first = track.querySelector('.carousel-item');
+      if (!first) return track.clientWidth;
+      var gap = parseFloat(getComputedStyle(track).columnGap || 24);
+      return first.getBoundingClientRect().width + gap;
+    }
+    function atEnd(){ return track.scrollLeft + track.clientWidth >= track.scrollWidth - 4; }
+    function atStart(){ return track.scrollLeft <= 4; }
+
+    var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function goTo(target){
+      target = Math.max(0, Math.min(target, track.scrollWidth - track.clientWidth));
+      track.scrollTo({ left: target, behavior: reduceMotion ? 'instant' : 'smooth' });
+    }
+
+    next.addEventListener('click', function(){
+      goTo(atEnd() ? 0 : track.scrollLeft + step());
+    });
+    prev.addEventListener('click', function(){
+      goTo(atStart() ? track.scrollWidth : track.scrollLeft - step());
+    });
+  })();
+</script>
+{% endif %}

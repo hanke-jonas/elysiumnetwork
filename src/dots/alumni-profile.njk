@@ -26,8 +26,9 @@ eleventyComputed:
     {% if person.location %}<p class="mt-1 text-sm text-muted">{{ person.location }}</p>{% endif %}
     <p class="mt-4 text-lg text-muted leading-relaxed max-w-3xl">{{ person.bio }}</p>
     {% if person.quote %}
-    <blockquote class="card p-6 mt-6 max-w-3xl" style="border-left:4px solid var(--coral-ink)">
-      <p class="text-lg leading-relaxed" style="font-style:italic">“{{ person.quote }}”</p>
+    <blockquote class="card p-6 mt-6 max-w-3xl" style="transform:rotate(-.5deg)">
+      <p class="font-display text-4xl leading-none" style="color:var(--coral)">&ldquo;</p>
+      <p class="text-lg leading-relaxed -mt-3" style="font-style:italic">{{ person.quote }}</p>
     </blockquote>
     {% endif %}
 
