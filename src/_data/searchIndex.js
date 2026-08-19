@@ -11,6 +11,7 @@ module.exports = [
   { title: 'Events', url: '/events/', group: 'Pages', blurb: 'Upcoming exchanges and trainings, with RSVP.' },
   { title: 'Resources', url: '/resources/', group: 'Pages', blurb: 'Annual reports, toolkits and guides to download.' },
   { title: 'Against the War', url: '/against-the-war/', group: 'Pages', blurb: "Documenting Russia's invasion and its impact on our home region." },
+  { title: 'DOTS Alumni', url: '/dots/alumni/', group: 'Pages', blurb: 'Meet the Democracy on TrackS participants — and add your own story.' },
   { title: 'Youth Peacebuilding Partnership', url: '/projects/peacebuilding/', group: 'Network', blurb: 'Astra’s Erasmus+ partner-recruitment project.' },
   { title: 'Elysium+ Ukraine', url: '/ukraine/', group: 'Network', blurb: 'Chernihiv — the founding organisation.' },
   { title: 'Elysium+ Poland', url: '/poland/', group: 'Network', blurb: 'Mińsk Mazowiecki — human rights at the core.' },

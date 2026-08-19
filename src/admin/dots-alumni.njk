@@ -1,0 +1,342 @@
+---
+layout: admin-base.njk
+title: "DOTS Alumni"
+permalink: /admin/dots-alumni/
+---
+<div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+  <div>
+    <p class="eyebrow" style="color:var(--coral-ink)">Admin</p>
+    <h1 class="h-sec mt-1">DOTS Alumni</h1>
+    <p class="text-sm text-muted mt-1">Submissions come in from the public form at /dots/alumni/ — approve one to put it live, or edit it first if it needs a fix.</p>
+  </div>
+</div>
+
+<div id="formCard" class="card p-6 mb-8" hidden>
+  <h2 class="h-card mb-4">Edit entry</h2>
+  <form id="alumniForm" class="flex flex-col gap-4">
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div>
+        <label class="form-label" for="f_name">Name</label>
+        <input class="input" type="text" id="f_name" name="name" required>
+      </div>
+      <div>
+        <label class="form-label" for="f_edition">Edition</label>
+        <input class="input" type="text" id="f_edition" name="edition" required>
+      </div>
+    </div>
+    <div>
+      <label class="form-label" for="f_bio">Bio</label>
+      <textarea class="input" id="f_bio" name="bio" rows="4" required></textarea>
+    </div>
+    <div>
+      <label class="form-label">Photo</label>
+      <div id="imageDropzone" class="rounded-xl border-2 border-dashed p-4 text-center cursor-pointer transition" style="background:var(--paper-2);border-color:rgba(25,23,18,.3)">
+        <div id="imagePreviewWrap" hidden class="mb-2">
+          <img id="imagePreview" class="mx-auto max-h-28 rounded-lg border-2 border-ink object-cover" alt="">
+        </div>
+        <p class="text-xs text-muted" id="imageDropzoneText">Drag and drop an image here, or click to choose one</p>
+      </div>
+      <input type="file" id="f_photo_file" accept="image/*" style="display:none">
+      <input type="hidden" id="f_photo_url" name="photo_url">
+      <p id="imageUploadStatus" role="status" aria-live="polite" class="text-xs mt-1"></p>
+    </div>
+    <div>
+      <label class="form-label" for="f_status">Status</label>
+      <select class="input" id="f_status" name="status">
+        <option value="pending">Pending</option>
+        <option value="published">Published</option>
+        <option value="rejected">Rejected</option>
+      </select>
+    </div>
+    <p id="formStatus" role="status" aria-live="polite" class="text-sm"></p>
+    <div class="flex items-center gap-3">
+      <button type="submit" id="saveBtn" class="btn btn-accent">Save changes</button>
+      <button type="button" id="cancelBtn" class="btn">Cancel</button>
+    </div>
+  </form>
+</div>
+
+<div class="card overflow-x-auto">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>Photo</th>
+        <th>Name</th>
+        <th>Edition</th>
+        <th>Bio</th>
+        <th>Status</th>
+        <th>Submitted</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="alumniTbody">
+      <tr><td colspan="7" class="text-muted">Loading…</td></tr>
+    </tbody>
+  </table>
+</div>
+<p id="tableStatus" role="status" aria-live="polite" class="mt-3 text-sm"></p>
+
+<script>
+(function () {
+  var items = [];
+  var editingId = null;
+
+  var formCard = document.getElementById('formCard');
+  var form = document.getElementById('alumniForm');
+  var saveBtn = document.getElementById('saveBtn');
+  var cancelBtn = document.getElementById('cancelBtn');
+  var formStatus = document.getElementById('formStatus');
+  var tableStatus = document.getElementById('tableStatus');
+  var tbody = document.getElementById('alumniTbody');
+
+  var f_name = document.getElementById('f_name');
+  var f_edition = document.getElementById('f_edition');
+  var f_bio = document.getElementById('f_bio');
+  var f_photo_url = document.getElementById('f_photo_url');
+  var f_status = document.getElementById('f_status');
+
+  function setFormStatus(msg, isError) {
+    formStatus.textContent = msg || '';
+    formStatus.style.color = isError ? 'var(--coral-ink)' : '';
+  }
+
+  function setTableStatus(msg, isError) {
+    tableStatus.textContent = msg || '';
+    tableStatus.style.color = isError ? 'var(--coral-ink)' : '';
+  }
+
+  function showForm(item) {
+    form.reset();
+    setFormStatus('');
+    editingId = item.id;
+    f_name.value = item.name || '';
+    f_edition.value = item.edition || '';
+    f_bio.value = item.bio || '';
+    f_photo_url.value = item.photo_url || '';
+    setImagePreview(item.photo_url || '');
+    f_status.value = item.status || 'pending';
+    formCard.hidden = false;
+    formCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function hideForm() {
+    formCard.hidden = true;
+    form.reset();
+    editingId = null;
+    setFormStatus('');
+    setImagePreview('');
+  }
+
+  function formatDate(value) {
+    if (!value) return '—';
+    var d = new Date(value);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString();
+  }
+
+  function statusColor(status) {
+    if (status === 'published') return 'var(--mint)';
+    if (status === 'rejected') return 'var(--coral-ink)';
+    return 'var(--paper-2)';
+  }
+
+  function render() {
+    if (!items.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="text-muted">No submissions yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = '';
+    items.forEach(function (item) {
+      var tr = document.createElement('tr');
+
+      var tdPhoto = document.createElement('td');
+      var img = document.createElement('img');
+      img.src = item.photo_url;
+      img.alt = '';
+      img.style.cssText = 'width:2.5rem;height:2.5rem;border-radius:.5rem;object-fit:cover;border:1px solid rgba(25,23,18,.2)';
+      tdPhoto.appendChild(img);
+      tr.appendChild(tdPhoto);
+
+      var tdName = document.createElement('td');
+      tdName.textContent = item.name;
+      tr.appendChild(tdName);
+
+      var tdEdition = document.createElement('td');
+      tdEdition.textContent = item.edition;
+      tr.appendChild(tdEdition);
+
+      var tdBio = document.createElement('td');
+      tdBio.textContent = (item.bio || '').length > 80 ? item.bio.slice(0, 80) + '…' : item.bio;
+      tdBio.className = 'text-sm text-muted';
+      tr.appendChild(tdBio);
+
+      var tdStatus = document.createElement('td');
+      var tag = document.createElement('span');
+      tag.className = 'tag';
+      tag.textContent = item.status;
+      tag.style.background = statusColor(item.status);
+      tdStatus.appendChild(tag);
+      tr.appendChild(tdStatus);
+
+      var tdSubmitted = document.createElement('td');
+      tdSubmitted.textContent = formatDate(item.submitted_at);
+      tr.appendChild(tdSubmitted);
+
+      var tdActions = document.createElement('td');
+      tdActions.style.whiteSpace = 'nowrap';
+
+      if (item.status !== 'published') {
+        var approveBtn = document.createElement('button');
+        approveBtn.type = 'button';
+        approveBtn.className = 'btn btn-accent !py-1.5 !px-3 text-xs';
+        approveBtn.textContent = 'Approve';
+        approveBtn.addEventListener('click', function () { setStatus(item.id, 'published', approveBtn); });
+        tdActions.appendChild(approveBtn);
+      }
+
+      var editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'btn !py-1.5 !px-3 text-xs ml-2';
+      editBtn.textContent = 'Edit';
+      editBtn.addEventListener('click', function () { showForm(item); });
+      tdActions.appendChild(editBtn);
+
+      var delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'btn btn-coral !py-1.5 !px-3 text-xs ml-2';
+      delBtn.textContent = 'Delete';
+      delBtn.addEventListener('click', function () { deleteItem(item.id, item.name, delBtn); });
+      tdActions.appendChild(delBtn);
+
+      tr.appendChild(tdActions);
+      tbody.appendChild(tr);
+    });
+  }
+
+  function load() {
+    setTableStatus('');
+    adminFetch('/api/admin/dots-alumni').then(function (r) {
+      if (!r.ok) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-muted">Could not load submissions.</td></tr>';
+        setTableStatus(r.data && r.data.error ? r.data.error : 'Failed to load submissions.', true);
+        return;
+      }
+      items = r.data.items || [];
+      render();
+    });
+  }
+
+  function setStatus(id, status, btn) {
+    if (btn) btn.disabled = true;
+    setTableStatus('');
+    adminFetch('/api/admin/dots-alumni/' + id, { method: 'PUT', body: JSON.stringify({ status: status }) }).then(function (r) {
+      if (!r.ok) {
+        if (btn) btn.disabled = false;
+        setTableStatus(r.data && r.data.error ? r.data.error : 'Failed to update.', true);
+        return;
+      }
+      load();
+    });
+  }
+
+  function deleteItem(id, name, btn) {
+    confirmDialog('Delete "' + name + '"? This cannot be undone.', 'Delete').then(function (ok) {
+      if (!ok) return;
+      btn.disabled = true;
+      setTableStatus('');
+      adminFetch('/api/admin/dots-alumni/' + id, { method: 'DELETE' }).then(function (r) {
+        if (!r.ok) {
+          btn.disabled = false;
+          setTableStatus(r.data && r.data.error ? r.data.error : 'Failed to delete.', true);
+          return;
+        }
+        load();
+      });
+    });
+  }
+
+  var imageDropzone = document.getElementById('imageDropzone');
+  var imageFileInput = document.getElementById('f_photo_file');
+  var imagePreview = document.getElementById('imagePreview');
+  var imagePreviewWrap = document.getElementById('imagePreviewWrap');
+  var imageDropzoneText = document.getElementById('imageDropzoneText');
+  var imageUploadStatus = document.getElementById('imageUploadStatus');
+
+  function setImagePreview(url) {
+    if (url) {
+      imagePreview.src = url;
+      imagePreviewWrap.hidden = false;
+      imageDropzoneText.textContent = 'Drag a new image to replace it, or click to choose one';
+    } else {
+      imagePreviewWrap.hidden = true;
+      imageDropzoneText.textContent = 'Drag and drop an image here, or click to choose one';
+    }
+  }
+
+  function uploadImage(file) {
+    if (!file) return;
+    imageUploadStatus.style.color = '';
+    imageUploadStatus.textContent = 'Uploading…';
+    var formData = new FormData();
+    formData.append('file', file);
+    adminFetch('/api/admin/upload', { method: 'POST', body: formData }).then(function (r) {
+      if (!r.ok) {
+        imageUploadStatus.style.color = 'var(--coral-ink)';
+        imageUploadStatus.textContent = (r.data && r.data.error) || 'Upload failed.';
+        return;
+      }
+      f_photo_url.value = r.data.url;
+      setImagePreview(r.data.url);
+      imageUploadStatus.textContent = 'Uploaded.';
+    });
+  }
+
+  imageDropzone.addEventListener('click', function () { imageFileInput.click(); });
+  imageFileInput.addEventListener('change', function () { uploadImage(imageFileInput.files[0]); });
+  imageDropzone.addEventListener('dragover', function (e) {
+    e.preventDefault();
+    imageDropzone.style.borderColor = 'var(--blue-ink)';
+  });
+  imageDropzone.addEventListener('dragleave', function () {
+    imageDropzone.style.borderColor = 'rgba(25,23,18,.3)';
+  });
+  imageDropzone.addEventListener('drop', function (e) {
+    e.preventDefault();
+    imageDropzone.style.borderColor = 'rgba(25,23,18,.3)';
+    uploadImage(e.dataTransfer.files[0]);
+  });
+
+  cancelBtn.addEventListener('click', hideForm);
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!editingId) return;
+
+    var body = {
+      name: f_name.value.trim(),
+      edition: f_edition.value.trim(),
+      bio: f_bio.value.trim(),
+      photoUrl: f_photo_url.value.trim(),
+      status: f_status.value,
+    };
+
+    saveBtn.disabled = true;
+    setFormStatus('Saving…', false);
+
+    adminFetch('/api/admin/dots-alumni/' + editingId, { method: 'PUT', body: JSON.stringify(body) }).then(function (r) {
+      saveBtn.disabled = false;
+      if (!r.ok) {
+        setFormStatus(r.data && r.data.error ? r.data.error : 'Something went wrong.', true);
+        return;
+      }
+      hideForm();
+      setTableStatus('Saved.');
+      load();
+    });
+  });
+
+  document.addEventListener('admin:ready', function () {
+    load();
+  });
+})();
+</script>

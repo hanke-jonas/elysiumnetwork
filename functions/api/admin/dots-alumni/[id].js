@@ -1,0 +1,71 @@
+import { requireStaff } from '../../../_lib/guard.js';
+import { badRequest, json } from '../../../_lib/http.js';
+
+const FIELD_MAP = {
+  edition: 'edition',
+  name: 'name',
+  bio: 'bio',
+  photoUrl: 'photo_url',
+  status: 'status',
+};
+const VALID_STATUSES = new Set(['pending', 'published', 'rejected']);
+
+export async function onRequestGet({ request, env, params }) {
+  try {
+    const staff = await requireStaff(request, env);
+    if (staff instanceof Response) return staff;
+    const row = await env.DB.prepare('SELECT * FROM dots_alumni WHERE id = ?').bind(params.id).first();
+    if (!row) return json({ error: 'Not found' }, { status: 404 });
+    return json(row);
+  } catch (err) {
+    return json({ error: 'Unexpected server error', detail: String(err) }, { status: 500 });
+  }
+}
+
+export async function onRequestPut({ request, env, params }) {
+  try {
+    const staff = await requireStaff(request, env);
+    if (staff instanceof Response) return staff;
+
+    const body = await request.json().catch(() => null);
+    if (!body) return badRequest('Invalid JSON body');
+    if (body.status !== undefined && !VALID_STATUSES.has(body.status)) {
+      return badRequest("status must be 'pending', 'published', or 'rejected'");
+    }
+
+    const current = await env.DB.prepare('SELECT published_at FROM dots_alumni WHERE id = ?').bind(params.id).first();
+    if (!current) return json({ error: 'Not found' }, { status: 404 });
+
+    const sets = [];
+    const values = [];
+    for (const [key, col] of Object.entries(FIELD_MAP)) {
+      if (!(key in body)) continue;
+      sets.push(`${col} = ?`);
+      values.push(body[key] === undefined ? null : body[key]);
+    }
+    // Stamp published_at the first time an entry is approved; never move it
+    // on later edits (e.g. a typo fix to the bio shouldn't bump the date).
+    if (body.status === 'published' && !current.published_at) {
+      sets.push('published_at = ?');
+      values.push(new Date().toISOString());
+    }
+    if (!sets.length) return badRequest('Nothing to update');
+    values.push(params.id);
+
+    await env.DB.prepare(`UPDATE dots_alumni SET ${sets.join(', ')} WHERE id = ?`).bind(...values).run();
+    return json({ ok: true });
+  } catch (err) {
+    return json({ error: 'Unexpected server error', detail: String(err) }, { status: 500 });
+  }
+}
+
+export async function onRequestDelete({ request, env, params }) {
+  try {
+    const staff = await requireStaff(request, env);
+    if (staff instanceof Response) return staff;
+    await env.DB.prepare('DELETE FROM dots_alumni WHERE id = ?').bind(params.id).run();
+    return json({ ok: true });
+  } catch (err) {
+    return json({ error: 'Unexpected server error', detail: String(err) }, { status: 500 });
+  }
+}

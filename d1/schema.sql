@@ -222,6 +222,24 @@ CREATE TABLE IF NOT EXISTS event_rsvps (
 );
 CREATE INDEX IF NOT EXISTS idx_event_rsvps_user ON event_rsvps(user_id);
 
+-- Public, self-submitted alumni entries for DOTS-style cohort programmes.
+-- `edition` is a plain label ('1', '2', ...) so future cohorts are just
+-- more rows, not a new table or page. Submissions land as 'pending' and
+-- only appear on the public gallery once staff flip them to 'published'
+-- (same status pattern as blog_posts/resources/events) -- this is the
+-- moderation gate on an otherwise fully open, unauthenticated form.
+CREATE TABLE IF NOT EXISTS dots_alumni (
+  id TEXT PRIMARY KEY,
+  edition TEXT NOT NULL,
+  name TEXT NOT NULL,
+  bio TEXT NOT NULL,
+  photo_url TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending', -- 'pending' | 'published' | 'rejected'
+  submitted_at TEXT NOT NULL DEFAULT (datetime('now')),
+  published_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_dots_alumni_status ON dots_alumni(status, edition);
+
 -- A folder (R2 key prefix) an admin has put a password on, reachable by
 -- anyone with the link and password at /shared/?f=<slug> — no account
 -- needed. slug is the public, guessable-resistant identifier; prefix is
