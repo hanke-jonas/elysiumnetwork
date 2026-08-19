@@ -1,0 +1,34 @@
+---
+layout: base.njk
+title: "Methodology & Dissemination — Elysium+ Network"
+description: "The non-formal education methodology behind Elysium+ projects, and how we share results, outputs and impact."
+permalink: /dissemination/
+---
+{% set sections = [
+  ["compass", "Methodology", "The non-formal, learning-by-doing approach shared across Elysium+ projects — how we design activities, why we favour direct experience over lectures, and how participant-led documentation becomes part of each project's own output."],
+  ["box", "Outputs & Results", "What each project actually produces — toolkits, media, guides, and the measurable outcomes for participants and partner communities."],
+  ["globe", "Dissemination Activities", "How results reach beyond the participants themselves: partner networks, local communities, and the wider Erasmus+ community."]
+] %}
+
+<section class="relative overflow-hidden bg-paper border-b-2 border-ink">
+  <div class="relative max-w-4xl mx-auto px-5 sm:px-6 pt-14 pb-16">
+    <p class="eyebrow" style="color:var(--blue-ink)">Across every Elysium+ project</p>
+    <h1 class="h-hero mt-4">Methodology &amp; <mark>Dissemination</mark></h1>
+    <p class="mt-6 text-lg text-muted max-w-2xl leading-relaxed">How we design and run our projects, and how their results reach beyond the people directly involved. This page covers the network as a whole — for a specific project's own page, see <a href="/dots/" class="underline">DOTS</a> or <a href="/projects/peacebuilding/" class="underline">Youth Peacebuilding Partnership</a>.</p>
+  </div>
+</section>
+
+<section class="bg-paper">
+  <div class="max-w-4xl mx-auto px-5 sm:px-6 py-16 space-y-10">
+    {% for icon, title, blurb in sections %}
+    <div class="rounded-2xl border-2 border-dashed border-ink p-8" style="background:var(--paper-2)">
+      <div class="flex items-center gap-3 mb-3">
+        <span class="w-9 h-9 rounded-lg grid place-items-center border-2 border-ink shrink-0" style="background:var(--sun)">{% icon icon, "w-5 h-5" %}</span>
+        <h2 class="h-card">{{ title }}</h2>
+      </div>
+      <p class="text-muted leading-relaxed">{{ blurb }}</p>
+      <p class="mt-4 text-sm font-bold uppercase tracking-wide" style="color:var(--coral-ink)">Content coming soon — this section is a placeholder.</p>
+    </div>
+    {% endfor %}
+  </div>
+</section>

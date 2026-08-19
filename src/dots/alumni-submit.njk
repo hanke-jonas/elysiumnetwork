@@ -1,0 +1,167 @@
+---
+layout: base.njk
+title: "Submit your DOTS profile — Elysium+ Network"
+description: "Enter your one-time access code to add your photo and story to the DOTS alumni gallery."
+permalink: /dots/alumni/submit/
+---
+<section class="bg-paper">
+  <div class="max-w-md mx-auto px-5 py-16">
+    <nav class="mono text-xs text-muted mb-8 uppercase tracking-wider">
+      <a href="/" class="hover:underline">Home</a> <span class="mx-1 opacity-40">/</span>
+      <a href="/dots/alumni/" class="hover:underline">DOTS Alumni</a> <span class="mx-1 opacity-40">/</span>
+      <span class="text-ink/90">Submit</span>
+    </nav>
+    <p class="eyebrow" style="color:var(--coral-ink)">Were you on DOTS?</p>
+    <h1 class="h-hero mt-4" style="font-size:2.25rem">Add your page</h1>
+
+    <div class="card p-8 mt-8" id="codeCard">
+      <p class="text-muted leading-relaxed mb-5">Enter the one-time access code we shared with you.</p>
+      <form id="code-form" class="flex flex-col gap-4">
+        <div>
+          <label class="form-label" for="code">Access code</label>
+          <input class="input font-mono uppercase" type="text" id="code" name="code" maxlength="8" required autocomplete="off">
+        </div>
+        <button type="submit" id="code-btn" class="btn btn-accent w-full justify-center">Continue</button>
+        <p id="code-status" role="status" aria-live="polite" class="text-sm"></p>
+      </form>
+    </div>
+
+    <div class="card p-8 mt-8" id="formCard" hidden>
+      <p class="text-sm text-muted mb-5">Edition <strong id="editionLabel"></strong> — submissions are reviewed before they go live, so it may take a little while to appear.</p>
+      <form id="alumni-form" class="flex flex-col gap-4" enctype="multipart/form-data">
+        <input type="hidden" id="hiddenCode" name="code">
+        <div>
+          <label class="form-label" for="name">Your name</label>
+          <input class="input" type="text" id="name" name="name" maxlength="100" required>
+        </div>
+        <div>
+          <label class="form-label" for="bio">Mini bio</label>
+          <textarea class="input" id="bio" name="bio" rows="3" maxlength="600" required placeholder="A sentence or two — shown on the gallery card."></textarea>
+        </div>
+        <div>
+          <label class="form-label" for="story">Your DOTS story <span class="text-muted font-normal">(optional)</span></label>
+          <textarea class="input" id="story" name="story" rows="6" maxlength="4000" placeholder="The longer version — what you took away from it, a favourite moment, anything you want future participants to know. Shown on your own page, not the gallery."></textarea>
+        </div>
+        <div>
+          <label class="form-label" for="photo">Main photo</label>
+          <input class="input" type="file" id="photo" name="photo" accept="image/jpeg,image/png,image/webp" required>
+          <p class="text-xs text-muted mt-1">JPEG, PNG, or WebP — 5MB maximum. Shown on the gallery card and your page.</p>
+        </div>
+        <div>
+          <label class="form-label" for="photos">More photos <span class="text-muted font-normal">(optional)</span></label>
+          <input class="input" type="file" id="photos" name="photos" accept="image/jpeg,image/png,image/webp" multiple>
+          <p class="text-xs text-muted mt-1">Up to 4 extra photos for your own page.</p>
+        </div>
+        <div class="grid sm:grid-cols-3 gap-3">
+          <div>
+            <label class="form-label" for="instagram">Instagram <span class="text-muted font-normal">(optional)</span></label>
+            <input class="input" type="text" id="instagram" name="instagram" placeholder="instagram.com/you">
+          </div>
+          <div>
+            <label class="form-label" for="linkedin">LinkedIn <span class="text-muted font-normal">(optional)</span></label>
+            <input class="input" type="text" id="linkedin" name="linkedin" placeholder="linkedin.com/in/you">
+          </div>
+          <div>
+            <label class="form-label" for="website">Website <span class="text-muted font-normal">(optional)</span></label>
+            <input class="input" type="text" id="website" name="website" placeholder="your-site.com">
+          </div>
+        </div>
+        <!-- Honeypot: hidden from real visitors via CSS, invisible to screen
+             readers via aria-hidden — a bot filling this out is the tell.
+             Named separately from the real "website" field above. -->
+        <div style="position:absolute;left:-9999px;top:-9999px" aria-hidden="true">
+          <label for="website_hp">Leave this field blank</label>
+          <input type="text" id="website_hp" name="website_hp" tabindex="-1" autocomplete="off">
+        </div>
+        <button type="submit" id="submit-btn" class="btn btn-accent w-full justify-center mt-1">Submit</button>
+      </form>
+      <p id="status-msg" role="status" aria-live="polite" class="text-sm mt-4"></p>
+    </div>
+  </div>
+</section>
+
+<script>
+(function () {
+  var codeCard = document.getElementById('codeCard');
+  var codeForm = document.getElementById('code-form');
+  var codeInput = document.getElementById('code');
+  var codeBtn = document.getElementById('code-btn');
+  var codeStatus = document.getElementById('code-status');
+  var formCard = document.getElementById('formCard');
+  var editionLabel = document.getElementById('editionLabel');
+  var hiddenCode = document.getElementById('hiddenCode');
+
+  function checkCode(code) {
+    codeBtn.disabled = true;
+    codeStatus.style.color = 'unset';
+    codeStatus.textContent = 'Checking…';
+
+    fetch('/api/dots-alumni/check-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: code }),
+    }).then(function (res) { return res.json(); }).then(function (data) {
+      codeBtn.disabled = false;
+      if (!data.valid) {
+        codeStatus.style.color = 'var(--coral-ink)';
+        codeStatus.textContent = data.error || 'That code is not valid.';
+        return;
+      }
+      hiddenCode.value = code;
+      editionLabel.textContent = data.edition;
+      codeCard.hidden = true;
+      formCard.hidden = false;
+    }).catch(function () {
+      codeBtn.disabled = false;
+      codeStatus.style.color = 'var(--coral-ink)';
+      codeStatus.textContent = 'Network error. Please try again.';
+    });
+  }
+
+  codeForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    checkCode(codeInput.value.trim().toUpperCase());
+  });
+
+  // Convenience: a shared link like /dots/alumni/submit/?code=ABCD1234
+  // jumps straight to checking the code.
+  var prefill = new URLSearchParams(location.search).get('code');
+  if (prefill) {
+    codeInput.value = prefill.toUpperCase();
+    checkCode(prefill.toUpperCase());
+  }
+
+  document.getElementById('alumni-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    var form = e.target;
+    var statusMsg = document.getElementById('status-msg');
+    var submitBtn = document.getElementById('submit-btn');
+
+    statusMsg.style.color = 'unset';
+    statusMsg.textContent = 'Submitting…';
+    submitBtn.disabled = true;
+
+    fetch('/api/dots-alumni/submit', {
+      method: 'POST',
+      body: new FormData(form),
+    }).then(function (res) {
+      return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+    }).then(function (r) {
+      submitBtn.disabled = false;
+      if (!r.ok) {
+        statusMsg.style.color = 'var(--coral-ink)';
+        statusMsg.textContent = (r.data && r.data.error) || 'Something went wrong. Please try again.';
+        return;
+      }
+      form.hidden = true;
+      statusMsg.style.color = 'var(--mint-ink)';
+      statusMsg.textContent = 'Thanks! Your submission is in for review and will appear on the alumni page once approved.';
+    }).catch(function () {
+      submitBtn.disabled = false;
+      statusMsg.style.color = 'var(--coral-ink)';
+      statusMsg.textContent = 'Network error. Please try again.';
+    });
+  });
+})();
+</script>

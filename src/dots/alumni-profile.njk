@@ -1,0 +1,58 @@
+---
+layout: base.njk
+pagination:
+  data: dotsAlumni
+  size: 1
+  alias: person
+permalink: "/dots/alumni/{{ person.slug }}/"
+eleventyComputed:
+  title: "{{ person.name }} — DOTS Alumni — Elysium+ Network"
+  description: "{{ person.bio }}"
+---
+<section class="bg-paper">
+  <div class="max-w-3xl mx-auto px-5 sm:px-6 pt-10 pb-20">
+    <nav class="mono text-xs text-muted mb-8 uppercase tracking-wider">
+      <a href="/" class="hover:underline">Home</a> <span class="mx-1 opacity-40">/</span>
+      <a href="/dots/alumni/" class="hover:underline">DOTS Alumni</a> <span class="mx-1 opacity-40">/</span>
+      <span class="text-ink/90">{{ person.name }}</span>
+    </nav>
+
+    {% if person.photoUrl %}
+    <img src="{{ person.photoUrl }}" alt="{{ person.name }}" width="1200" height="420" class="max-h-[420px] object-cover w-full rounded-2xl border-2 border-ink mb-8" style="aspect-ratio:1200/420">
+    {% endif %}
+
+    <span class="tag">Edition {{ person.edition }}</span>
+    <h1 class="h-hero mt-4">{{ person.name }}</h1>
+    <p class="mt-4 text-lg text-muted leading-relaxed">{{ person.bio }}</p>
+
+    {% if person.links.length > 0 %}
+    <div class="flex flex-wrap gap-3 mt-6">
+      {% for link in person.links %}
+      <a href="{{ link.url }}" target="_blank" rel="noopener" class="btn">{{ link.label }} {% icon "arrow-ur", "w-4 h-4" %}</a>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if person.story %}
+    <div class="card p-8 mt-10">
+      <h2 class="h-card mb-3">Their story</h2>
+      <p class="text-muted leading-relaxed whitespace-pre-line">{{ person.story }}</p>
+    </div>
+    {% endif %}
+
+    {% if person.photos.length > 0 %}
+    <div class="mt-10">
+      <h2 class="h-card mb-4">More photos</h2>
+      <div class="grid gap-4 sm:grid-cols-2">
+        {% for photo in person.photos %}
+        <img src="{{ photo }}" alt="" width="640" height="480" loading="lazy" class="aspect-[4/3] w-full object-cover rounded-2xl border-2 border-ink">
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="mt-12">
+      <a href="/dots/alumni/" class="btn">{% icon "arrow", "w-4 h-4 rotate-180" %} Back to all alumni</a>
+    </div>
+  </div>
+</section>

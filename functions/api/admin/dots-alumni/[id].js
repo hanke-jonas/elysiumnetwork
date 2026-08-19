@@ -5,6 +5,7 @@ const FIELD_MAP = {
   edition: 'edition',
   name: 'name',
   bio: 'bio',
+  story: 'story',
   photoUrl: 'photo_url',
   status: 'status',
 };

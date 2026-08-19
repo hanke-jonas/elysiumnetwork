@@ -10,10 +10,14 @@ module.exports = async function () {
 
   return rows.map((r) => ({
     id: r.id,
+    slug: r.slug,
     edition: r.edition,
     name: r.name,
     bio: r.bio,
+    story: r.story,
     photoUrl: r.photo_url,
+    photos: JSON.parse(r.photos_json || '[]'),
+    links: JSON.parse(r.links_json || '[]'),
     publishedAt: r.published_at,
   }));
 };

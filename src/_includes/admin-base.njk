@@ -42,7 +42,7 @@
         <a href="/admin/" class="admin-nav-link{% if page.url == '/admin/' %} active{% endif %}">Dashboard</a>
         <a href="/admin/media/" class="admin-nav-link{% if page.url == '/admin/media/' %} active{% endif %}">Media</a>
         <div class="admin-nav-item-drop relative">
-          <button type="button" class="admin-nav-link admin-nav-drop-btn inline-flex items-center gap-1{% if page.url in ['/admin/branches/', '/admin/team/', '/admin/blog/', '/admin/resources/', '/admin/calls/', '/admin/events/', '/admin/faqs/', '/admin/dots-alumni/'] %} active{% endif %}" aria-haspopup="true" aria-expanded="false">Content {% icon "chevron", "w-3.5 h-3.5" %}</button>
+          <button type="button" class="admin-nav-link admin-nav-drop-btn inline-flex items-center gap-1{% if page.url in ['/admin/branches/', '/admin/team/', '/admin/blog/', '/admin/resources/', '/admin/calls/', '/admin/events/', '/admin/faqs/', '/admin/dots-alumni/', '/admin/dots-codes/'] %} active{% endif %}" aria-haspopup="true" aria-expanded="false">Content {% icon "chevron", "w-3.5 h-3.5" %}</button>
           <div class="admin-nav-drop">
             <a href="/admin/branches/" class="{% if page.url == '/admin/branches/' %}active{% endif %}">{% icon "globe", "w-4 h-4 shrink-0" %}Branches</a>
             <a href="/admin/team/" class="{% if page.url == '/admin/team/' %}active{% endif %}">{% icon "id", "w-4 h-4 shrink-0" %}Team</a>
@@ -52,6 +52,7 @@
             <a href="/admin/events/" class="{% if page.url == '/admin/events/' %}active{% endif %}">{% icon "calendar", "w-4 h-4 shrink-0" %}Events</a>
             <a href="/admin/faqs/" class="{% if page.url == '/admin/faqs/' %}active{% endif %}">{% icon "question", "w-4 h-4 shrink-0" %}FAQs</a>
             <a href="/admin/dots-alumni/" class="{% if page.url == '/admin/dots-alumni/' %}active{% endif %}">{% icon "vote", "w-4 h-4 shrink-0" %}DOTS Alumni</a>
+            <a href="/admin/dots-codes/" class="{% if page.url == '/admin/dots-codes/' %}active{% endif %}">{% icon "id", "w-4 h-4 shrink-0" %}DOTS Codes</a>
           </div>
         </div>
         <div class="admin-nav-item-drop relative">

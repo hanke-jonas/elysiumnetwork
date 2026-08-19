@@ -27,6 +27,12 @@ permalink: /admin/dots-alumni/
     <div>
       <label class="form-label" for="f_bio">Bio</label>
       <textarea class="input" id="f_bio" name="bio" rows="4" required></textarea>
+      <p class="text-xs text-muted mt-1">The short summary shown on the gallery card.</p>
+    </div>
+    <div>
+      <label class="form-label" for="f_story">Story (optional)</label>
+      <textarea class="input" id="f_story" name="story" rows="6"></textarea>
+      <p class="text-xs text-muted mt-1">The longer reflection shown only on their individual page. Additional photos and social links are submitted directly by the participant and aren't editable here — delete and ask them to resubmit if one needs fixing.</p>
     </div>
     <div>
       <label class="form-label">Photo</label>
@@ -92,6 +98,7 @@ permalink: /admin/dots-alumni/
   var f_name = document.getElementById('f_name');
   var f_edition = document.getElementById('f_edition');
   var f_bio = document.getElementById('f_bio');
+  var f_story = document.getElementById('f_story');
   var f_photo_url = document.getElementById('f_photo_url');
   var f_status = document.getElementById('f_status');
 
@@ -112,6 +119,7 @@ permalink: /admin/dots-alumni/
     f_name.value = item.name || '';
     f_edition.value = item.edition || '';
     f_bio.value = item.bio || '';
+    f_story.value = item.story || '';
     f_photo_url.value = item.photo_url || '';
     setImagePreview(item.photo_url || '');
     f_status.value = item.status || 'pending';
@@ -316,6 +324,7 @@ permalink: /admin/dots-alumni/
       name: f_name.value.trim(),
       edition: f_edition.value.trim(),
       bio: f_bio.value.trim(),
+      story: f_story.value.trim(),
       photoUrl: f_photo_url.value.trim(),
       status: f_status.value,
     };

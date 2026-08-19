@@ -1,0 +1,205 @@
+---
+layout: admin-base.njk
+title: "DOTS Access Codes"
+permalink: /admin/dots-codes/
+---
+<div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+  <div>
+    <p class="eyebrow" style="color:var(--coral-ink)">Admin</p>
+    <h1 class="h-sec mt-1">DOTS Access Codes</h1>
+    <p class="text-sm text-muted mt-1">Generate a one-time code per real participant and share it with them directly — that's what unlocks the submission form at /dots/alumni/submit/. A code can only be used once.</p>
+  </div>
+</div>
+
+<div class="card p-6 mb-8">
+  <h2 class="h-card mb-4">Generate a code</h2>
+  <form id="genForm" class="flex flex-wrap items-end gap-4">
+    <div>
+      <label class="form-label" for="f_edition">Edition</label>
+      <input class="input" type="text" id="f_edition" name="edition" value="1" required style="width:8rem">
+    </div>
+    <div class="flex-1 min-w-[12rem]">
+      <label class="form-label" for="f_label">Label <span class="text-muted font-normal">(staff note only, optional)</span></label>
+      <input class="input" type="text" id="f_label" name="label" placeholder="e.g. the participant's name">
+    </div>
+    <button type="submit" id="genBtn" class="btn btn-accent">Generate</button>
+  </form>
+  <p id="genStatus" role="status" aria-live="polite" class="text-sm mt-3"></p>
+  <div id="newCodeCard" hidden class="mt-4 rounded-xl border-2 border-ink p-5" style="background:var(--mint)22">
+    <p class="text-sm text-muted">New code — share this with the participant:</p>
+    <p class="font-mono text-2xl font-bold mt-1" id="newCodeValue"></p>
+    <div class="flex flex-wrap gap-2 mt-3">
+      <button type="button" class="btn !py-1.5 !px-3 text-xs" id="copyCodeBtn">Copy code</button>
+      <button type="button" class="btn !py-1.5 !px-3 text-xs" id="copyLinkBtn">Copy submission link</button>
+    </div>
+  </div>
+</div>
+
+<div class="card overflow-x-auto">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>Code</th>
+        <th>Edition</th>
+        <th>Label</th>
+        <th>Status</th>
+        <th>Created</th>
+        <th>Submission</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="codesTbody">
+      <tr><td colspan="7" class="text-muted">Loading…</td></tr>
+    </tbody>
+  </table>
+</div>
+<p id="tableStatus" role="status" aria-live="polite" class="mt-3 text-sm"></p>
+
+<script>
+(function () {
+  var items = [];
+  var genForm = document.getElementById('genForm');
+  var genBtn = document.getElementById('genBtn');
+  var genStatus = document.getElementById('genStatus');
+  var newCodeCard = document.getElementById('newCodeCard');
+  var newCodeValue = document.getElementById('newCodeValue');
+  var tableStatus = document.getElementById('tableStatus');
+  var tbody = document.getElementById('codesTbody');
+
+  function setGenStatus(msg, isError) {
+    genStatus.textContent = msg || '';
+    genStatus.style.color = isError ? 'var(--coral-ink)' : '';
+  }
+
+  function setTableStatus(msg, isError) {
+    tableStatus.textContent = msg || '';
+    tableStatus.style.color = isError ? 'var(--coral-ink)' : '';
+  }
+
+  function formatDate(value) {
+    if (!value) return '—';
+    var d = new Date(value);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString();
+  }
+
+  function render() {
+    if (!items.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="text-muted">No codes yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = '';
+    items.forEach(function (item) {
+      var tr = document.createElement('tr');
+
+      var tdCode = document.createElement('td');
+      tdCode.textContent = item.code;
+      tdCode.className = 'font-mono';
+      tr.appendChild(tdCode);
+
+      var tdEdition = document.createElement('td');
+      tdEdition.textContent = item.edition;
+      tr.appendChild(tdEdition);
+
+      var tdLabel = document.createElement('td');
+      tdLabel.textContent = item.label || '—';
+      tr.appendChild(tdLabel);
+
+      var tdStatus = document.createElement('td');
+      var tag = document.createElement('span');
+      tag.className = 'tag';
+      tag.textContent = item.used_at ? 'Used' : 'Unused';
+      tag.style.background = item.used_at ? 'var(--paper-2)' : 'var(--mint)';
+      tdStatus.appendChild(tag);
+      tr.appendChild(tdStatus);
+
+      var tdCreated = document.createElement('td');
+      tdCreated.textContent = formatDate(item.created_at);
+      tr.appendChild(tdCreated);
+
+      var tdSubmission = document.createElement('td');
+      if (item.alumnus_name) {
+        var a = document.createElement('a');
+        a.href = '/admin/dots-alumni/';
+        a.textContent = item.alumnus_name + ' (' + item.alumnus_status + ')';
+        a.className = 'underline';
+        tdSubmission.appendChild(a);
+      } else {
+        tdSubmission.textContent = '—';
+      }
+      tr.appendChild(tdSubmission);
+
+      var tdActions = document.createElement('td');
+      var delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'btn btn-coral !py-1.5 !px-3 text-xs';
+      delBtn.textContent = 'Revoke';
+      delBtn.addEventListener('click', function () { revokeCode(item.id, item.code, delBtn); });
+      tdActions.appendChild(delBtn);
+      tr.appendChild(tdActions);
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  function load() {
+    setTableStatus('');
+    adminFetch('/api/admin/dots-codes').then(function (r) {
+      if (!r.ok) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-muted">Could not load codes.</td></tr>';
+        setTableStatus(r.data && r.data.error ? r.data.error : 'Failed to load codes.', true);
+        return;
+      }
+      items = r.data.items || [];
+      render();
+    });
+  }
+
+  function revokeCode(id, code, btn) {
+    confirmDialog('Revoke code "' + code + '"? This cannot be undone.', 'Revoke').then(function (ok) {
+      if (!ok) return;
+      btn.disabled = true;
+      setTableStatus('');
+      adminFetch('/api/admin/dots-codes/' + id, { method: 'DELETE' }).then(function (r) {
+        if (!r.ok) {
+          btn.disabled = false;
+          setTableStatus(r.data && r.data.error ? r.data.error : 'Failed to revoke.', true);
+          return;
+        }
+        load();
+      });
+    });
+  }
+
+  genForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var edition = document.getElementById('f_edition').value.trim();
+    var label = document.getElementById('f_label').value.trim();
+
+    genBtn.disabled = true;
+    setGenStatus('Generating…');
+    newCodeCard.hidden = true;
+
+    adminFetch('/api/admin/dots-codes', { method: 'POST', body: JSON.stringify({ edition: edition, label: label }) }).then(function (r) {
+      genBtn.disabled = false;
+      if (!r.ok) {
+        setGenStatus(r.data && r.data.error ? r.data.error : 'Something went wrong.', true);
+        return;
+      }
+      setGenStatus('');
+      newCodeValue.textContent = r.data.code;
+      newCodeCard.hidden = false;
+      document.getElementById('copyCodeBtn').onclick = function () { navigator.clipboard.writeText(r.data.code); };
+      document.getElementById('copyLinkBtn').onclick = function () {
+        navigator.clipboard.writeText(location.origin + '/dots/alumni/submit/?code=' + r.data.code);
+      };
+      document.getElementById('f_label').value = '';
+      load();
+    });
+  });
+
+  document.addEventListener('admin:ready', function () {
+    load();
+  });
+})();
+</script>

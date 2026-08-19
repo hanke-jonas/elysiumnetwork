@@ -225,20 +225,44 @@ CREATE INDEX IF NOT EXISTS idx_event_rsvps_user ON event_rsvps(user_id);
 -- Public, self-submitted alumni entries for DOTS-style cohort programmes.
 -- `edition` is a plain label ('1', '2', ...) so future cohorts are just
 -- more rows, not a new table or page. Submissions land as 'pending' and
--- only appear on the public gallery once staff flip them to 'published'
--- (same status pattern as blog_posts/resources/events) -- this is the
--- moderation gate on an otherwise fully open, unauthenticated form.
+-- only appear on the public gallery (and get their own individual
+-- portfolio page at /dots/alumni/<slug>/) once staff flip them to
+-- 'published' (same status pattern as blog_posts/resources/events) --
+-- this is the moderation gate on an otherwise fully open, unauthenticated
+-- form. `slug` is generated at submission time from the name plus a short
+-- random suffix (collisions are never checked for -- the suffix makes
+-- them practically impossible, same tradeoff as every randomId() used
+-- elsewhere in this codebase).
 CREATE TABLE IF NOT EXISTS dots_alumni (
   id TEXT PRIMARY KEY,
+  slug TEXT UNIQUE NOT NULL,
   edition TEXT NOT NULL,
   name TEXT NOT NULL,
   bio TEXT NOT NULL,
-  photo_url TEXT NOT NULL,
+  story TEXT, -- longer personal reflection, shown only on the individual page
+  photo_url TEXT NOT NULL, -- main/cover photo, shown on the gallery card
+  photos_json TEXT NOT NULL DEFAULT '[]', -- additional gallery photos for the individual page
+  links_json TEXT NOT NULL DEFAULT '[]', -- [{label, url}, ...] optional social/contact links
   status TEXT NOT NULL DEFAULT 'pending', -- 'pending' | 'published' | 'rejected'
   submitted_at TEXT NOT NULL DEFAULT (datetime('now')),
   published_at TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_dots_alumni_status ON dots_alumni(status, edition);
+
+-- Invite-only gate for dots_alumni submissions: staff generate a code per
+-- real participant (in /admin/dots-codes/) and share it directly, rather
+-- than leaving the submission form open to anyone who finds the URL.
+-- `used_at` is claimed atomically at submit time (UPDATE ... WHERE
+-- used_at IS NULL) so a code can only ever back one submission.
+CREATE TABLE IF NOT EXISTS dots_access_codes (
+  id TEXT PRIMARY KEY,
+  code TEXT UNIQUE NOT NULL,
+  edition TEXT NOT NULL,
+  label TEXT, -- optional staff note (e.g. the participant's name), never shown publicly
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  used_at TEXT,
+  dots_alumni_id TEXT REFERENCES dots_alumni(id)
+);
 
 -- A folder (R2 key prefix) an admin has put a password on, reachable by
 -- anyone with the link and password at /shared/?f=<slug> — no account

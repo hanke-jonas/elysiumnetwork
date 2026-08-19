@@ -1,7 +1,7 @@
 ---
 layout: base.njk
 title: "DOTS Alumni — Elysium+ Network"
-description: "Meet the participants of Democracy on TrackS (DOTS) — and add your own photo and story if you took part."
+description: "Meet the participants of Democracy on TrackS (DOTS)."
 permalink: /dots/alumni/
 ---
 {% set cardAccents = ["var(--blue)", "var(--coral)", "var(--sun)", "var(--mint)", "var(--plum)"] %}
@@ -10,18 +10,18 @@ permalink: /dots/alumni/
   <div class="relative max-w-4xl mx-auto px-5 sm:px-6 pt-14 pb-16">
     <p class="eyebrow" style="color:var(--blue-ink)">Democracy on TrackS · Edition One</p>
     <h1 class="h-hero mt-4">Meet the <mark>DOTS alumni</mark></h1>
-    <p class="mt-6 text-lg text-muted max-w-2xl leading-relaxed">Five seats, one ten-day rail journey from Berlin to Strasbourg. Here's who took part — and if that was you, add your own photo and story below.</p>
+    <p class="mt-6 text-lg text-muted max-w-2xl leading-relaxed">Five seats, one ten-day rail journey from Berlin to Strasbourg. Here's who took part.</p>
   </div>
 </section>
 
 <section class="bg-paper">
   <div class="max-w-7xl mx-auto px-5 sm:px-6 py-16">
     {% if dotsAlumni.length == 0 %}
-    {% emptyState "compass", "No alumni yet — be the first.", "Approved submissions from the form below will appear here." %}
+    {% emptyState "compass", "No alumni yet — be the first.", "Approved submissions will appear here." %}
     {% else %}
     <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {% for person in dotsAlumni %}
-      <div class="card overflow-hidden reveal">
+      <a href="/dots/alumni/{{ person.slug }}/" class="card overflow-hidden reveal block group">
         {% if person.photoUrl %}
         <img src="{{ person.photoUrl }}" alt="{{ person.name }}" width="640" height="480" loading="lazy" class="aspect-[4/3] w-full object-cover">
         {% else %}
@@ -29,10 +29,10 @@ permalink: /dots/alumni/
         {% endif %}
         <div class="p-6">
           <span class="tag mb-3 inline-block">Edition {{ person.edition }}</span>
-          <h2 class="h-card">{{ person.name }}</h2>
+          <h2 class="h-card group-hover:underline underline-offset-2">{{ person.name }}</h2>
           <p class="mt-2 text-muted leading-relaxed">{{ person.bio }}</p>
         </div>
-      </div>
+      </a>
       {% endfor %}
     </div>
     {% endif %}
@@ -40,76 +40,10 @@ permalink: /dots/alumni/
 </section>
 
 <section class="bg-paper border-t-2 border-ink">
-  <div class="max-w-md mx-auto px-5 py-16">
+  <div class="max-w-md mx-auto px-5 py-16 text-center">
     <p class="eyebrow" style="color:var(--coral-ink)">Were you on DOTS?</p>
-    <h2 class="h-hero mt-4" style="font-size:2rem">Add your photo &amp; bio</h2>
-    <p class="mt-4 text-muted leading-relaxed">Submissions are reviewed before they go live, so it may take a little while to appear.</p>
-
-    <div class="card p-8 mt-8">
-      <form id="alumni-form" class="flex flex-col gap-4" enctype="multipart/form-data">
-        <div>
-          <label class="form-label" for="name">Your name</label>
-          <input class="input" type="text" id="name" name="name" maxlength="100" required>
-        </div>
-        <div>
-          <label class="form-label" for="edition">Edition</label>
-          <input class="input" type="text" id="edition" name="edition" value="1" maxlength="40" required>
-          <p class="text-xs text-muted mt-1">Which DOTS trip were you on? Leave as "1" for the first edition.</p>
-        </div>
-        <div>
-          <label class="form-label" for="bio">Mini bio</label>
-          <textarea class="input" id="bio" name="bio" rows="4" maxlength="600" required placeholder="A sentence or two about you and your DOTS experience."></textarea>
-        </div>
-        <div>
-          <label class="form-label" for="photo">Photo</label>
-          <input class="input" type="file" id="photo" name="photo" accept="image/jpeg,image/png,image/webp" required>
-          <p class="text-xs text-muted mt-1">JPEG, PNG, or WebP — 5MB maximum.</p>
-        </div>
-        <!-- Honeypot: hidden from real visitors via CSS, invisible to screen
-             readers via aria-hidden — a bot filling this out is the tell. -->
-        <div style="position:absolute;left:-9999px;top:-9999px" aria-hidden="true">
-          <label for="website">Website</label>
-          <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
-        </div>
-        <button type="submit" id="submit-btn" class="btn btn-accent w-full justify-center mt-1">Submit</button>
-        <p id="status-msg" role="status" aria-live="polite" class="text-sm"></p>
-      </form>
-    </div>
+    <h2 class="h-hero mt-4" style="font-size:2rem">Add your page</h2>
+    <p class="mt-4 text-muted leading-relaxed">If you took part, we'll have sent you a one-time access code — that's what unlocks the submission form.</p>
+    <a href="/dots/alumni/submit/" class="btn btn-accent mt-6">Enter your code {% icon "arrow", "w-4 h-4" %}</a>
   </div>
 </section>
-
-<script>
-  document.getElementById('alumni-form').addEventListener('submit', function (e) {
-    e.preventDefault();
-
-    var form = e.target;
-    var statusMsg = document.getElementById('status-msg');
-    var submitBtn = document.getElementById('submit-btn');
-
-    statusMsg.style.color = 'unset';
-    statusMsg.textContent = 'Submitting…';
-    submitBtn.disabled = true;
-
-    fetch('/api/dots-alumni/submit', {
-      method: 'POST',
-      body: new FormData(form),
-    }).then(function (res) {
-      return res.json().then(function (data) { return { ok: res.ok, data: data }; });
-    }).then(function (r) {
-      submitBtn.disabled = false;
-      if (!r.ok) {
-        statusMsg.style.color = 'var(--coral-ink)';
-        statusMsg.textContent = (r.data && r.data.error) || 'Something went wrong. Please try again.';
-        return;
-      }
-      form.reset();
-      document.getElementById('edition').value = '1';
-      statusMsg.style.color = 'var(--mint-ink)';
-      statusMsg.textContent = 'Thanks! Your submission is in for review and will appear here once approved.';
-    }).catch(function () {
-      submitBtn.disabled = false;
-      statusMsg.style.color = 'var(--coral-ink)';
-      statusMsg.textContent = 'Network error. Please try again.';
-    });
-  });
-</script>
