@@ -66,7 +66,8 @@ export async function onRequestPost({ request, env }) {
   }
 
   // Increment the neuron counter only on success
-  await addNeuronUsage(env, estimateNeurons(result));
+  const neurons = estimateNeurons(result && result.usage);
+  await addNeuronUsage(env, neurons);
 
-  return json(result);
+  return json({ reply: (result && result.response) || '', budget: budgetInfo(usedSoFar + neurons) });
 }
