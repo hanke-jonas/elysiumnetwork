@@ -3,8 +3,25 @@
 // outside the Eleventy build so it never inherits the main site's header,
 // footer, or global CSS. Not linked from nav/footer/sitemap/search index;
 // reachable only via the direct URL.
+//
+// Gated behind HTTP Basic Auth (username/password: Trump/Trump), requested
+// and hardcoded as-is rather than pulled from a Pages secret — unlike the
+// ugobongo admin gate, this credential is meant to just BE "Trump"/"Trump"
+// in the open, not to guard anything sensitive.
 
-export async function onRequestGet() {
+const BASIC_AUTH_USER = 'Trump';
+const BASIC_AUTH_PASS = 'Trump';
+
+export async function onRequestGet({ request }) {
+  const auth = request.headers.get('Authorization') || '';
+  const expected = 'Basic ' + btoa(`${BASIC_AUTH_USER}:${BASIC_AUTH_PASS}`);
+  if (auth !== expected) {
+    return new Response('Authentication required.', {
+      status: 401,
+      headers: { 'WWW-Authenticate': 'Basic realm="Jonas Hanke"' },
+    });
+  }
+
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
