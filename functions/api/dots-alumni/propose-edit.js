@@ -20,6 +20,7 @@ export async function onRequestPost({ request, env }) {
     const form = await request.formData().catch(() => null);
     if (!form) return badRequest('Invalid form submission');
     if (form.get('website_hp')) return json({ ok: true }, { status: 201 });
+    if (!form.get('consent')) return badRequest('Please confirm you agree to have your page published before submitting.');
 
     const code = String(form.get('code') || '').trim().toUpperCase();
     if (!code) return badRequest('An access code is required');
@@ -33,7 +34,7 @@ export async function onRequestPost({ request, env }) {
 
     let blocks;
     try { blocks = sanitizeBlocks(JSON.parse(form.get('blocks') || '[]')); } catch { blocks = null; }
-    if (!blocks) return badRequest('Your page is empty — add at least a name, photo, and bio.');
+    if (!blocks) return badRequest('Your page is empty — add at least a name and bio.');
 
     const core = deriveCoreFields(blocks);
     const coreError = validateCoreFields(core);

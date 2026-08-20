@@ -127,7 +127,18 @@ permalink: /admin/
         btn.disabled = false;
         if (!r.ok) {
           status.style.color = 'var(--coral-ink)';
-          status.textContent = r.data.error || 'Something went wrong.';
+          var msg = (r.data && r.data.error) || 'Something went wrong.';
+          // The backend's real diagnostic (Cloudflare's own error codes, or
+          // the HTTP status it got back) lands in status/detail -- surface
+          // it instead of leaving staff stuck on the generic fallback
+          // message with no way to tell a rate limit from a bad token.
+          var detail = r.data && r.data.detail;
+          var detailText = Array.isArray(detail)
+            ? detail.map(function (d) { return d && d.message ? (d.code ? d.code + ': ' + d.message : d.message) : null; }).filter(Boolean).join('; ')
+            : (typeof detail === 'string' ? detail : '');
+          if (detailText) msg += ' (' + detailText + ')';
+          else if (r.data && r.data.status) msg += ' (Cloudflare returned HTTP ' + r.data.status + ')';
+          status.textContent = msg + ' Try again in a minute — if it keeps happening, it needs a developer to look at the API token/account setup.';
           return;
         }
         status.style.color = '';

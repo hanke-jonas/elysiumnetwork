@@ -41,6 +41,11 @@ export async function onRequestPost({ request, env }) {
     // it was caught.
     if (form.get('website_hp')) return json({ ok: true }, { status: 201 });
 
+    // The consent checkbox is `required` client-side, but that's only ever
+    // a UX nicety a request can skip -- the actual record of "this person
+    // agreed to have this published" has to be enforced here too.
+    if (!form.get('consent')) return badRequest('Please confirm you agree to have your page published before submitting.');
+
     const code = String(form.get('code') || '').trim().toUpperCase();
     if (!code) return badRequest('An access code is required');
     const codeRow = await env.DB.prepare('SELECT edition, used_at FROM dots_access_codes WHERE code = ?').bind(code).first();
@@ -49,7 +54,7 @@ export async function onRequestPost({ request, env }) {
 
     let blocks;
     try { blocks = sanitizeBlocks(JSON.parse(form.get('blocks') || '[]')); } catch { blocks = null; }
-    if (!blocks) return badRequest('Your page is empty — add at least a name, photo, and bio.');
+    if (!blocks) return badRequest('Your page is empty — add at least a name and bio.');
 
     const core = deriveCoreFields(blocks);
     const coreError = validateCoreFields(core);
