@@ -7,14 +7,14 @@ permalink: /admin/dots-alumni/
   <div>
     <p class="eyebrow" style="color:var(--coral-ink)">Admin</p>
     <h1 class="h-sec mt-1">DOTS Alumni</h1>
-    <p class="text-sm text-muted mt-1">Submissions come in from the public form at /dots/alumni/ — approve one to put it live. The whole page — name, photo, bio, everything — is one reorderable block list here, same as what participants see.</p>
+    <p class="text-sm text-muted mt-1">Submissions come in from the public form at /dots/alumni/ — approve one to put it live.</p>
   </div>
 </div>
 
 <div id="formCard" class="card p-6 mb-8" hidden>
   <h2 class="h-card mb-4">Edit entry</h2>
-  <form id="alumniForm" class="flex flex-col gap-3">
-    <div class="grid sm:grid-cols-2 gap-4 mb-2">
+  <form id="alumniForm" class="flex flex-col gap-5">
+    <div class="grid sm:grid-cols-2 gap-4">
       <div>
         <label class="form-label" for="f_edition">Edition</label>
         <input class="input" type="text" id="f_edition" name="edition" required>
@@ -30,46 +30,74 @@ permalink: /admin/dots-alumni/
       </div>
     </div>
 
-    <p class="text-xs text-muted mb-1">The whole page, one section at a time — drag to reorder anything. Name and bio are required and can't be removed entirely, only edited and repositioned. A photo is recommended but optional, same as everything else.</p>
-    <div id="blocksList" class="flex flex-col gap-3 mb-2"></div>
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div>
+        <label class="form-label" for="f_name">Name *</label>
+        <input class="input" type="text" id="f_name" required maxlength="100">
+      </div>
+      <div>
+        <label class="form-label" for="f_pronouns">Pronouns</label>
+        <input class="input" type="text" id="f_pronouns" maxlength="30">
+      </div>
+    </div>
 
-    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-      <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="quote">
-        <span class="block font-semibold text-sm">+ Quote</span>
-        <span class="block text-xs text-muted mt-0.5">A line of advice or a memory</span>
-      </button>
-      <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="subtitle">
-        <span class="block font-semibold text-sm">+ What &amp; where</span>
-        <span class="block text-xs text-muted mt-0.5">What they're up to, where they're based</span>
-      </button>
-      <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="links">
-        <span class="block font-semibold text-sm">+ Links</span>
-        <span class="block text-xs text-muted mt-0.5">Instagram, LinkedIn, website</span>
-      </button>
-      <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="heading">
-        <span class="block font-semibold text-sm">+ Heading</span>
-        <span class="block text-xs text-muted mt-0.5">A short section title</span>
-      </button>
-      <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="paragraph">
-        <span class="block font-semibold text-sm">+ Text</span>
-        <span class="block text-xs text-muted mt-0.5">A paragraph of writing</span>
-      </button>
-      <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="image">
-        <span class="block font-semibold text-sm">+ Image</span>
-        <span class="block text-xs text-muted mt-0.5">One photo, with a caption</span>
-      </button>
-      <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="gallery">
-        <span class="block font-semibold text-sm">+ Gallery</span>
-        <span class="block text-xs text-muted mt-0.5">A grid of several photos</span>
-      </button>
-      <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="button">
-        <span class="block font-semibold text-sm">+ Button</span>
-        <span class="block text-xs text-muted mt-0.5">A clickable link, e.g. to their website</span>
-      </button>
-      <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="spacer">
-        <span class="block font-semibold text-sm">+ Spacer</span>
-        <span class="block text-xs text-muted mt-0.5">Blank space between sections</span>
-      </button>
+    <div>
+      <p class="form-label">Photo</p>
+      <input type="hidden" id="f_photo_url">
+      <div id="photoEmpty">
+        <label class="btn cursor-pointer inline-flex">📷 Add a photo<input type="file" id="photoFile" accept="image/jpeg,image/png,image/webp" class="sr-only"></label>
+      </div>
+      <div id="photoFilled" hidden class="flex items-center gap-3">
+        <img id="photoPreview" src="" alt="" class="w-20 h-20 rounded-xl object-cover border-2 border-ink">
+        <div class="flex gap-2">
+          <label class="btn !py-1.5 !px-3 text-xs cursor-pointer inline-flex">Change<input type="file" id="photoFileChange" accept="image/jpeg,image/png,image/webp" class="sr-only"></label>
+          <button type="button" id="photoRemoveBtn" class="btn btn-coral !py-1.5 !px-3 text-xs">Remove</button>
+        </div>
+      </div>
+      <p id="photoStatus" role="status" aria-live="polite" class="text-xs mt-2 text-muted"></p>
+    </div>
+
+    <div>
+      <label class="form-label" for="f_bio">Bio *</label>
+      <textarea class="input" id="f_bio" rows="3" maxlength="600" required></textarea>
+    </div>
+
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div>
+        <label class="form-label" for="f_role">What they're up to</label>
+        <input class="input" type="text" id="f_role" maxlength="120">
+      </div>
+      <div>
+        <label class="form-label" for="f_location">Based in</label>
+        <input class="input" type="text" id="f_location" maxlength="80">
+      </div>
+    </div>
+
+    <div>
+      <label class="form-label" for="f_quote">Quote</label>
+      <input class="input" type="text" id="f_quote" maxlength="300">
+    </div>
+
+    <div>
+      <label class="form-label" for="f_story">Story (shown only on their individual page)</label>
+      <textarea class="input" id="f_story" rows="5" maxlength="4000"></textarea>
+    </div>
+
+    <div>
+      <p class="form-label">Links</p>
+      <div class="flex flex-col gap-2 mt-1">
+        <input class="input" type="text" id="f_instagram" placeholder="Instagram" maxlength="300">
+        <input class="input" type="text" id="f_linkedin" placeholder="LinkedIn" maxlength="300">
+        <input class="input" type="text" id="f_website" placeholder="Website" maxlength="300">
+      </div>
+    </div>
+
+    <div>
+      <p class="form-label">More photos</p>
+      <input type="hidden" id="f_photos">
+      <div id="extraPhotosGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-2"></div>
+      <label id="addExtraPhotoBtn" class="btn !py-1.5 !px-3 text-xs cursor-pointer inline-flex">+ Add a photo<input type="file" id="extraPhotoFile" accept="image/jpeg,image/png,image/webp" class="sr-only"></label>
+      <p id="extraPhotoStatus" role="status" aria-live="polite" class="text-xs mt-2 text-muted"></p>
     </div>
 
     <p id="formStatus" role="status" aria-live="polite" class="text-sm"></p>
@@ -138,8 +166,8 @@ permalink: /admin/dots-alumni/
 (function () {
   var items = [];
   var editingId = null;
-  var blocks = [];
-  var REQUIRED_TYPES = { name: true, bio: true };
+  var extraPhotos = [];
+  var MAX_EXTRA_PHOTOS = 6;
 
   var formCard = document.getElementById('formCard');
   var form = document.getElementById('alumniForm');
@@ -164,33 +192,6 @@ permalink: /admin/dots-alumni/
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]; }); }
   function safeParse(str, fallback) { try { return JSON.parse(str || 'null') || fallback; } catch (e) { return fallback; } }
-
-  // --- Block builder (same widget shapes as the public form/back end;
-  // see functions/_lib/dotsBlocks.js) -- name/photo/bio are required
-  // block types, always present, not removable but freely reorderable,
-  // same as the participant-facing form. Staff uploads go through the
-  // generic admin upload endpoint since staff don't have a participant
-  // access code. ---------------------------------------------------------
-  var blocksList = document.getElementById('blocksList');
-  var dragIndex = null;
-
-  function uid() { return 'b' + Math.random().toString(36).slice(2, 10); }
-
-  function newBlock(type) {
-    if (type === 'name') return { id: uid(), type: type, text: '', pronouns: '' };
-    if (type === 'photo') return { id: uid(), type: type, url: '' };
-    if (type === 'bio') return { id: uid(), type: type, text: '' };
-    if (type === 'quote') return { id: uid(), type: type, text: '' };
-    if (type === 'subtitle') return { id: uid(), type: type, role: '', location: '' };
-    if (type === 'links') return { id: uid(), type: type, instagram: '', linkedin: '', website: '' };
-    if (type === 'heading') return { id: uid(), type: type, text: '' };
-    if (type === 'paragraph') return { id: uid(), type: type, text: '' };
-    if (type === 'image') return { id: uid(), type: type, url: '', caption: '' };
-    if (type === 'gallery') return { id: uid(), type: type, images: [] };
-    if (type === 'button') return { id: uid(), type: type, label: '', href: '' };
-    if (type === 'spacer') return { id: uid(), type: type, height: 40 };
-    return null;
-  }
 
   function uploadAdminImage(file, onDone) {
     var fd = new FormData();
@@ -414,286 +415,90 @@ permalink: /admin/dots-alumni/
     });
   })();
 
-  function blockLabel(type) {
-    return {
-      name: 'Name', photo: 'Photo', bio: 'Bio', quote: 'Quote', subtitle: "What & where", links: 'Links',
-      heading: 'Heading', paragraph: 'Text', image: 'Image', gallery: 'Gallery', button: 'Button', spacer: 'Spacer',
-    }[type] || type;
+  // --- Main photo -------------------------------------------------------
+  var f_photo_url = document.getElementById('f_photo_url');
+  var photoEmpty = document.getElementById('photoEmpty');
+  var photoFilled = document.getElementById('photoFilled');
+  var photoPreview = document.getElementById('photoPreview');
+  var photoStatus = document.getElementById('photoStatus');
+
+  function setPhoto(url) {
+    f_photo_url.value = url || '';
+    if (url) {
+      photoPreview.src = url;
+      photoEmpty.hidden = true;
+      photoFilled.hidden = false;
+    } else {
+      photoEmpty.hidden = false;
+      photoFilled.hidden = true;
+    }
   }
 
-  function renderBlocks() {
-    blocksList.innerHTML = '';
-    blocks.forEach(function (block, index) {
-      var required = !!REQUIRED_TYPES[block.type];
-      var card = document.createElement('div');
-      card.className = 'rounded-xl border-2 p-4';
-      card.style.background = required ? 'var(--paper-2)' : '#fff';
-      card.style.borderColor = 'var(--ink)';
-      card.draggable = true;
-      card.addEventListener('dragstart', function () { dragIndex = index; card.style.opacity = '.5'; });
-      card.addEventListener('dragend', function () { card.style.opacity = ''; });
-      card.addEventListener('dragover', function (e) { e.preventDefault(); });
-      card.addEventListener('drop', function (e) {
-        e.preventDefault();
-        if (dragIndex === null || dragIndex === index) return;
-        var moved = blocks.splice(dragIndex, 1)[0];
-        blocks.splice(index, 0, moved);
-        dragIndex = null;
-        renderBlocks();
-      });
-
-      var head = document.createElement('div');
-      head.className = 'flex items-center justify-between mb-3';
-      var tag = document.createElement('span');
-      tag.className = 'tag';
-      tag.textContent = '⠿ ' + blockLabel(block.type);
-      if (required) tag.style.background = 'var(--sun)';
-      head.appendChild(tag);
-
-      var controls = document.createElement('div');
-      controls.className = 'flex items-center gap-1';
-      var upBtn = document.createElement('button');
-      upBtn.type = 'button'; upBtn.className = 'btn !py-1 !px-2 text-xs'; upBtn.textContent = '↑'; upBtn.disabled = index === 0;
-      upBtn.addEventListener('click', function () { if (index === 0) return; blocks.splice(index - 1, 0, blocks.splice(index, 1)[0]); renderBlocks(); });
-      var downBtn = document.createElement('button');
-      downBtn.type = 'button'; downBtn.className = 'btn !py-1 !px-2 text-xs'; downBtn.textContent = '↓'; downBtn.disabled = index === blocks.length - 1;
-      downBtn.addEventListener('click', function () { if (index === blocks.length - 1) return; blocks.splice(index + 1, 0, blocks.splice(index, 1)[0]); renderBlocks(); });
-      controls.appendChild(upBtn); controls.appendChild(downBtn);
-      if (!required) {
-        var removeBtn = document.createElement('button');
-        removeBtn.type = 'button'; removeBtn.className = 'btn btn-coral !py-1 !px-2 text-xs'; removeBtn.textContent = 'Remove';
-        removeBtn.addEventListener('click', function () { blocks.splice(index, 1); renderBlocks(); });
-        controls.appendChild(removeBtn);
-      } else {
-        var reqLabel = document.createElement('span');
-        reqLabel.className = 'text-xs text-muted';
-        reqLabel.style.padding = '0 .4rem';
-        reqLabel.textContent = 'Required';
-        controls.appendChild(reqLabel);
+  function handlePhotoFile(file) {
+    if (!file) return;
+    photoStatus.style.color = '';
+    photoStatus.textContent = 'Uploading…';
+    uploadAdminImage(file, function (url, err) {
+      if (!url) {
+        photoStatus.style.color = 'var(--coral-ink)';
+        photoStatus.textContent = err || 'Upload failed — try again.';
+        return;
       }
-      head.appendChild(controls);
-      card.appendChild(head);
-
-      var body = document.createElement('div');
-      body.className = 'flex flex-col gap-2';
-
-      if (block.type === 'name') {
-        var nameIn = document.createElement('input');
-        nameIn.className = 'input'; nameIn.type = 'text'; nameIn.maxLength = 100; nameIn.placeholder = 'Name'; nameIn.value = block.text || '';
-        nameIn.addEventListener('input', function () { block.text = nameIn.value; });
-        var pronounsIn = document.createElement('input');
-        pronounsIn.className = 'input'; pronounsIn.type = 'text'; pronounsIn.maxLength = 30; pronounsIn.placeholder = 'Pronouns (optional)'; pronounsIn.value = block.pronouns || '';
-        pronounsIn.addEventListener('input', function () { block.pronouns = pronounsIn.value; });
-        body.appendChild(nameIn); body.appendChild(pronounsIn);
-      } else if (block.type === 'photo') {
-        if (block.url) {
-          var photoPrev = document.createElement('img');
-          photoPrev.src = block.url; photoPrev.alt = '';
-          photoPrev.style.cssText = 'max-height:8rem;border-radius:.5rem;border:2px solid var(--ink);object-fit:cover';
-          body.appendChild(photoPrev);
-        }
-        var photoFileIn = document.createElement('input');
-        photoFileIn.className = 'input'; photoFileIn.type = 'file'; photoFileIn.accept = 'image/jpeg,image/png,image/webp';
-        var photoStatus = document.createElement('p');
-        photoStatus.className = 'text-xs text-muted';
-        photoStatus.textContent = block.url ? 'Choose a new file to replace this photo.' : 'Optional, but recommended. Shown on the gallery card and their page.';
-        photoFileIn.addEventListener('change', function () {
-          if (!photoFileIn.files[0]) return;
-          photoStatus.textContent = 'Uploading…';
-          uploadAdminImage(photoFileIn.files[0], function (url, err) {
-            if (!url) { photoStatus.style.color = 'var(--coral-ink)'; photoStatus.textContent = err || 'Upload failed.'; return; }
-            photoStatus.textContent = '';
-            window.openCropModal(url, function (finalUrl) { block.url = finalUrl; renderBlocks(); });
-          });
-        });
-        body.appendChild(photoFileIn); body.appendChild(photoStatus);
-      } else if (block.type === 'bio') {
-        var bioIn = document.createElement('textarea');
-        bioIn.className = 'input'; bioIn.rows = 3; bioIn.maxLength = 600; bioIn.placeholder = 'Short bio — shown on the gallery card.'; bioIn.value = block.text || '';
-        bioIn.addEventListener('input', function () { block.text = bioIn.value; });
-        body.appendChild(bioIn);
-      } else if (block.type === 'quote') {
-        var quoteIn = document.createElement('input');
-        quoteIn.className = 'input'; quoteIn.type = 'text'; quoteIn.maxLength = 300; quoteIn.placeholder = 'A line of advice or a memory — shown as a pull-quote.'; quoteIn.value = block.text || '';
-        quoteIn.addEventListener('input', function () { block.text = quoteIn.value; });
-        body.appendChild(quoteIn);
-      } else if (block.type === 'subtitle') {
-        var roleIn = document.createElement('input');
-        roleIn.className = 'input'; roleIn.type = 'text'; roleIn.maxLength = 120; roleIn.placeholder = "What they're up to now"; roleIn.value = block.role || '';
-        roleIn.addEventListener('input', function () { block.role = roleIn.value; });
-        var locIn = document.createElement('input');
-        locIn.className = 'input'; locIn.type = 'text'; locIn.maxLength = 80; locIn.placeholder = 'Where they live now'; locIn.value = block.location || '';
-        locIn.addEventListener('input', function () { block.location = locIn.value; });
-        body.appendChild(roleIn); body.appendChild(locIn);
-      } else if (block.type === 'links') {
-        var igIn = document.createElement('input');
-        igIn.className = 'input'; igIn.type = 'text'; igIn.placeholder = 'Instagram'; igIn.value = block.instagram || '';
-        igIn.addEventListener('input', function () { block.instagram = igIn.value; });
-        var liIn = document.createElement('input');
-        liIn.className = 'input'; liIn.type = 'text'; liIn.placeholder = 'LinkedIn'; liIn.value = block.linkedin || '';
-        liIn.addEventListener('input', function () { block.linkedin = liIn.value; });
-        var webIn = document.createElement('input');
-        webIn.className = 'input'; webIn.type = 'text'; webIn.placeholder = 'Website'; webIn.value = block.website || '';
-        webIn.addEventListener('input', function () { block.website = webIn.value; });
-        body.appendChild(igIn); body.appendChild(liIn); body.appendChild(webIn);
-      } else if (block.type === 'heading') {
-        var hIn = document.createElement('input');
-        hIn.className = 'input'; hIn.type = 'text'; hIn.maxLength = 200; hIn.placeholder = 'Section heading'; hIn.value = block.text || '';
-        hIn.addEventListener('input', function () { block.text = hIn.value; });
-        body.appendChild(hIn);
-      } else if (block.type === 'paragraph') {
-        var pIn = document.createElement('textarea');
-        pIn.className = 'input'; pIn.rows = 4; pIn.maxLength = 4000; pIn.placeholder = 'Write as much as you like…'; pIn.value = block.text || '';
-        pIn.addEventListener('input', function () { block.text = pIn.value; });
-        body.appendChild(pIn);
-      } else if (block.type === 'image') {
-        if (block.url) {
-          var prevImg = document.createElement('img');
-          prevImg.src = block.url; prevImg.alt = '';
-          prevImg.style.cssText = 'max-height:8rem;border-radius:.5rem;border:2px solid var(--ink);object-fit:cover';
-          body.appendChild(prevImg);
-        }
-        var fIn = document.createElement('input');
-        fIn.className = 'input'; fIn.type = 'file'; fIn.accept = 'image/jpeg,image/png,image/webp';
-        var upStatus = document.createElement('p');
-        upStatus.className = 'text-xs text-muted'; upStatus.textContent = block.url ? 'Choose a new file to replace this photo.' : '';
-        fIn.addEventListener('change', function () {
-          if (!fIn.files[0]) return;
-          upStatus.textContent = 'Uploading…';
-          uploadAdminImage(fIn.files[0], function (url, err) {
-            if (!url) { upStatus.style.color = 'var(--coral-ink)'; upStatus.textContent = err || 'Upload failed.'; return; }
-            upStatus.textContent = '';
-            window.openCropModal(url, function (finalUrl) { block.url = finalUrl; renderBlocks(); });
-          });
-        });
-        body.appendChild(fIn); body.appendChild(upStatus);
-        var capIn = document.createElement('input');
-        capIn.className = 'input'; capIn.type = 'text'; capIn.maxLength = 300; capIn.placeholder = 'Caption (optional)'; capIn.value = block.caption || '';
-        capIn.addEventListener('input', function () { block.caption = capIn.value; });
-        body.appendChild(capIn);
-      } else if (block.type === 'gallery') {
-        if (block.images && block.images.length) {
-          var grid = document.createElement('div');
-          grid.className = 'flex flex-wrap gap-2';
-          block.images.forEach(function (url, imgIdx) {
-            var wrap = document.createElement('div');
-            wrap.style.position = 'relative';
-            var gImg = document.createElement('img');
-            gImg.src = url; gImg.alt = '';
-            gImg.style.cssText = 'width:4rem;height:4rem;border-radius:.5rem;object-fit:cover;border:2px solid var(--ink)';
-            wrap.appendChild(gImg);
-            var rmBtn = document.createElement('button');
-            rmBtn.type = 'button'; rmBtn.textContent = '×'; rmBtn.title = 'Remove photo';
-            rmBtn.style.cssText = 'position:absolute;top:-.4rem;right:-.4rem;width:1.25rem;height:1.25rem;border-radius:999px;background:var(--coral-ink);color:#fff;font-size:.75rem;line-height:1;border:none;cursor:pointer';
-            rmBtn.addEventListener('click', function () { block.images.splice(imgIdx, 1); renderBlocks(); });
-            wrap.appendChild(rmBtn);
-            grid.appendChild(wrap);
-          });
-          body.appendChild(grid);
-        }
-        var gIn = document.createElement('input');
-        gIn.className = 'input'; gIn.type = 'file'; gIn.accept = 'image/jpeg,image/png,image/webp'; gIn.multiple = true;
-        var gStatus = document.createElement('p');
-        gStatus.className = 'text-xs text-muted'; gStatus.textContent = 'Up to 12 photos.';
-        gIn.addEventListener('change', function () {
-          var files = Array.prototype.slice.call(gIn.files).slice(0, 12 - (block.images || []).length);
-          if (!files.length) return;
-          gStatus.textContent = 'Uploading…';
-          var remaining = files.length;
-          files.forEach(function (file) {
-            uploadAdminImage(file, function (url) {
-              if (url) { block.images = block.images || []; block.images.push(url); }
-              remaining -= 1;
-              if (remaining === 0) renderBlocks();
-            });
-          });
-        });
-        body.appendChild(gIn); body.appendChild(gStatus);
-      } else if (block.type === 'button') {
-        var lblIn = document.createElement('input');
-        lblIn.className = 'input'; lblIn.type = 'text'; lblIn.maxLength = 100; lblIn.placeholder = 'Button label'; lblIn.value = block.label || '';
-        lblIn.addEventListener('input', function () { block.label = lblIn.value; });
-        var hrefIn = document.createElement('input');
-        hrefIn.className = 'input mt-2'; hrefIn.type = 'text'; hrefIn.maxLength = 500; hrefIn.placeholder = 'Link (https://…)'; hrefIn.value = block.href || '';
-        hrefIn.addEventListener('input', function () { block.href = hrefIn.value; });
-        body.appendChild(lblIn); body.appendChild(hrefIn);
-      } else if (block.type === 'spacer') {
-        var hgtIn = document.createElement('input');
-        hgtIn.className = 'input'; hgtIn.type = 'number'; hgtIn.min = 0; hgtIn.max = 300; hgtIn.value = block.height || 40;
-        hgtIn.addEventListener('input', function () { block.height = Number(hgtIn.value) || 0; });
-        body.appendChild(hgtIn);
-      }
-
-      card.appendChild(body);
-      blocksList.appendChild(card);
+      photoStatus.textContent = '';
+      window.openCropModal(url, function (finalUrl) { setPhoto(finalUrl); });
     });
   }
 
-  document.querySelectorAll('[data-add]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var b = newBlock(btn.getAttribute('data-add'));
-      if (b) { blocks.push(b); renderBlocks(); }
+  document.getElementById('photoFile').addEventListener('change', function (e) { handlePhotoFile(e.target.files[0]); e.target.value = ''; });
+  document.getElementById('photoFileChange').addEventListener('change', function (e) { handlePhotoFile(e.target.files[0]); e.target.value = ''; });
+  document.getElementById('photoRemoveBtn').addEventListener('click', function () { setPhoto(''); });
+
+  // --- Extra photos -------------------------------------------------------
+  var extraPhotosGrid = document.getElementById('extraPhotosGrid');
+  var f_photos = document.getElementById('f_photos');
+  var extraPhotoStatus = document.getElementById('extraPhotoStatus');
+  var addExtraPhotoBtn = document.getElementById('addExtraPhotoBtn');
+
+  function renderExtraPhotos() {
+    extraPhotosGrid.innerHTML = '';
+    extraPhotos.forEach(function (url, i) {
+      var wrap = document.createElement('div');
+      wrap.style.cssText = 'position:relative';
+      var img = document.createElement('img');
+      img.src = url;
+      img.alt = '';
+      img.className = 'w-full aspect-square object-cover rounded-lg border-2 border-ink';
+      var rm = document.createElement('button');
+      rm.type = 'button';
+      rm.textContent = '×';
+      rm.setAttribute('aria-label', 'Remove this photo');
+      rm.style.cssText = 'position:absolute;top:-.4rem;right:-.4rem;width:1.5rem;height:1.5rem;border-radius:999px;background:var(--coral);border:2px solid var(--ink);font-weight:700;line-height:1';
+      rm.addEventListener('click', function () { extraPhotos.splice(i, 1); renderExtraPhotos(); });
+      wrap.appendChild(img);
+      wrap.appendChild(rm);
+      extraPhotosGrid.appendChild(wrap);
+    });
+    f_photos.value = JSON.stringify(extraPhotos);
+    addExtraPhotoBtn.style.display = extraPhotos.length >= MAX_EXTRA_PHOTOS ? 'none' : '';
+  }
+
+  document.getElementById('extraPhotoFile').addEventListener('change', function (e) {
+    var file = e.target.files[0];
+    e.target.value = '';
+    if (!file || extraPhotos.length >= MAX_EXTRA_PHOTOS) return;
+    extraPhotoStatus.style.color = '';
+    extraPhotoStatus.textContent = 'Uploading…';
+    uploadAdminImage(file, function (url, err) {
+      extraPhotoStatus.textContent = '';
+      if (!url) {
+        extraPhotoStatus.style.color = 'var(--coral-ink)';
+        extraPhotoStatus.textContent = err || 'Upload failed — try again.';
+        return;
+      }
+      extraPhotos.push(url);
+      renderExtraPhotos();
     });
   });
-
-  // --- Migration: build the unified block list for an item that may
-  // predate this system (mirrors buildBlocksFromCurrent in
-  // src/dots/alumni-submit.njk). --------------------------------------
-  function isUnified(list) {
-    return Array.isArray(list) && list.some(function (b) { return b.type === 'name'; });
-  }
-
-  function buildBlocksFromItem(item) {
-    var existing = safeParse(item.blocks_json, null);
-    if (isUnified(existing)) return existing.map(function (b) { return Object.assign({}, b); });
-
-    var out = [
-      { id: uid(), type: 'name', text: item.name || '', pronouns: item.pronouns || '' },
-      { id: uid(), type: 'photo', url: item.photo_url || '' },
-      { id: uid(), type: 'bio', text: item.bio || '' },
-    ];
-    if (item.current_role || item.location) {
-      out.push({ id: uid(), type: 'subtitle', role: item.current_role || '', location: item.location || '' });
-    }
-    if (item.quote) out.push({ id: uid(), type: 'quote', text: item.quote });
-    var links = safeParse(item.links_json, []);
-    if (links.length) {
-      var lb = { id: uid(), type: 'links', instagram: '', linkedin: '', website: '' };
-      links.forEach(function (l) {
-        if (l.label === 'Instagram') lb.instagram = l.url || '';
-        if (l.label === 'LinkedIn') lb.linkedin = l.url || '';
-        if (l.label === 'Website') lb.website = l.url || '';
-      });
-      out.push(lb);
-    }
-    if (item.story) out.push({ id: uid(), type: 'paragraph', text: item.story });
-    var photos = safeParse(item.photos_json, []);
-    if (photos.length) out.push({ id: uid(), type: 'gallery', images: photos.slice() });
-    if (existing && existing.length) out.push.apply(out, existing.map(function (b) { return Object.assign({}, b); }));
-    return out;
-  }
-
-  function deriveCoreFields(list) {
-    var find = function (type) { return list.find(function (b) { return b.type === type; }); };
-    var nameBlock = find('name'), bioBlock = find('bio'), photoBlock = find('photo');
-    var quoteBlock = find('quote'), subtitleBlock = find('subtitle'), linksBlock = find('links');
-    var links = [];
-    if (linksBlock) {
-      if (linksBlock.instagram) links.push({ label: 'Instagram', url: linksBlock.instagram });
-      if (linksBlock.linkedin) links.push({ label: 'LinkedIn', url: linksBlock.linkedin });
-      if (linksBlock.website) links.push({ label: 'Website', url: linksBlock.website });
-    }
-    return {
-      name: (nameBlock && nameBlock.text) || '',
-      pronouns: (nameBlock && nameBlock.pronouns) || null,
-      bio: (bioBlock && bioBlock.text) || '',
-      photoUrl: (photoBlock && photoBlock.url) || '',
-      current_role: (subtitleBlock && subtitleBlock.role) || null,
-      location: (subtitleBlock && subtitleBlock.location) || null,
-      quote: (quoteBlock && quoteBlock.text) || null,
-      links_json: JSON.stringify(links),
-    };
-  }
 
   function showForm(item) {
     form.reset();
@@ -701,8 +506,20 @@ permalink: /admin/dots-alumni/
     editingId = item.id;
     f_edition.value = item.edition || '';
     f_status.value = item.status || 'pending';
-    blocks = buildBlocksFromItem(item);
-    renderBlocks();
+    document.getElementById('f_name').value = item.name || '';
+    document.getElementById('f_pronouns').value = item.pronouns || '';
+    document.getElementById('f_bio').value = item.bio || '';
+    document.getElementById('f_role').value = item.current_role || '';
+    document.getElementById('f_location').value = item.location || '';
+    document.getElementById('f_quote').value = item.quote || '';
+    document.getElementById('f_story').value = item.story || '';
+    setPhoto(item.photo_url || '');
+    var links = safeParse(item.links_json, []);
+    document.getElementById('f_instagram').value = (links.find(function (l) { return l.label === 'Instagram'; }) || {}).url || '';
+    document.getElementById('f_linkedin').value = (links.find(function (l) { return l.label === 'LinkedIn'; }) || {}).url || '';
+    document.getElementById('f_website').value = (links.find(function (l) { return l.label === 'Website'; }) || {}).url || '';
+    extraPhotos = safeParse(item.photos_json, []).slice(0, MAX_EXTRA_PHOTOS);
+    renderExtraPhotos();
 
     formCard.hidden = false;
     formCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -712,7 +529,7 @@ permalink: /admin/dots-alumni/
     formCard.hidden = true;
     form.reset();
     editingId = null;
-    blocks = [];
+    extraPhotos = [];
     setFormStatus('');
   }
 
@@ -729,48 +546,33 @@ permalink: /admin/dots-alumni/
     return 'var(--paper-2)';
   }
 
-  // Renders the same visual shape as the real public page
-  // (src/dots/alumni-profile.njk), including the unified block order, so
-  // staff can see exactly what a submission will look like before it's
-  // ever built into a static page.
+  // Renders the same shape as the real public page's fixed-fields layout
+  // (src/dots/alumni-profile.njk's legacy-fields branch) so staff can see
+  // roughly what a submission will look like before it's ever built into
+  // a static page. An entry created through the since-retired
+  // drag-and-drop builder may still have a richer blocks_json -- this
+  // preview only shows the flat fields, which is exactly what any new
+  // edit through this form saves going forward.
   function renderPreview(item) {
-    var list = buildBlocksFromItem(item);
-    var html = '';
-    list.forEach(function (block) {
-      if (block.type === 'name') {
-        html += '<h1 class="h-hero">' + esc(block.text) + (block.pronouns ? ' <span class="text-muted" style="font-size:.55em">(' + esc(block.pronouns) + ')</span>' : '') + '</h1>';
-      } else if (block.type === 'photo') {
-        if (block.url) html += '<img src="' + esc(block.url) + '" alt="" style="width:100%;max-height:22rem;object-fit:cover;border-radius:1rem;border:2px solid var(--ink);margin:1rem 0">';
-      } else if (block.type === 'bio') {
-        html += '<p class="mt-2 text-lg text-muted leading-relaxed">' + esc(block.text) + '</p>';
-      } else if (block.type === 'subtitle') {
-        if (block.role) html += '<p class="mt-2 text-lg font-semibold">' + esc(block.role) + '</p>';
-        if (block.location) html += '<p class="text-sm text-muted">' + esc(block.location) + '</p>';
-      } else if (block.type === 'quote') {
-        html += '<blockquote class="card p-4 mt-4" style="border-left:4px solid var(--coral-ink)">“' + esc(block.text) + '”</blockquote>';
-      } else if (block.type === 'links') {
-        html += '<div class="flex flex-wrap gap-3 mt-4">';
-        if (block.instagram) html += '<span class="btn" style="pointer-events:none">Instagram</span>';
-        if (block.linkedin) html += '<span class="btn" style="pointer-events:none">LinkedIn</span>';
-        if (block.website) html += '<span class="btn" style="pointer-events:none">Website</span>';
-        html += '</div>';
-      } else if (block.type === 'heading') {
-        html += '<h2 class="h-card mt-6">' + esc(block.text) + '</h2>';
-      } else if (block.type === 'paragraph') {
-        html += '<p class="text-muted leading-relaxed mt-3" style="white-space:pre-line">' + esc(block.text) + '</p>';
-      } else if (block.type === 'image') {
-        if (block.url) html += '<img src="' + esc(block.url) + '" alt="" style="width:100%;max-height:20rem;object-fit:cover;border-radius:.75rem;border:2px solid var(--ink);margin-top:1.5rem">';
-        if (block.caption) html += '<p class="text-sm text-muted mt-1">' + esc(block.caption) + '</p>';
-      } else if (block.type === 'gallery' && Array.isArray(block.images)) {
-        html += '<div class="grid gap-3 mt-6" style="grid-template-columns:repeat(auto-fill,minmax(8rem,1fr))">';
-        block.images.forEach(function (url) { html += '<img src="' + esc(url) + '" alt="" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:.5rem;border:2px solid var(--ink)">'; });
-        html += '</div>';
-      } else if (block.type === 'button') {
-        html += '<span class="btn btn-accent mt-4" style="pointer-events:none;display:inline-block">' + esc(block.label) + '</span>';
-      } else if (block.type === 'spacer') {
-        html += '<div style="height:' + (Number(block.height) || 40) + 'px"></div>';
-      }
-    });
+    var html = '<h1 class="h-hero">' + esc(item.name) + (item.pronouns ? ' <span class="text-muted" style="font-size:.55em">(' + esc(item.pronouns) + ')</span>' : '') + '</h1>';
+    if (item.photo_url) html += '<img src="' + esc(item.photo_url) + '" alt="" style="width:100%;max-height:22rem;object-fit:cover;border-radius:1rem;border:2px solid var(--ink);margin:1rem 0">';
+    if (item.current_role) html += '<p class="mt-2 text-lg font-semibold">' + esc(item.current_role) + '</p>';
+    if (item.location) html += '<p class="text-sm text-muted">' + esc(item.location) + '</p>';
+    html += '<p class="mt-4 text-lg text-muted leading-relaxed">' + esc(item.bio) + '</p>';
+    if (item.quote) html += '<blockquote class="card p-4 mt-4" style="border-left:4px solid var(--coral-ink)">“' + esc(item.quote) + '”</blockquote>';
+    var links = safeParse(item.links_json, []);
+    if (links.length) {
+      html += '<div class="flex flex-wrap gap-3 mt-4">';
+      links.forEach(function (l) { html += '<span class="btn" style="pointer-events:none">' + esc(l.label) + '</span>'; });
+      html += '</div>';
+    }
+    if (item.story) html += '<div class="card p-6 mt-6"><h2 class="h-card mb-2">Their story</h2><p class="text-muted leading-relaxed" style="white-space:pre-line">' + esc(item.story) + '</p></div>';
+    var photos = safeParse(item.photos_json, []);
+    if (photos.length) {
+      html += '<div class="mt-6"><h2 class="h-card mb-3">More photos</h2><div class="grid gap-3" style="grid-template-columns:repeat(auto-fill,minmax(8rem,1fr))">';
+      photos.forEach(function (url) { html += '<img src="' + esc(url) + '" alt="" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:.5rem;border:2px solid var(--ink)">'; });
+      html += '</div></div>';
+    }
     return html;
   }
 
@@ -941,25 +743,40 @@ permalink: /admin/dots-alumni/
     e.preventDefault();
     if (!editingId) return;
 
-    var core = deriveCoreFields(blocks);
-    if (!core.name || !core.bio) {
+    var name = document.getElementById('f_name').value.trim();
+    var bio = document.getElementById('f_bio').value.trim();
+    if (!name || !bio) {
       setFormStatus('Name and bio are both required.', true);
       return;
     }
 
+    var links = [];
+    var ig = document.getElementById('f_instagram').value.trim();
+    var li = document.getElementById('f_linkedin').value.trim();
+    var web = document.getElementById('f_website').value.trim();
+    if (ig) links.push({ label: 'Instagram', url: ig });
+    if (li) links.push({ label: 'LinkedIn', url: li });
+    if (web) links.push({ label: 'Website', url: web });
+
     var body = {
       edition: f_edition.value.trim(),
       status: f_status.value,
-      name: core.name,
-      pronouns: core.pronouns,
-      current_role: core.current_role,
-      location: core.location,
-      quote: core.quote,
-      bio: core.bio,
-      photoUrl: core.photoUrl,
-      photos_json: '[]',
-      links_json: core.links_json,
-      blocks_json: JSON.stringify(blocks),
+      name: name,
+      pronouns: document.getElementById('f_pronouns').value.trim() || null,
+      current_role: document.getElementById('f_role').value.trim() || null,
+      location: document.getElementById('f_location').value.trim() || null,
+      quote: document.getElementById('f_quote').value.trim() || null,
+      bio: bio,
+      story: document.getElementById('f_story').value.trim() || null,
+      photoUrl: f_photo_url.value || '',
+      photos_json: JSON.stringify(extraPhotos),
+      links_json: JSON.stringify(links),
+      // The drag-and-drop page builder that used to populate this column
+      // is retired -- any edit through this form is flat-fields-only from
+      // here on, so an old entry's stale block order can't linger and
+      // keep rendering on the public page after staff have just edited
+      // its plain fields (see the "unified" branch in src/dots/alumni-profile.njk).
+      blocks_json: null,
     };
 
     saveBtn.disabled = true;

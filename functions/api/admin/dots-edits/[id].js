@@ -1,7 +1,6 @@
 import { requireStaff } from '../../../_lib/guard.js';
 import { badRequest, json } from '../../../_lib/http.js';
 import { scheduleRebuild } from '../../../_lib/rebuild.js';
-import { sanitizeBlocks, deriveCoreFields } from '../../../_lib/dotsBlocks.js';
 
 const PROPOSED_FIELD_MAP = {
   name: 'name',
@@ -19,15 +18,17 @@ const PROPOSED_FIELD_MAP = {
 
 // Approve on an 'edit' row normally copies proposed_json's fields onto
 // the live dots_alumni row verbatim -- but the review screen
-// (src/admin/dots-edits.njk) lets staff adjust the proposed blocks right
-// there before approving, so an optional `blocks` array in the request
-// body overrides the stored proposal entirely: this re-derives the flat
-// columns from whatever staff actually left in the editor, same as a
-// normal submission. Approve on a 'delete' row (see functions/api/
-// dots-alumni/request-deletion.js) deletes it outright, same FK-safe
-// order as the direct admin delete in functions/api/admin/dots-alumni/
-// [id].js. Reject just closes the review out either way -- the live
-// entry (or lack of one) is untouched. Neither ever touches
+// (src/admin/dots-edits.njk) lets staff adjust the proposed fields right
+// there before approving, so an optional `fields` object in the request
+// body overrides the stored proposal entirely with whatever staff left
+// in the editor. blocks_json isn't part of that override -- the page
+// builder that produced it is retired, so any edit that goes through
+// this review screen always ends up flat-fields-only (see proposeEdit.js
+// nulling it in every new proposal). Approve on a 'delete' row (see
+// functions/api/dots-alumni/request-deletion.js) deletes it outright,
+// same FK-safe order as the direct admin delete in functions/api/admin/
+// dots-alumni/[id].js. Reject just closes the review out either way --
+// the live entry (or lack of one) is untouched. Neither ever touches
 // dots_alumni.status -- an edit proposal can't un-publish or re-queue an
 // already-published entry, it only changes its content.
 export async function onRequestPut({ request, env, params, waitUntil }) {
@@ -54,15 +55,24 @@ export async function onRequestPut({ request, env, params, waitUntil }) {
 
     if (body.action === 'approve') {
       let proposed;
-      if (Array.isArray(body.blocks)) {
-        const blocks = sanitizeBlocks(body.blocks);
-        if (!blocks) return badRequest('Your page is empty — add at least a name and bio.');
-        const core = deriveCoreFields(blocks);
-        if (!core.name || !core.bio) return badRequest('Name and bio are both required.');
+      if (body.fields && typeof body.fields === 'object') {
+        const f = body.fields;
+        const name = String(f.name || '').trim().slice(0, 100);
+        const bio = String(f.bio || '').trim().slice(0, 600);
+        if (!name) return badRequest('Name is required.');
+        if (!bio) return badRequest('A short bio is required.');
         proposed = {
-          name: core.name, pronouns: core.pronouns, current_role: core.current_role, location: core.location,
-          quote: core.quote, bio: core.bio, photo_url: core.photo_url, photos_json: '[]',
-          links_json: core.links_json, blocks_json: JSON.stringify(blocks),
+          name,
+          pronouns: (String(f.pronouns || '').trim().slice(0, 30)) || null,
+          current_role: (String(f.current_role || '').trim().slice(0, 120)) || null,
+          location: (String(f.location || '').trim().slice(0, 80)) || null,
+          quote: (String(f.quote || '').trim().slice(0, 300)) || null,
+          bio,
+          story: (String(f.story || '').trim().slice(0, 4000)) || null,
+          photo_url: String(f.photo_url || '').trim().slice(0, 500),
+          photos_json: JSON.stringify(Array.isArray(f.photos) ? f.photos.filter((u) => typeof u === 'string' && u).slice(0, 6) : []),
+          links_json: JSON.stringify(Array.isArray(f.links) ? f.links : []),
+          blocks_json: null,
         };
       } else {
         try { proposed = JSON.parse(edit.proposed_json); } catch { return badRequest('Stored proposal is corrupt'); }

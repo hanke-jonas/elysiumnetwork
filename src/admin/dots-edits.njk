@@ -52,18 +52,74 @@ permalink: /admin/dots-edits/
           <span>After — you can edit this before approving</span>
           <button type="button" id="resetProposedBtn" class="btn !py-1 !px-2 text-xs" style="background:#fff">Reset to their original</button>
         </p>
-        <div style="padding:1.25rem;">
-          <div id="proposedBlocksList" class="flex flex-col gap-3 mb-3"></div>
-          <div class="grid grid-cols-2 gap-2">
-            <button type="button" class="rounded-lg border-2 border-ink p-2 text-left text-xs" style="background:#fff" data-add="quote">+ Quote</button>
-            <button type="button" class="rounded-lg border-2 border-ink p-2 text-left text-xs" style="background:#fff" data-add="subtitle">+ What &amp; where</button>
-            <button type="button" class="rounded-lg border-2 border-ink p-2 text-left text-xs" style="background:#fff" data-add="links">+ Links</button>
-            <button type="button" class="rounded-lg border-2 border-ink p-2 text-left text-xs" style="background:#fff" data-add="heading">+ Heading</button>
-            <button type="button" class="rounded-lg border-2 border-ink p-2 text-left text-xs" style="background:#fff" data-add="paragraph">+ Text</button>
-            <button type="button" class="rounded-lg border-2 border-ink p-2 text-left text-xs" style="background:#fff" data-add="image">+ Image</button>
-            <button type="button" class="rounded-lg border-2 border-ink p-2 text-left text-xs" style="background:#fff" data-add="gallery">+ Gallery</button>
-            <button type="button" class="rounded-lg border-2 border-ink p-2 text-left text-xs" style="background:#fff" data-add="button">+ Button</button>
-            <button type="button" class="rounded-lg border-2 border-ink p-2 text-left text-xs" style="background:#fff" data-add="spacer">+ Spacer</button>
+        <div style="padding:1.25rem;" class="flex flex-col gap-4">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="form-label" for="p_name">Name *</label>
+              <input class="input text-sm" type="text" id="p_name" maxlength="100">
+            </div>
+            <div>
+              <label class="form-label" for="p_pronouns">Pronouns</label>
+              <input class="input text-sm" type="text" id="p_pronouns" maxlength="30">
+            </div>
+          </div>
+
+          <div>
+            <p class="form-label">Photo</p>
+            <input type="hidden" id="p_photo_url">
+            <div id="p_photoEmpty">
+              <label class="btn !py-1.5 !px-3 text-xs cursor-pointer inline-flex">📷 Add a photo<input type="file" id="p_photoFile" accept="image/jpeg,image/png,image/webp" class="sr-only"></label>
+            </div>
+            <div id="p_photoFilled" hidden class="flex items-center gap-3">
+              <img id="p_photoPreview" src="" alt="" class="w-16 h-16 rounded-lg object-cover border-2 border-ink">
+              <div class="flex gap-2">
+                <label class="btn !py-1 !px-2 text-xs cursor-pointer inline-flex">Change<input type="file" id="p_photoFileChange" accept="image/jpeg,image/png,image/webp" class="sr-only"></label>
+                <button type="button" id="p_photoRemoveBtn" class="btn btn-coral !py-1 !px-2 text-xs">Remove</button>
+              </div>
+            </div>
+            <p id="p_photoStatus" role="status" aria-live="polite" class="text-xs mt-1 text-muted"></p>
+          </div>
+
+          <div>
+            <label class="form-label" for="p_bio">Bio *</label>
+            <textarea class="input text-sm" id="p_bio" rows="3" maxlength="600"></textarea>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="form-label" for="p_role">What they're up to</label>
+              <input class="input text-sm" type="text" id="p_role" maxlength="120">
+            </div>
+            <div>
+              <label class="form-label" for="p_location">Based in</label>
+              <input class="input text-sm" type="text" id="p_location" maxlength="80">
+            </div>
+          </div>
+
+          <div>
+            <label class="form-label" for="p_quote">Quote</label>
+            <input class="input text-sm" type="text" id="p_quote" maxlength="300">
+          </div>
+
+          <div>
+            <label class="form-label" for="p_story">Story</label>
+            <textarea class="input text-sm" id="p_story" rows="4" maxlength="4000"></textarea>
+          </div>
+
+          <div>
+            <p class="form-label">Links</p>
+            <div class="flex flex-col gap-2 mt-1">
+              <input class="input text-sm" type="text" id="p_instagram" placeholder="Instagram" maxlength="300">
+              <input class="input text-sm" type="text" id="p_linkedin" placeholder="LinkedIn" maxlength="300">
+              <input class="input text-sm" type="text" id="p_website" placeholder="Website" maxlength="300">
+            </div>
+          </div>
+
+          <div>
+            <p class="form-label">More photos</p>
+            <div id="p_extraPhotosGrid" class="grid grid-cols-4 gap-2 mb-2"></div>
+            <label id="p_addExtraPhotoBtn" class="btn !py-1 !px-2 text-xs cursor-pointer inline-flex">+ Add a photo<input type="file" id="p_extraPhotoFile" accept="image/jpeg,image/png,image/webp" class="sr-only"></label>
+            <p id="p_extraPhotoStatus" role="status" aria-live="polite" class="text-xs mt-1 text-muted"></p>
           </div>
         </div>
       </div>
@@ -82,9 +138,9 @@ permalink: /admin/dots-edits/
   var items = [];
   var reviewingId = null;
   var reviewingItem = null;
-  var proposedBlocks = [];
-  var originalProposedBlocks = [];
-  var REQUIRED_TYPES = { name: true, bio: true };
+  var originalProposed = {};
+  var extraPhotos = [];
+  var MAX_EXTRA_PHOTOS = 6;
 
   var tbody = document.getElementById('editsTbody');
   var tableStatus = document.getElementById('tableStatus');
@@ -93,7 +149,6 @@ permalink: /admin/dots-edits/
   var deleteReviewCard = document.getElementById('deleteReviewCard');
   var editReviewGrid = document.getElementById('editReviewGrid');
   var reviewCurrent = document.getElementById('reviewCurrent');
-  var proposedBlocksList = document.getElementById('proposedBlocksList');
   var resetProposedBtn = document.getElementById('resetProposedBtn');
   var reviewCloseBtn = document.getElementById('reviewCloseBtn');
   var approveBtn = document.getElementById('approveBtn');
@@ -113,12 +168,11 @@ permalink: /admin/dots-edits/
   }
 
   // Renders one block list in order, matching src/dots/alumni-profile.njk's
-  // unified branch exactly -- every identity block type (name/photo/bio/
-  // quote/subtitle/links) plus the free-form content ones, so what staff
-  // see here is what the public page will actually show, in whatever
-  // order the blocks are in. Falls back to the pre-unification flat-field
-  // layout only for legacy entries that never went through the block
-  // builder at all.
+  // unified branch -- only ever needed for the read-only "Before" pane, for
+  // a currently-live entry that was built through the since-retired
+  // drag-and-drop page builder and hasn't been edited since. Any proposal
+  // reviewed here saves flat fields only, so this can never appear on the
+  // "After" side.
   function renderBlockList(blocks) {
     var html = '';
     blocks.forEach(function (block) {
@@ -192,22 +246,6 @@ permalink: /admin/dots-edits/
     return renderLegacyFallback(data);
   }
 
-  // --- Editable "After" block list --------------------------------------
-  function uid() { return 'b' + Math.random().toString(36).slice(2, 10); }
-
-  function newBlock(type) {
-    if (type === 'quote') return { id: uid(), type: type, text: '' };
-    if (type === 'subtitle') return { id: uid(), type: type, role: '', location: '' };
-    if (type === 'links') return { id: uid(), type: type, instagram: '', linkedin: '', website: '' };
-    if (type === 'heading') return { id: uid(), type: type, text: '' };
-    if (type === 'paragraph') return { id: uid(), type: type, text: '' };
-    if (type === 'image') return { id: uid(), type: type, url: '', caption: '' };
-    if (type === 'gallery') return { id: uid(), type: type, images: [] };
-    if (type === 'button') return { id: uid(), type: type, label: '', href: '' };
-    if (type === 'spacer') return { id: uid(), type: type, height: 40 };
-    return null;
-  }
-
   function uploadAdminImage(file, onDone) {
     var fd = new FormData();
     fd.append('file', file);
@@ -216,233 +254,139 @@ permalink: /admin/dots-edits/
     });
   }
 
-  function blockLabel(type) {
-    return {
-      name: 'Name', photo: 'Photo', bio: 'Bio', quote: 'Quote', subtitle: "What & where", links: 'Links',
-      heading: 'Heading', paragraph: 'Text', image: 'Image', gallery: 'Gallery', button: 'Button', spacer: 'Spacer',
-    }[type] || type;
+  // --- Editable "After" fields --------------------------------------------
+  var p_photo_url = document.getElementById('p_photo_url');
+  var p_photoEmpty = document.getElementById('p_photoEmpty');
+  var p_photoFilled = document.getElementById('p_photoFilled');
+  var p_photoPreview = document.getElementById('p_photoPreview');
+  var p_photoStatus = document.getElementById('p_photoStatus');
+
+  function setProposedPhoto(url) {
+    p_photo_url.value = url || '';
+    if (url) {
+      p_photoPreview.src = url;
+      p_photoEmpty.hidden = true;
+      p_photoFilled.hidden = false;
+    } else {
+      p_photoEmpty.hidden = false;
+      p_photoFilled.hidden = true;
+    }
   }
 
-  var dragIndex = null;
-
-  function renderProposedBlocks() {
-    proposedBlocksList.innerHTML = '';
-    proposedBlocks.forEach(function (block, index) {
-      var required = !!REQUIRED_TYPES[block.type];
-      var card = document.createElement('div');
-      card.className = 'rounded-xl border-2 p-3';
-      card.style.background = required ? 'var(--paper-2)' : '#fff';
-      card.style.borderColor = 'var(--ink)';
-      card.draggable = true;
-      card.addEventListener('dragstart', function () { dragIndex = index; card.style.opacity = '.5'; });
-      card.addEventListener('dragend', function () { card.style.opacity = ''; });
-      card.addEventListener('dragover', function (e) { e.preventDefault(); });
-      card.addEventListener('drop', function (e) {
-        e.preventDefault();
-        if (dragIndex === null || dragIndex === index) return;
-        var moved = proposedBlocks.splice(dragIndex, 1)[0];
-        proposedBlocks.splice(index, 0, moved);
-        dragIndex = null;
-        renderProposedBlocks();
-      });
-
-      var head = document.createElement('div');
-      head.className = 'flex items-center justify-between mb-2';
-      var tag = document.createElement('span');
-      tag.className = 'tag';
-      tag.style.fontSize = '.62rem';
-      tag.textContent = '⠿ ' + blockLabel(block.type);
-      if (required) tag.style.background = 'var(--sun)';
-      head.appendChild(tag);
-
-      var controls = document.createElement('div');
-      controls.className = 'flex items-center gap-1';
-      var upBtn = document.createElement('button');
-      upBtn.type = 'button'; upBtn.className = 'btn !py-0.5 !px-1.5 text-xs'; upBtn.textContent = '↑'; upBtn.disabled = index === 0;
-      upBtn.addEventListener('click', function () { if (index === 0) return; proposedBlocks.splice(index - 1, 0, proposedBlocks.splice(index, 1)[0]); renderProposedBlocks(); });
-      var downBtn = document.createElement('button');
-      downBtn.type = 'button'; downBtn.className = 'btn !py-0.5 !px-1.5 text-xs'; downBtn.textContent = '↓'; downBtn.disabled = index === proposedBlocks.length - 1;
-      downBtn.addEventListener('click', function () { if (index === proposedBlocks.length - 1) return; proposedBlocks.splice(index + 1, 0, proposedBlocks.splice(index, 1)[0]); renderProposedBlocks(); });
-      controls.appendChild(upBtn); controls.appendChild(downBtn);
-      if (!required) {
-        var removeBtn = document.createElement('button');
-        removeBtn.type = 'button'; removeBtn.className = 'btn btn-coral !py-0.5 !px-1.5 text-xs'; removeBtn.textContent = 'Remove';
-        removeBtn.addEventListener('click', function () { proposedBlocks.splice(index, 1); renderProposedBlocks(); });
-        controls.appendChild(removeBtn);
+  function handleProposedPhotoFile(file) {
+    if (!file) return;
+    p_photoStatus.style.color = '';
+    p_photoStatus.textContent = 'Uploading…';
+    uploadAdminImage(file, function (url, err) {
+      p_photoStatus.textContent = '';
+      if (!url) {
+        p_photoStatus.style.color = 'var(--coral-ink)';
+        p_photoStatus.textContent = err || 'Upload failed — try again.';
+        return;
       }
-      head.appendChild(controls);
-      card.appendChild(head);
-
-      var body = document.createElement('div');
-      body.className = 'flex flex-col gap-1.5';
-
-      if (block.type === 'name') {
-        var nameIn = document.createElement('input');
-        nameIn.className = 'input text-sm'; nameIn.type = 'text'; nameIn.maxLength = 100; nameIn.placeholder = 'Name'; nameIn.value = block.text || '';
-        nameIn.addEventListener('input', function () { block.text = nameIn.value; });
-        var pronounsIn = document.createElement('input');
-        pronounsIn.className = 'input text-sm'; pronounsIn.type = 'text'; pronounsIn.maxLength = 30; pronounsIn.placeholder = 'Pronouns (optional)'; pronounsIn.value = block.pronouns || '';
-        pronounsIn.addEventListener('input', function () { block.pronouns = pronounsIn.value; });
-        body.appendChild(nameIn); body.appendChild(pronounsIn);
-      } else if (block.type === 'photo') {
-        if (block.url) {
-          var photoPrev = document.createElement('img');
-          photoPrev.src = block.url; photoPrev.alt = '';
-          photoPrev.style.cssText = 'max-height:6rem;border-radius:.5rem;border:2px solid var(--ink);object-fit:cover';
-          body.appendChild(photoPrev);
-        }
-        var photoFileIn = document.createElement('input');
-        photoFileIn.className = 'input text-sm'; photoFileIn.type = 'file'; photoFileIn.accept = 'image/jpeg,image/png,image/webp';
-        var photoStatus = document.createElement('p');
-        photoStatus.className = 'text-xs text-muted';
-        photoFileIn.addEventListener('change', function () {
-          if (!photoFileIn.files[0]) return;
-          photoStatus.textContent = 'Uploading…';
-          uploadAdminImage(photoFileIn.files[0], function (url, err) {
-            if (!url) { photoStatus.style.color = 'var(--coral-ink)'; photoStatus.textContent = err || 'Upload failed.'; return; }
-            block.url = url; photoStatus.textContent = ''; renderProposedBlocks();
-          });
-        });
-        body.appendChild(photoFileIn); body.appendChild(photoStatus);
-      } else if (block.type === 'bio') {
-        var bioIn = document.createElement('textarea');
-        bioIn.className = 'input text-sm'; bioIn.rows = 3; bioIn.maxLength = 600; bioIn.placeholder = 'Bio'; bioIn.value = block.text || '';
-        bioIn.addEventListener('input', function () { block.text = bioIn.value; });
-        body.appendChild(bioIn);
-      } else if (block.type === 'quote') {
-        var quoteIn = document.createElement('input');
-        quoteIn.className = 'input text-sm'; quoteIn.type = 'text'; quoteIn.maxLength = 300; quoteIn.placeholder = 'Quote'; quoteIn.value = block.text || '';
-        quoteIn.addEventListener('input', function () { block.text = quoteIn.value; });
-        body.appendChild(quoteIn);
-      } else if (block.type === 'subtitle') {
-        var roleIn = document.createElement('input');
-        roleIn.className = 'input text-sm'; roleIn.type = 'text'; roleIn.maxLength = 120; roleIn.placeholder = 'What they\'re up to'; roleIn.value = block.role || '';
-        roleIn.addEventListener('input', function () { block.role = roleIn.value; });
-        var locIn = document.createElement('input');
-        locIn.className = 'input text-sm'; locIn.type = 'text'; locIn.maxLength = 80; locIn.placeholder = 'Where they are'; locIn.value = block.location || '';
-        locIn.addEventListener('input', function () { block.location = locIn.value; });
-        body.appendChild(roleIn); body.appendChild(locIn);
-      } else if (block.type === 'links') {
-        ['instagram', 'linkedin', 'website'].forEach(function (key) {
-          var lIn = document.createElement('input');
-          lIn.className = 'input text-sm'; lIn.type = 'text'; lIn.placeholder = key.charAt(0).toUpperCase() + key.slice(1); lIn.value = block[key] || '';
-          lIn.addEventListener('input', function () { block[key] = lIn.value; });
-          body.appendChild(lIn);
-        });
-      } else if (block.type === 'heading') {
-        var hIn = document.createElement('input');
-        hIn.className = 'input text-sm'; hIn.type = 'text'; hIn.maxLength = 200; hIn.placeholder = 'Heading'; hIn.value = block.text || '';
-        hIn.addEventListener('input', function () { block.text = hIn.value; });
-        body.appendChild(hIn);
-      } else if (block.type === 'paragraph') {
-        var pIn = document.createElement('textarea');
-        pIn.className = 'input text-sm'; pIn.rows = 3; pIn.maxLength = 4000; pIn.placeholder = 'Text'; pIn.value = block.text || '';
-        pIn.addEventListener('input', function () { block.text = pIn.value; });
-        body.appendChild(pIn);
-      } else if (block.type === 'image') {
-        if (block.url) {
-          var prevImg = document.createElement('img');
-          prevImg.src = block.url; prevImg.alt = '';
-          prevImg.style.cssText = 'max-height:6rem;border-radius:.5rem;border:2px solid var(--ink);object-fit:cover';
-          body.appendChild(prevImg);
-        }
-        var fIn = document.createElement('input');
-        fIn.className = 'input text-sm'; fIn.type = 'file'; fIn.accept = 'image/jpeg,image/png,image/webp';
-        var upStatus = document.createElement('p');
-        upStatus.className = 'text-xs text-muted';
-        fIn.addEventListener('change', function () {
-          if (!fIn.files[0]) return;
-          upStatus.textContent = 'Uploading…';
-          uploadAdminImage(fIn.files[0], function (url, err) {
-            if (!url) { upStatus.style.color = 'var(--coral-ink)'; upStatus.textContent = err || 'Upload failed.'; return; }
-            block.url = url; upStatus.textContent = ''; renderProposedBlocks();
-          });
-        });
-        body.appendChild(fIn); body.appendChild(upStatus);
-        var capIn = document.createElement('input');
-        capIn.className = 'input text-sm'; capIn.type = 'text'; capIn.maxLength = 300; capIn.placeholder = 'Caption'; capIn.value = block.caption || '';
-        capIn.addEventListener('input', function () { block.caption = capIn.value; });
-        body.appendChild(capIn);
-      } else if (block.type === 'gallery') {
-        if (block.images && block.images.length) {
-          var grid = document.createElement('div');
-          grid.className = 'flex flex-wrap gap-1';
-          block.images.forEach(function (url, imgIdx) {
-            var wrap = document.createElement('div');
-            wrap.style.position = 'relative';
-            var gImg = document.createElement('img');
-            gImg.src = url; gImg.alt = '';
-            gImg.style.cssText = 'width:3rem;height:3rem;border-radius:.4rem;object-fit:cover;border:2px solid var(--ink)';
-            wrap.appendChild(gImg);
-            var rmBtn = document.createElement('button');
-            rmBtn.type = 'button'; rmBtn.textContent = '×';
-            rmBtn.style.cssText = 'position:absolute;top:-.3rem;right:-.3rem;width:1rem;height:1rem;border-radius:999px;background:var(--coral-ink);color:#fff;font-size:.6rem;line-height:1;border:none;cursor:pointer';
-            rmBtn.addEventListener('click', function () { block.images.splice(imgIdx, 1); renderProposedBlocks(); });
-            wrap.appendChild(rmBtn);
-            grid.appendChild(wrap);
-          });
-          body.appendChild(grid);
-        }
-        var gIn = document.createElement('input');
-        gIn.className = 'input text-sm'; gIn.type = 'file'; gIn.accept = 'image/jpeg,image/png,image/webp'; gIn.multiple = true;
-        gIn.addEventListener('change', function () {
-          var files = Array.prototype.slice.call(gIn.files).slice(0, 12 - (block.images || []).length);
-          if (!files.length) return;
-          var remaining = files.length;
-          files.forEach(function (file) {
-            uploadAdminImage(file, function (url) {
-              if (url) { block.images = block.images || []; block.images.push(url); }
-              remaining -= 1;
-              if (remaining === 0) renderProposedBlocks();
-            });
-          });
-        });
-        body.appendChild(gIn);
-      } else if (block.type === 'button') {
-        var lblIn = document.createElement('input');
-        lblIn.className = 'input text-sm'; lblIn.type = 'text'; lblIn.maxLength = 100; lblIn.placeholder = 'Label'; lblIn.value = block.label || '';
-        lblIn.addEventListener('input', function () { block.label = lblIn.value; });
-        var hrefIn = document.createElement('input');
-        hrefIn.className = 'input text-sm'; hrefIn.type = 'text'; hrefIn.maxLength = 500; hrefIn.placeholder = 'Link'; hrefIn.value = block.href || '';
-        hrefIn.addEventListener('input', function () { block.href = hrefIn.value; });
-        body.appendChild(lblIn); body.appendChild(hrefIn);
-      } else if (block.type === 'spacer') {
-        var hgtIn = document.createElement('input');
-        hgtIn.className = 'input text-sm'; hgtIn.type = 'number'; hgtIn.min = 0; hgtIn.max = 300; hgtIn.value = block.height || 40;
-        hgtIn.addEventListener('input', function () { block.height = Number(hgtIn.value) || 0; });
-        body.appendChild(hgtIn);
-      }
-
-      card.appendChild(body);
-      proposedBlocksList.appendChild(card);
+      setProposedPhoto(url);
     });
   }
+  document.getElementById('p_photoFile').addEventListener('change', function (e) { handleProposedPhotoFile(e.target.files[0]); e.target.value = ''; });
+  document.getElementById('p_photoFileChange').addEventListener('change', function (e) { handleProposedPhotoFile(e.target.files[0]); e.target.value = ''; });
+  document.getElementById('p_photoRemoveBtn').addEventListener('click', function () { setProposedPhoto(''); });
 
-  document.querySelectorAll('#editReviewGrid [data-add]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var b = newBlock(btn.getAttribute('data-add'));
-      if (b) { proposedBlocks.push(b); renderProposedBlocks(); }
+  var p_extraPhotosGrid = document.getElementById('p_extraPhotosGrid');
+  var p_extraPhotoStatus = document.getElementById('p_extraPhotoStatus');
+  var p_addExtraPhotoBtn = document.getElementById('p_addExtraPhotoBtn');
+
+  function renderProposedExtraPhotos() {
+    p_extraPhotosGrid.innerHTML = '';
+    extraPhotos.forEach(function (url, i) {
+      var wrap = document.createElement('div');
+      wrap.style.cssText = 'position:relative';
+      var img = document.createElement('img');
+      img.src = url; img.alt = '';
+      img.className = 'w-full aspect-square object-cover rounded-lg border-2 border-ink';
+      var rm = document.createElement('button');
+      rm.type = 'button'; rm.textContent = '×';
+      rm.setAttribute('aria-label', 'Remove this photo');
+      rm.style.cssText = 'position:absolute;top:-.4rem;right:-.4rem;width:1.25rem;height:1.25rem;border-radius:999px;background:var(--coral);border:2px solid var(--ink);font-weight:700;line-height:1;font-size:.7rem';
+      rm.addEventListener('click', function () { extraPhotos.splice(i, 1); renderProposedExtraPhotos(); });
+      wrap.appendChild(img); wrap.appendChild(rm);
+      p_extraPhotosGrid.appendChild(wrap);
+    });
+    p_addExtraPhotoBtn.style.display = extraPhotos.length >= MAX_EXTRA_PHOTOS ? 'none' : '';
+  }
+  document.getElementById('p_extraPhotoFile').addEventListener('change', function (e) {
+    var file = e.target.files[0];
+    e.target.value = '';
+    if (!file || extraPhotos.length >= MAX_EXTRA_PHOTOS) return;
+    p_extraPhotoStatus.style.color = '';
+    p_extraPhotoStatus.textContent = 'Uploading…';
+    uploadAdminImage(file, function (url, err) {
+      p_extraPhotoStatus.textContent = '';
+      if (!url) {
+        p_extraPhotoStatus.style.color = 'var(--coral-ink)';
+        p_extraPhotoStatus.textContent = err || 'Upload failed — try again.';
+        return;
+      }
+      extraPhotos.push(url);
+      renderProposedExtraPhotos();
     });
   });
 
+  function fillProposedFields(p) {
+    document.getElementById('p_name').value = p.name || '';
+    document.getElementById('p_pronouns').value = p.pronouns || '';
+    document.getElementById('p_bio').value = p.bio || '';
+    document.getElementById('p_role').value = p.current_role || '';
+    document.getElementById('p_location').value = p.location || '';
+    document.getElementById('p_quote').value = p.quote || '';
+    document.getElementById('p_story').value = p.story || '';
+    setProposedPhoto(p.photo_url || '');
+    var links = safeParseArr(p.links_json) || [];
+    document.getElementById('p_instagram').value = (links.find(function (l) { return l.label === 'Instagram'; }) || {}).url || '';
+    document.getElementById('p_linkedin').value = (links.find(function (l) { return l.label === 'LinkedIn'; }) || {}).url || '';
+    document.getElementById('p_website').value = (links.find(function (l) { return l.label === 'Website'; }) || {}).url || '';
+    extraPhotos = (safeParseArr(p.photos_json) || []).slice(0, MAX_EXTRA_PHOTOS);
+    renderProposedExtraPhotos();
+  }
+
+  function readProposedFields() {
+    var links = [];
+    var ig = document.getElementById('p_instagram').value.trim();
+    var li = document.getElementById('p_linkedin').value.trim();
+    var web = document.getElementById('p_website').value.trim();
+    if (ig) links.push({ label: 'Instagram', url: ig });
+    if (li) links.push({ label: 'LinkedIn', url: li });
+    if (web) links.push({ label: 'Website', url: web });
+    return {
+      name: document.getElementById('p_name').value.trim(),
+      pronouns: document.getElementById('p_pronouns').value.trim(),
+      bio: document.getElementById('p_bio').value.trim(),
+      current_role: document.getElementById('p_role').value.trim(),
+      location: document.getElementById('p_location').value.trim(),
+      quote: document.getElementById('p_quote').value.trim(),
+      story: document.getElementById('p_story').value.trim(),
+      photo_url: p_photo_url.value || '',
+      photos: extraPhotos.slice(),
+      links: links,
+    };
+  }
+
   resetProposedBtn.addEventListener('click', function () {
-    proposedBlocks = originalProposedBlocks.map(function (b) { return Object.assign({}, b); });
-    renderProposedBlocks();
+    fillProposedFields(originalProposed);
   });
 
   // --- What-changed summary ----------------------------------------------
-  var FIELD_LABELS = { name: 'Name', pronouns: 'Pronouns', bio: 'Bio', photo_url: 'Photo', current_role: "What they're up to", location: 'Location', quote: 'Quote' };
+  var FIELD_LABELS = { name: 'Name', pronouns: 'Pronouns', bio: 'Bio', photo_url: 'Photo', current_role: "What they're up to", location: 'Location', quote: 'Quote', story: 'Story' };
 
-  function deriveCore(blocks) {
+  function deriveCoreFromBlocks(blocks) {
     var find = function (t) { return (blocks || []).find(function (b) { return b.type === t; }); };
     var n = find('name'), b = find('bio'), p = find('photo'), q = find('quote'), s = find('subtitle');
     return {
       name: (n && n.text) || '', pronouns: (n && n.pronouns) || '', bio: (b && b.text) || '',
-      photo_url: (p && p.url) || '', current_role: (s && s.role) || '', location: (s && s.location) || '', quote: (q && q.text) || '',
+      photo_url: (p && p.url) || '', current_role: (s && s.role) || '', location: (s && s.location) || '', quote: (q && q.text) || '', story: '',
     };
   }
 
-  function renderChangesSummary(currentCore, proposedCore, blocksActuallyDiffer) {
+  function renderChangesSummary(currentCore, proposedCore) {
     var rows = [];
     Object.keys(FIELD_LABELS).forEach(function (key) {
       var oldVal = currentCore[key] || '';
@@ -453,11 +397,8 @@ permalink: /admin/dots-edits/
         rows.push('<li><strong>' + esc(FIELD_LABELS[key]) + ':</strong> <span class="text-muted">' + esc(oldDisplay) + '</span> <span class="mx-1">→</span> <span style="color:var(--mint-ink);font-weight:600">' + esc(newDisplay) + '</span></li>');
       }
     });
-    if (blocksActuallyDiffer) {
-      rows.push('<li><strong>Page layout:</strong> <span style="color:var(--mint-ink);font-weight:600">sections were added, removed, or reordered</span> — see the editable panel on the right for exactly what changed.</li>');
-    }
     if (!rows.length) {
-      changesSummary.innerHTML = '<p class="eyebrow" style="color:var(--coral-ink)">What changed</p><p class="text-sm text-muted mt-2">Nothing in the core fields changed — only the page sections may differ. Compare the two panels below.</p>';
+      changesSummary.innerHTML = '<p class="eyebrow" style="color:var(--coral-ink)">What changed</p><p class="text-sm text-muted mt-2">Nothing changed in the main fields — links or extra photos may still differ, compare the two panels below.</p>';
     } else {
       changesSummary.innerHTML = '<p class="eyebrow" style="color:var(--coral-ink)">What changed</p><ul class="mt-2 space-y-1 text-sm">' + rows.join('') + '</ul>';
     }
@@ -498,19 +439,19 @@ permalink: /admin/dots-edits/
 
       reviewCurrent.innerHTML = renderCurrent(currentData);
 
-      var proposedBlocksRaw = safeParseArr(proposed.blocks_json) || [];
-      proposedBlocks = proposedBlocksRaw.map(function (b) { return Object.assign({}, b); });
-      originalProposedBlocks = proposedBlocksRaw.map(function (b) { return Object.assign({}, b); });
-      renderProposedBlocks();
+      originalProposed = proposed;
+      fillProposedFields(proposed);
 
       var currentBlocks = safeParseArr(currentData.blocks_json);
-      var currentCore = isUnified(currentBlocks) ? deriveCore(currentBlocks) : {
+      var currentCore = isUnified(currentBlocks) ? deriveCoreFromBlocks(currentBlocks) : {
         name: currentData.name || '', pronouns: currentData.pronouns || '', bio: currentData.bio || '',
-        photo_url: currentData.photo_url || '', current_role: currentData.current_role || '', location: currentData.location || '', quote: currentData.quote || '',
+        photo_url: currentData.photo_url || '', current_role: currentData.current_role || '', location: currentData.location || '', quote: currentData.quote || '', story: currentData.story || '',
       };
-      var proposedCore = deriveCore(proposedBlocksRaw);
-      var blocksDiffer = JSON.stringify(currentBlocks || []) !== JSON.stringify(proposedBlocksRaw || []);
-      renderChangesSummary(currentCore, proposedCore, blocksDiffer);
+      var proposedCore = {
+        name: proposed.name || '', pronouns: proposed.pronouns || '', bio: proposed.bio || '',
+        photo_url: proposed.photo_url || '', current_role: proposed.current_role || '', location: proposed.location || '', quote: proposed.quote || '', story: proposed.story || '',
+      };
+      renderChangesSummary(currentCore, proposedCore);
     }
 
     reviewStatus.textContent = '';
@@ -520,9 +461,7 @@ permalink: /admin/dots-edits/
   function closeReview() {
     reviewOverlay.style.display = 'none';
     reviewCurrent.innerHTML = '';
-    proposedBlocksList.innerHTML = '';
-    proposedBlocks = [];
-    originalProposedBlocks = [];
+    extraPhotos = [];
     reviewingId = null;
     reviewingItem = null;
   }
@@ -533,11 +472,11 @@ permalink: /admin/dots-edits/
   function decide(action) {
     if (!reviewingId) return;
     var isDelete = reviewingItem && reviewingItem.type === 'delete';
+    var fields = null;
 
     if (action === 'approve' && !isDelete) {
-      var hasName = proposedBlocks.some(function (b) { return b.type === 'name' && b.text && b.text.trim(); });
-      var hasBio = proposedBlocks.some(function (b) { return b.type === 'bio' && b.text && b.text.trim(); });
-      if (!hasName || !hasBio) {
+      fields = readProposedFields();
+      if (!fields.name || !fields.bio) {
         reviewStatus.style.color = 'var(--coral-ink)';
         reviewStatus.textContent = 'Name and bio are both required before you can approve this.';
         return;
@@ -549,7 +488,7 @@ permalink: /admin/dots-edits/
     reviewStatus.textContent = 'Saving…';
     reviewStatus.style.color = '';
     var payload = { action: action };
-    if (action === 'approve' && !isDelete) payload.blocks = proposedBlocks;
+    if (fields) payload.fields = fields;
     adminFetch('/api/admin/dots-edits/' + reviewingId, { method: 'PUT', body: JSON.stringify(payload) }).then(function (r) {
       approveBtn.disabled = false;
       rejectBtn.disabled = false;

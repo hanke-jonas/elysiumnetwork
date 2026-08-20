@@ -75,7 +75,6 @@ export async function onRequestPost({ request, env }) {
         photoUrl: source.photo_url,
         photos: JSON.parse(source.photos_json || '[]'),
         links: JSON.parse(source.links_json || '[]'),
-        blocks: JSON.parse(source.blocks_json || 'null'),
       },
     });
   } catch (err) {
