@@ -30,7 +30,10 @@ permalink: /dots/alumni/submit/
       <p class="text-sm text-muted mb-5" id="editionLabel">Submissions are reviewed before they go live, so it may take a little while to appear.</p>
       <p class="text-sm mt-1 mb-5" id="pendingEditNotice" hidden style="color:var(--coral-ink)">You already have a change waiting for review — submitting again updates that same proposal rather than adding a new one.</p>
 
-      <p class="text-xs text-muted mb-4">This is your whole page, one section at a time — drag to reorder anything. Your name and bio are required (shown in every gallery listing), so those two can be edited and repositioned but not removed entirely. A photo is recommended but optional — everything else, including your photo, is fully optional and removable.</p>
+      <div class="flex items-start justify-between gap-3 mb-4">
+        <p class="text-xs text-muted">This is your whole page, one section at a time — drag to reorder anything. Your name and bio are required (shown in every gallery listing), so those two can be edited and repositioned but not removed entirely. A photo is recommended but optional — everything else, including your photo, is fully optional and removable.</p>
+        <button type="button" id="takeTourBtn" class="btn !py-1.5 !px-3 text-xs shrink-0">🎓 Take the tour</button>
+      </div>
 
       <form id="alumni-form" class="flex flex-col gap-3">
         <input type="hidden" id="hiddenCode" name="code">
@@ -99,6 +102,42 @@ permalink: /dots/alumni/submit/
 </section>
 {% include "dialog.njk" %}
 
+<div id="tourOverlay" style="position:fixed;inset:0;background:rgba(25,23,18,.85);z-index:310;display:none;align-items:center;justify-content:center;padding:1rem">
+  <div class="card p-8" style="max-width:30rem;width:100%;">
+    <div class="flex items-center gap-1.5 mb-5" id="tourDots"></div>
+    <p class="eyebrow" style="color:var(--coral-ink)" id="tourStepLabel"></p>
+    <h3 class="h-card mt-2" id="tourTitle" style="font-size:1.4rem"></h3>
+    <p class="text-muted leading-relaxed mt-3" id="tourBody"></p>
+    <div class="flex items-center justify-between mt-7">
+      <button type="button" id="tourSkipBtn" class="text-sm text-muted underline">Skip tour</button>
+      <div class="flex gap-2">
+        <button type="button" id="tourBackBtn" class="btn !py-2 !px-3 text-sm">Back</button>
+        <button type="button" id="tourNextBtn" class="btn btn-accent !py-2 !px-4 text-sm">Next</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="cropModalOverlay" style="position:fixed;inset:0;background:rgba(25,23,18,.85);z-index:300;display:none;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:#fff;border:2px solid var(--ink);border-radius:1rem;box-shadow:8px 8px 0 var(--ink);max-width:34rem;width:100%;padding:1.5rem;max-height:92vh;overflow-y:auto">
+    <h3 class="h-card mb-1">Adjust your photo</h3>
+    <p class="text-xs text-muted mb-3">Drag to reposition, use the slider to zoom — or skip straight to automatic face detection.</p>
+    <div id="cropFrame" style="position:relative;width:100%;aspect-ratio:4/3;overflow:hidden;border:2px solid var(--ink);border-radius:.75rem;background:#191712;cursor:grab;touch-action:none">
+      <canvas id="cropCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%"></canvas>
+    </div>
+    <div class="flex items-center gap-3 mt-4">
+      <span class="text-xs text-muted mono">Zoom</span>
+      <input type="range" id="cropZoom" min="1" max="3" step="0.01" value="1" style="flex:1">
+    </div>
+    <div class="flex flex-wrap gap-2 mt-4">
+      <button type="button" id="cropUseRecommendedBtn" class="btn btn-accent">✨ Use recommended (automatic face detection)</button>
+      <button type="button" id="cropSaveBtn" class="btn">Save this crop</button>
+      <button type="button" id="cropCancelBtn" class="btn btn-coral">Cancel</button>
+    </div>
+    <p id="cropStatus" role="status" aria-live="polite" class="text-xs mt-2 text-muted"></p>
+  </div>
+</div>
+
 <script>
 (function () {
   var mode = 'create';
@@ -158,6 +197,228 @@ permalink: /dots/alumni/submit/
       .then(function (r) { onDone(r.ok ? r.data.url : null, r.ok ? null : (r.data && r.data.error)); })
       .catch(function () { onDone(null, 'Network error.'); });
   }
+
+  // --- Crop / reposition modal ------------------------------------------
+  // Every uploaded photo goes to R2 as-is first (uploadBlockImage above),
+  // then this modal opens on that already-hosted URL so there's always a
+  // real file to fall back to if the user cancels. Two ways out:
+  // "recommended" just keeps that original URL untouched -- every photo
+  // display on the site already runs it through Cloudflare's automatic
+  // face-aware crop (functions/uploads/[[path]].js's ?face=1 transform,
+  // via the faceCrop filter in templates), so "recommended" genuinely
+  // means "let the system already built for this handle it," not a
+  // placeholder. "Save this crop" renders the current pan/zoom to a fixed
+  // frame and uploads THAT as a new, separate file -- the manual choice
+  // takes precedence over automatic cropping from then on, since it's now
+  // the only image faceCrop has to work with.
+  (function () {
+    var overlay = document.getElementById('cropModalOverlay');
+    var frame = document.getElementById('cropFrame');
+    var canvas = document.getElementById('cropCanvas');
+    var ctx = canvas.getContext('2d');
+    var zoomSlider = document.getElementById('cropZoom');
+    var useRecommendedBtn = document.getElementById('cropUseRecommendedBtn');
+    var saveBtn = document.getElementById('cropSaveBtn');
+    var cancelBtn = document.getElementById('cropCancelBtn');
+    var cropStatus = document.getElementById('cropStatus');
+
+    var img = null, coverScale = 1, scale = 1, offsetX = 0, offsetY = 0;
+    var dragging = false, dragStartX = 0, dragStartY = 0, dragOrigX = 0, dragOrigY = 0;
+    var activeOriginalUrl = null, activeOnDone = null;
+    var OUT_W = 960, OUT_H = 720;
+
+    function frameSize() {
+      var rect = frame.getBoundingClientRect();
+      return { w: rect.width, h: rect.height };
+    }
+
+    function clampOffsets() {
+      var fs = frameSize();
+      var iw = img.naturalWidth * scale, ih = img.naturalHeight * scale;
+      offsetX = Math.min(0, Math.max(fs.w - iw, offsetX));
+      offsetY = Math.min(0, Math.max(fs.h - ih, offsetY));
+    }
+
+    function draw() {
+      var fs = frameSize();
+      var dpr = window.devicePixelRatio || 1;
+      canvas.width = fs.w * dpr;
+      canvas.height = fs.h * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, fs.w, fs.h);
+      if (!img) return;
+      ctx.drawImage(img, offsetX, offsetY, img.naturalWidth * scale, img.naturalHeight * scale);
+    }
+
+    frame.addEventListener('pointerdown', function (e) {
+      if (!img) return;
+      dragging = true;
+      dragStartX = e.clientX; dragStartY = e.clientY;
+      dragOrigX = offsetX; dragOrigY = offsetY;
+      frame.setPointerCapture(e.pointerId);
+      frame.style.cursor = 'grabbing';
+    });
+    frame.addEventListener('pointermove', function (e) {
+      if (!dragging) return;
+      offsetX = dragOrigX + (e.clientX - dragStartX);
+      offsetY = dragOrigY + (e.clientY - dragStartY);
+      clampOffsets();
+      draw();
+    });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (evt) {
+      frame.addEventListener(evt, function () { dragging = false; frame.style.cursor = 'grab'; });
+    });
+
+    zoomSlider.addEventListener('input', function () {
+      if (!img) return;
+      var fs = frameSize();
+      var cx = fs.w / 2, cy = fs.h / 2;
+      var prevScale = scale;
+      scale = coverScale * Number(zoomSlider.value);
+      var ratio = scale / prevScale;
+      offsetX = cx - (cx - offsetX) * ratio;
+      offsetY = cy - (cy - offsetY) * ratio;
+      clampOffsets();
+      draw();
+    });
+
+    function loadImage(url) {
+      cropStatus.textContent = '';
+      cropStatus.style.color = '';
+      img = null;
+      var el = new Image();
+      el.onload = function () {
+        img = el;
+        var fs = frameSize();
+        coverScale = Math.max(fs.w / img.naturalWidth, fs.h / img.naturalHeight);
+        scale = coverScale;
+        zoomSlider.value = '1';
+        offsetX = (fs.w - img.naturalWidth * scale) / 2;
+        offsetY = (fs.h - img.naturalHeight * scale) / 2;
+        draw();
+      };
+      el.onerror = function () {
+        cropStatus.style.color = 'var(--coral-ink)';
+        cropStatus.textContent = "Couldn't load that image for cropping — try again.";
+      };
+      el.src = url;
+    }
+
+    window.openCropModal = function (originalUrl, onDone) {
+      activeOriginalUrl = originalUrl;
+      activeOnDone = onDone;
+      overlay.style.display = 'flex';
+      loadImage(originalUrl);
+    };
+
+    function close() {
+      overlay.style.display = 'none';
+      img = null;
+      activeOriginalUrl = null;
+      activeOnDone = null;
+    }
+
+    cancelBtn.addEventListener('click', close);
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+
+    useRecommendedBtn.addEventListener('click', function () {
+      var onDone = activeOnDone;
+      var url = activeOriginalUrl;
+      close();
+      if (onDone) onDone(url);
+    });
+
+    saveBtn.addEventListener('click', function () {
+      if (!img) return;
+      saveBtn.disabled = true;
+      cropStatus.style.color = '';
+      cropStatus.textContent = 'Saving your crop…';
+
+      var out = document.createElement('canvas');
+      out.width = OUT_W; out.height = OUT_H;
+      var octx = out.getContext('2d');
+      var fs = frameSize();
+      var sx = OUT_W / fs.w, sy = OUT_H / fs.h;
+      octx.drawImage(img, offsetX * sx, offsetY * sy, img.naturalWidth * scale * sx, img.naturalHeight * scale * sy);
+
+      out.toBlob(function (blob) {
+        if (!blob) {
+          saveBtn.disabled = false;
+          cropStatus.style.color = 'var(--coral-ink)';
+          cropStatus.textContent = "Couldn't process that crop — try again.";
+          return;
+        }
+        var file = new File([blob], 'cropped.jpg', { type: 'image/jpeg' });
+        var onDone = activeOnDone;
+        uploadBlockImage(file, function (url, err) {
+          saveBtn.disabled = false;
+          if (!url) {
+            cropStatus.style.color = 'var(--coral-ink)';
+            cropStatus.textContent = err || 'Upload failed — try again.';
+            return;
+          }
+          close();
+          if (onDone) onDone(url);
+        });
+      }, 'image/jpeg', 0.9);
+    });
+  })();
+
+  // --- Guided tour -------------------------------------------------------
+  // Shown automatically the first time someone reaches the form with a
+  // fresh code (mode === 'create'); always re-openable via "Take the
+  // tour" in either mode, since a returning participant editing months
+  // later may want the refresher just as much as a first-timer does.
+  (function () {
+    var STEPS = [
+      { label: 'Step 1 of 5', title: "This is your own page", body: "You're building your individual page for the DOTS alumni gallery. It's made of sections — called blocks — that you add, remove, and drag into any order, like building blocks for a mini website." },
+      { label: 'Step 2 of 5', title: 'The essentials', body: 'Every page needs a Name and a Bio — required, since they show up on the gallery card and can\'t be removed. A Photo is recommended too, though it\'s optional if you\'d rather not add one.' },
+      { label: 'Step 3 of 5', title: 'Make it yours', body: 'Add extra sections any time with the buttons below your page: a Quote, what you\'re up to and where you\'re based, social links, or free-form Text, Images, a Gallery, even a Button. All fully optional, add as many or as few as you like.' },
+      { label: 'Step 4 of 5', title: 'Rearrange freely', body: 'Drag any section by its ⠿ handle to reorder it, or use the ↑ / ↓ buttons. Your page shows sections in exactly the order you arrange them here — including your name and photo.' },
+      { label: 'Step 5 of 5', title: 'Submitting, and editing later', body: "When you submit, staff review it before it goes live — usually within a day or two. Your access code doesn't expire after that: come back to this same page any time to edit it, or ask for it to be removed." },
+    ];
+    var step = 0;
+    var overlay = document.getElementById('tourOverlay');
+    var dotsWrap = document.getElementById('tourDots');
+    var stepLabel = document.getElementById('tourStepLabel');
+    var titleEl = document.getElementById('tourTitle');
+    var bodyEl = document.getElementById('tourBody');
+    var backBtn = document.getElementById('tourBackBtn');
+    var nextBtn = document.getElementById('tourNextBtn');
+    var skipBtn = document.getElementById('tourSkipBtn');
+    var takeTourBtn = document.getElementById('takeTourBtn');
+
+    function renderStep() {
+      var s = STEPS[step];
+      stepLabel.textContent = s.label;
+      titleEl.textContent = s.title;
+      bodyEl.textContent = s.body;
+      backBtn.style.visibility = step === 0 ? 'hidden' : 'visible';
+      nextBtn.textContent = step === STEPS.length - 1 ? "Let's build it" : 'Next';
+      dotsWrap.innerHTML = '';
+      STEPS.forEach(function (_, i) {
+        var dot = document.createElement('span');
+        dot.style.cssText = 'width:.5rem;height:.5rem;border-radius:999px;display:inline-block;background:' + (i === step ? 'var(--coral)' : 'var(--line)');
+        dotsWrap.appendChild(dot);
+      });
+    }
+
+    window.openTour = function () {
+      step = 0;
+      renderStep();
+      overlay.style.display = 'flex';
+    };
+    function closeTour() { overlay.style.display = 'none'; }
+
+    nextBtn.addEventListener('click', function () {
+      if (step === STEPS.length - 1) { closeTour(); return; }
+      step++; renderStep();
+    });
+    backBtn.addEventListener('click', function () { if (step > 0) { step--; renderStep(); } });
+    skipBtn.addEventListener('click', closeTour);
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) closeTour(); });
+    takeTourBtn.addEventListener('click', function () { window.openTour(); });
+  })();
 
   function blockLabel(type) {
     return {
@@ -281,9 +542,12 @@ permalink: /dots/alumni/submit/
           photoStatus.textContent = 'Uploading…';
           uploadBlockImage(photoFileIn.files[0], function (url, err) {
             if (!url) { photoStatus.style.color = 'var(--coral-ink)'; photoStatus.textContent = err || 'Upload failed.'; return; }
-            block.url = url;
-            syncBlocksInput();
-            renderBlocks();
+            photoStatus.textContent = '';
+            window.openCropModal(url, function (finalUrl) {
+              block.url = finalUrl;
+              syncBlocksInput();
+              renderBlocks();
+            });
           });
         });
         body.appendChild(photoFileIn);
@@ -383,9 +647,12 @@ permalink: /dots/alumni/submit/
           upStatus.textContent = 'Uploading…';
           uploadBlockImage(fIn.files[0], function (url, err) {
             if (!url) { upStatus.style.color = 'var(--coral-ink)'; upStatus.textContent = err || 'Upload failed.'; return; }
-            block.url = url;
-            syncBlocksInput();
-            renderBlocks();
+            upStatus.textContent = '';
+            window.openCropModal(url, function (finalUrl) {
+              block.url = finalUrl;
+              syncBlocksInput();
+              renderBlocks();
+            });
           });
         });
         body.appendChild(fIn);
@@ -573,6 +840,7 @@ permalink: /dots/alumni/submit/
       }
       codeCard.hidden = true;
       formCard.hidden = false;
+      if (mode === 'create' && window.openTour) window.openTour();
     }).catch(function () {
       codeBtn.disabled = false;
       codeStatus.style.color = 'var(--coral-ink)';

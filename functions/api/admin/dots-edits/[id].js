@@ -1,6 +1,7 @@
 import { requireStaff } from '../../../_lib/guard.js';
 import { badRequest, json } from '../../../_lib/http.js';
 import { scheduleRebuild } from '../../../_lib/rebuild.js';
+import { sanitizeBlocks, deriveCoreFields } from '../../../_lib/dotsBlocks.js';
 
 const PROPOSED_FIELD_MAP = {
   name: 'name',
@@ -16,17 +17,19 @@ const PROPOSED_FIELD_MAP = {
   blocks_json: 'blocks_json',
 };
 
-// Approve on an 'edit' row copies proposed_json's fields onto the live
-// dots_alumni row; approve on a 'delete' row (see
-// functions/api/dots-alumni/request-deletion.js) deletes it outright,
-// same FK-safe order as the direct admin delete in
-// functions/api/admin/dots-alumni/[id].js (detach the access code's
-// reference first, then remove any other pending edits on this alumnus so
-// none are left pointing at a now-missing row). Reject just closes the
-// review out either way -- the live entry (or lack of one) is untouched.
-// Neither ever touches dots_alumni.status -- an edit proposal can't
-// un-publish or re-queue an already-published entry, it only changes its
-// content.
+// Approve on an 'edit' row normally copies proposed_json's fields onto
+// the live dots_alumni row verbatim -- but the review screen
+// (src/admin/dots-edits.njk) lets staff adjust the proposed blocks right
+// there before approving, so an optional `blocks` array in the request
+// body overrides the stored proposal entirely: this re-derives the flat
+// columns from whatever staff actually left in the editor, same as a
+// normal submission. Approve on a 'delete' row (see functions/api/
+// dots-alumni/request-deletion.js) deletes it outright, same FK-safe
+// order as the direct admin delete in functions/api/admin/dots-alumni/
+// [id].js. Reject just closes the review out either way -- the live
+// entry (or lack of one) is untouched. Neither ever touches
+// dots_alumni.status -- an edit proposal can't un-publish or re-queue an
+// already-published entry, it only changes its content.
 export async function onRequestPut({ request, env, params, waitUntil }) {
   try {
     const staff = await requireStaff(request, env);
@@ -51,7 +54,19 @@ export async function onRequestPut({ request, env, params, waitUntil }) {
 
     if (body.action === 'approve') {
       let proposed;
-      try { proposed = JSON.parse(edit.proposed_json); } catch { return badRequest('Stored proposal is corrupt'); }
+      if (Array.isArray(body.blocks)) {
+        const blocks = sanitizeBlocks(body.blocks);
+        if (!blocks) return badRequest('Your page is empty — add at least a name and bio.');
+        const core = deriveCoreFields(blocks);
+        if (!core.name || !core.bio) return badRequest('Name and bio are both required.');
+        proposed = {
+          name: core.name, pronouns: core.pronouns, current_role: core.current_role, location: core.location,
+          quote: core.quote, bio: core.bio, photo_url: core.photo_url, photos_json: '[]',
+          links_json: core.links_json, blocks_json: JSON.stringify(blocks),
+        };
+      } else {
+        try { proposed = JSON.parse(edit.proposed_json); } catch { return badRequest('Stored proposal is corrupt'); }
+      }
 
       const sets = [];
       const values = [];
