@@ -39,7 +39,11 @@ permalink: /dots/alumni/submit/
         <input type="hidden" id="hiddenCode" name="code">
         <div id="blocksList" class="flex flex-col gap-3 mb-2"></div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        <div id="paletteGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="photo">
+            <span class="block font-semibold text-sm">+ Photo</span>
+            <span class="block text-xs text-muted mt-0.5">Add a photo back if you removed it</span>
+          </button>
           <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="quote">
             <span class="block font-semibold text-sm">+ Quote</span>
             <span class="block text-xs text-muted mt-0.5">A line of advice or a memory</span>
@@ -102,18 +106,18 @@ permalink: /dots/alumni/submit/
 </section>
 {% include "dialog.njk" %}
 
-<div id="tourOverlay" style="position:fixed;inset:0;background:rgba(25,23,18,.85);z-index:310;display:none;align-items:center;justify-content:center;padding:1rem">
-  <div class="card p-8" style="max-width:30rem;width:100%;">
-    <div class="flex items-center gap-1.5 mb-5" id="tourDots"></div>
-    <p class="eyebrow" style="color:var(--coral-ink)" id="tourStepLabel"></p>
-    <h3 class="h-card mt-2" id="tourTitle" style="font-size:1.4rem"></h3>
-    <p class="text-muted leading-relaxed mt-3" id="tourBody"></p>
-    <div class="flex items-center justify-between mt-7">
-      <button type="button" id="tourSkipBtn" class="text-sm text-muted underline">Skip tour</button>
-      <div class="flex gap-2">
-        <button type="button" id="tourBackBtn" class="btn !py-2 !px-3 text-sm">Back</button>
-        <button type="button" id="tourNextBtn" class="btn btn-accent !py-2 !px-4 text-sm">Next</button>
-      </div>
+<div id="tourSpotlight" style="position:fixed;z-index:310;display:none;border-radius:.85rem;pointer-events:none;box-shadow:0 0 0 3px var(--coral),0 0 0 9999px rgba(25,23,18,.68);transition:top .25s ease,left .25s ease,width .25s ease,height .25s ease"></div>
+<div id="tourCard" class="card p-5" style="position:fixed;z-index:311;max-width:19rem;width:calc(100% - 2rem);display:none;transition:top .25s ease,left .25s ease">
+  <div class="flex items-center gap-1.5 mb-3" id="tourDots"></div>
+  <p class="eyebrow" style="color:var(--coral-ink)" id="tourStepLabel"></p>
+  <h3 class="h-card mt-1" id="tourTitle" style="font-size:1.1rem"></h3>
+  <p class="text-muted text-sm leading-relaxed mt-2" id="tourBody"></p>
+  <p class="text-xs mt-2" id="tourHint" style="color:var(--coral-ink);display:none"></p>
+  <div class="flex items-center justify-between mt-4">
+    <button type="button" id="tourSkipBtn" class="text-xs text-muted underline">Skip tour</button>
+    <div class="flex gap-2">
+      <button type="button" id="tourBackBtn" class="btn !py-1.5 !px-3 text-xs">Back</button>
+      <button type="button" id="tourNextBtn" class="btn btn-accent !py-1.5 !px-3 text-xs">Next</button>
     </div>
   </div>
 </div>
@@ -425,60 +429,152 @@ permalink: /dots/alumni/submit/
     });
   })();
 
-  // --- Guided tour -------------------------------------------------------
+  // --- Guided tour ---------------------------------------------------
   // Shown automatically the first time someone reaches the form with a
   // fresh code (mode === 'create'); always re-openable via "Take the
-  // tour" in either mode, since a returning participant editing months
-  // later may want the refresher just as much as a first-timer does.
+  // tour" in either mode. Unlike a plain slide carousel, each step
+  // spotlights the REAL element it's talking about (getEl is a function,
+  // re-queried live, since renderBlocks() tears down and rebuilds
+  // blocksList's DOM on every add/move/remove) and a couple of steps
+  // (waitFor) actually wait for the participant to perform the action --
+  // add a block, move one -- via the elysium:blockAdded / blockMoved
+  // events dispatched from the real add/move handlers above, advancing
+  // automatically instead of just describing the action and moving on.
   (function () {
     var STEPS = [
-      { label: 'Step 1 of 5', title: "This is your own page", body: "You're building your individual page for the DOTS alumni gallery. It's made of sections — called blocks — that you add, remove, and drag into any order, like building blocks for a mini website." },
-      { label: 'Step 2 of 5', title: 'The essentials', body: 'Every page needs a Name and a Bio — required, since they show up on the gallery card and can\'t be removed. A Photo is recommended too, though it\'s optional if you\'d rather not add one.' },
-      { label: 'Step 3 of 5', title: 'Make it yours', body: 'Add extra sections any time with the buttons below your page: a Quote, what you\'re up to and where you\'re based, social links, or free-form Text, Images, a Gallery, even a Button. All fully optional, add as many or as few as you like.' },
-      { label: 'Step 4 of 5', title: 'Rearrange freely', body: 'Drag any section by its ⠿ handle to reorder it, or use the ↑ / ↓ buttons. Your page shows sections in exactly the order you arrange them here — including your name and photo.' },
-      { label: 'Step 5 of 5', title: 'Submitting, and editing later', body: "When you submit, staff review it before it goes live — usually within a day or two. Your access code doesn't expire after that: come back to this same page any time to edit it, or ask for it to be removed." },
+      {
+        label: 'Step 1 of 6', title: 'This is your page',
+        body: "Every section below is a block you can edit, remove, or drag into a new order. Let's start here: type your name (and pronouns, if you'd like) right in this card.",
+        getEl: function () { return blocksList.querySelector('[data-block-type="name"]'); },
+      },
+      {
+        label: 'Step 2 of 6', title: 'Add a photo (optional)',
+        body: "Upload a photo here if you'd like one — you'll get a drag-and-zoom tool afterward, or automatic face detection can frame it for you. Skip it if you'd rather not.",
+        getEl: function () { return blocksList.querySelector('[data-block-type="photo"]'); },
+        fallbackGetEl: function () { return document.querySelector('[data-add="photo"]'); },
+      },
+      {
+        label: 'Step 3 of 6', title: 'Your bio',
+        body: 'A short bio is required — it\'s what shows on your gallery card and profile page. Write a few sentences about yourself right here.',
+        getEl: function () { return blocksList.querySelector('[data-block-type="bio"]'); },
+      },
+      {
+        label: 'Step 4 of 6', title: 'Add more, any time',
+        body: "A quote, what you're up to and where, social links, free text, extra photos — try tapping one of these now to add a section to your page.",
+        getEl: function () { return document.getElementById('paletteGrid'); },
+        waitFor: 'elysium:blockAdded',
+        hint: 'Tap any button above to add a section — or hit Next to move on without adding one.',
+      },
+      {
+        label: 'Step 5 of 6', title: 'Rearrange freely',
+        body: 'Drag any section by its ⠿ handle, or use its ↑ / ↓ buttons, to put your page in exactly the order you want — including your name and photo. Try moving one now.',
+        getEl: function () { return blocksList.firstElementChild; },
+        waitFor: 'elysium:blockMoved',
+        hint: 'Drag a section, or use its ↑ / ↓ buttons — or hit Next to move on without reordering.',
+      },
+      {
+        label: 'Step 6 of 6', title: 'Submitting, and editing later',
+        body: "When you submit, staff review it before it goes live — usually within a day or two. Your access code never expires: come back to this same page any time to edit your page, or ask for it to be removed.",
+        getEl: function () { return document.getElementById('submit-btn'); },
+      },
     ];
     var step = 0;
-    var overlay = document.getElementById('tourOverlay');
+    var open = false;
+    var spotlight = document.getElementById('tourSpotlight');
+    var card = document.getElementById('tourCard');
     var dotsWrap = document.getElementById('tourDots');
     var stepLabel = document.getElementById('tourStepLabel');
     var titleEl = document.getElementById('tourTitle');
     var bodyEl = document.getElementById('tourBody');
+    var hintEl = document.getElementById('tourHint');
     var backBtn = document.getElementById('tourBackBtn');
     var nextBtn = document.getElementById('tourNextBtn');
     var skipBtn = document.getElementById('tourSkipBtn');
     var takeTourBtn = document.getElementById('takeTourBtn');
+
+    function currentTarget() {
+      var s = STEPS[step];
+      return s.getEl() || (s.fallbackGetEl && s.fallbackGetEl()) || null;
+    }
+
+    function position() {
+      if (!open) return;
+      var target = currentTarget();
+      var rect = target ? target.getBoundingClientRect() : null;
+      var vw = window.innerWidth, vh = window.innerHeight;
+      if (rect && rect.width) {
+        var pad = 6;
+        spotlight.style.display = 'block';
+        spotlight.style.top = (rect.top - pad) + 'px';
+        spotlight.style.left = (rect.left - pad) + 'px';
+        spotlight.style.width = (rect.width + pad * 2) + 'px';
+        spotlight.style.height = (rect.height + pad * 2) + 'px';
+      } else {
+        spotlight.style.display = 'none';
+      }
+      var cardRect = card.getBoundingClientRect();
+      var top, left;
+      if (rect && rect.width) {
+        var spaceBelow = vh - rect.bottom;
+        top = spaceBelow > cardRect.height + 24 ? rect.bottom + 16 : rect.top - cardRect.height - 16;
+        left = rect.left;
+      } else {
+        top = vh / 2 - cardRect.height / 2;
+        left = vw / 2 - cardRect.width / 2;
+      }
+      card.style.top = Math.max(12, Math.min(vh - cardRect.height - 12, top)) + 'px';
+      card.style.left = Math.max(12, Math.min(vw - cardRect.width - 12, left)) + 'px';
+    }
 
     function renderStep() {
       var s = STEPS[step];
       stepLabel.textContent = s.label;
       titleEl.textContent = s.title;
       bodyEl.textContent = s.body;
+      hintEl.style.display = s.hint ? 'block' : 'none';
+      hintEl.textContent = s.hint || '';
       backBtn.style.visibility = step === 0 ? 'hidden' : 'visible';
-      nextBtn.textContent = step === STEPS.length - 1 ? "Let's build it" : 'Next';
+      nextBtn.textContent = step === STEPS.length - 1 ? 'Got it' : 'Next';
       dotsWrap.innerHTML = '';
       STEPS.forEach(function (_, i) {
         var dot = document.createElement('span');
         dot.style.cssText = 'width:.5rem;height:.5rem;border-radius:999px;display:inline-block;background:' + (i === step ? 'var(--coral)' : 'var(--line)');
         dotsWrap.appendChild(dot);
       });
+      var target = currentTarget();
+      if (target && target.scrollIntoView) target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      setTimeout(position, target ? 260 : 0);
+    }
+
+    function advance() {
+      if (step === STEPS.length - 1) { closeTour(); return; }
+      step++; renderStep();
     }
 
     window.openTour = function () {
       step = 0;
+      open = true;
+      card.style.display = 'block';
       renderStep();
-      overlay.style.display = 'flex';
     };
-    function closeTour() { overlay.style.display = 'none'; }
+    function closeTour() {
+      open = false;
+      spotlight.style.display = 'none';
+      card.style.display = 'none';
+    }
 
-    nextBtn.addEventListener('click', function () {
-      if (step === STEPS.length - 1) { closeTour(); return; }
-      step++; renderStep();
-    });
+    nextBtn.addEventListener('click', advance);
     backBtn.addEventListener('click', function () { if (step > 0) { step--; renderStep(); } });
     skipBtn.addEventListener('click', closeTour);
-    overlay.addEventListener('click', function (e) { if (e.target === overlay) closeTour(); });
     takeTourBtn.addEventListener('click', function () { window.openTour(); });
+    document.addEventListener('elysium:blockAdded', function () {
+      if (open && STEPS[step].waitFor === 'elysium:blockAdded') setTimeout(advance, 500);
+    });
+    document.addEventListener('elysium:blockMoved', function () {
+      if (open && STEPS[step].waitFor === 'elysium:blockMoved') setTimeout(advance, 500);
+    });
+    window.addEventListener('resize', position);
+    window.addEventListener('scroll', position, true);
   })();
 
   function blockLabel(type) {
@@ -498,6 +594,7 @@ permalink: /dots/alumni/submit/
       card.style.borderColor = 'var(--ink)';
       card.draggable = true;
       card.dataset.index = String(index);
+      card.dataset.blockType = block.type;
 
       card.addEventListener('dragstart', function () { dragIndex = index; card.style.opacity = '.5'; });
       card.addEventListener('dragend', function () { card.style.opacity = ''; });
@@ -509,6 +606,7 @@ permalink: /dots/alumni/submit/
         blocks.splice(index, 0, moved);
         dragIndex = null;
         renderBlocks();
+        document.dispatchEvent(new CustomEvent('elysium:blockMoved'));
       });
 
       var head = document.createElement('div');
@@ -530,6 +628,7 @@ permalink: /dots/alumni/submit/
         if (index === 0) return;
         blocks.splice(index - 1, 0, blocks.splice(index, 1)[0]);
         renderBlocks();
+        document.dispatchEvent(new CustomEvent('elysium:blockMoved'));
       });
       var downBtn = document.createElement('button');
       downBtn.type = 'button';
@@ -540,6 +639,7 @@ permalink: /dots/alumni/submit/
         if (index === blocks.length - 1) return;
         blocks.splice(index + 1, 0, blocks.splice(index, 1)[0]);
         renderBlocks();
+        document.dispatchEvent(new CustomEvent('elysium:blockMoved'));
       });
       controls.appendChild(upBtn);
       controls.appendChild(downBtn);
@@ -820,8 +920,13 @@ permalink: /dots/alumni/submit/
 
   document.querySelectorAll('[data-add]').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      var b = newBlock(btn.getAttribute('data-add'));
-      if (b) { blocks.push(b); renderBlocks(); }
+      var type = btn.getAttribute('data-add');
+      var b = newBlock(type);
+      if (b) {
+        blocks.push(b);
+        renderBlocks();
+        document.dispatchEvent(new CustomEvent('elysium:blockAdded', { detail: { type: type } }));
+      }
     });
   });
 
