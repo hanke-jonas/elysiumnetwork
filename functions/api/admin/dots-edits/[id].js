@@ -45,7 +45,7 @@ export async function onRequestPut({ request, env, params, waitUntil }) {
     if (edit.status !== 'pending') return badRequest('This proposal has already been reviewed.');
 
     if (body.action === 'approve' && edit.type === 'delete') {
-      await env.DB.prepare('UPDATE dots_access_codes SET dots_alumni_id = NULL WHERE dots_alumni_id = ?').bind(edit.alumni_id).run();
+      await env.DB.prepare("UPDATE dots_access_codes SET dots_alumni_id = NULL, entry_deleted_at = datetime('now') WHERE dots_alumni_id = ?").bind(edit.alumni_id).run();
       await env.DB.prepare('DELETE FROM dots_alumni_edits WHERE alumni_id = ?').bind(edit.alumni_id).run();
       await env.DB.prepare('DELETE FROM dots_alumni WHERE id = ?').bind(edit.alumni_id).run();
       waitUntil(scheduleRebuild(env));

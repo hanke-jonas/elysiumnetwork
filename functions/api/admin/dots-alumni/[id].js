@@ -80,7 +80,7 @@ export async function onRequestDelete({ request, env, params, waitUntil }) {
     // used stay intact) and any edit proposals ever submitted against it
     // (dots_alumni_edits.alumni_id -- deleted outright, since a proposal
     // about a now-gone entry has nothing left to apply to).
-    await env.DB.prepare('UPDATE dots_access_codes SET dots_alumni_id = NULL WHERE dots_alumni_id = ?').bind(params.id).run();
+    await env.DB.prepare("UPDATE dots_access_codes SET dots_alumni_id = NULL, entry_deleted_at = datetime('now') WHERE dots_alumni_id = ?").bind(params.id).run();
     await env.DB.prepare('DELETE FROM dots_alumni_edits WHERE alumni_id = ?').bind(params.id).run();
     await env.DB.prepare('DELETE FROM dots_alumni WHERE id = ?').bind(params.id).run();
     waitUntil(scheduleRebuild(env));

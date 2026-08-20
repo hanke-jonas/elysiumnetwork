@@ -113,15 +113,17 @@ permalink: /admin/dots-alumni/
 </div>
 
 <div id="cropModalOverlay" style="position:fixed;inset:0;background:rgba(25,23,18,.85);z-index:300;display:none;align-items:center;justify-content:center;padding:1rem">
-  <div style="background:#fff;border:2px solid var(--ink);border-radius:1rem;box-shadow:8px 8px 0 var(--ink);max-width:34rem;width:100%;padding:1.5rem;max-height:92vh;overflow-y:auto">
-    <h3 class="h-card mb-1">Adjust this photo</h3>
-    <p class="text-xs text-muted mb-3">Drag to reposition, use the slider to zoom — or skip straight to automatic face detection.</p>
-    <div id="cropFrame" style="position:relative;width:100%;aspect-ratio:4/3;overflow:hidden;border:2px solid var(--ink);border-radius:.75rem;background:#191712;cursor:grab;touch-action:none">
+  <div style="background:#fff;border:2px solid var(--ink);border-radius:1rem;box-shadow:8px 8px 0 var(--ink);max-width:26rem;width:100%;padding:1.5rem;max-height:92vh;overflow-y:auto">
+    <h3 class="h-card mb-1">Move and scale</h3>
+    <p class="text-xs text-muted mb-3">Drag to reposition, pinch or use the slider to zoom — or skip straight to automatic face detection.</p>
+    <div id="cropFrame" style="position:relative;width:100%;aspect-ratio:1/1;overflow:hidden;border-radius:1rem;background:#191712;cursor:grab;touch-action:none">
       <canvas id="cropCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%"></canvas>
+      <div style="position:absolute;inset:0;pointer-events:none;border-radius:50%;box-shadow:0 0 0 9999px rgba(25,23,18,.72);outline:2px solid rgba(255,255,255,.9)"></div>
     </div>
     <div class="flex items-center gap-3 mt-4">
-      <span class="text-xs text-muted mono">Zoom</span>
-      <input type="range" id="cropZoom" min="1" max="3" step="0.01" value="1" style="flex:1">
+      <span class="text-xs text-muted mono" aria-hidden="true">–</span>
+      <input type="range" id="cropZoom" min="1" max="3" step="0.01" value="1" style="flex:1" aria-label="Zoom">
+      <span class="text-xs text-muted mono" aria-hidden="true">+</span>
     </div>
     <div class="flex flex-wrap gap-2 mt-4">
       <button type="button" id="cropUseRecommendedBtn" class="btn btn-accent">✨ Use recommended (automatic face detection)</button>
@@ -215,14 +217,24 @@ permalink: /admin/dots-alumni/
     var cropStatus = document.getElementById('cropStatus');
 
     var img = null, coverScale = 1, scale = 1, offsetX = 0, offsetY = 0;
-    var dragging = false, dragStartX = 0, dragStartY = 0, dragOrigX = 0, dragOrigY = 0;
     var activeOriginalUrl = null, activeOnDone = null;
-    var OUT_W = 960, OUT_H = 720;
+    var OUT_W = 960, OUT_H = 960;
+
+    // See src/dots/alumni-submit.njk's identical crop modal for the
+    // reasoning behind pinch-tracking two simultaneous pointers -- kept
+    // in sync here since this codebase duplicates the modal rather than
+    // sharing a module between the participant and staff editors.
+    var pointers = {};
+    var panFrom = null;
+    var pinchFrom = null;
 
     function frameSize() {
       var rect = frame.getBoundingClientRect();
       return { w: rect.width, h: rect.height };
     }
+
+    function minScale() { return coverScale; }
+    function maxScale() { return coverScale * 3; }
 
     function clampOffsets() {
       var fs = frameSize();
@@ -242,23 +254,69 @@ permalink: /admin/dots-alumni/
       ctx.drawImage(img, offsetX, offsetY, img.naturalWidth * scale, img.naturalHeight * scale);
     }
 
+    function pointerDist(ids) {
+      var a = pointers[ids[0]], b = pointers[ids[1]];
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    }
+    function pointerMid(ids) {
+      var a = pointers[ids[0]], b = pointers[ids[1]];
+      return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    }
+
+    function setZoomFromScale() {
+      zoomSlider.value = String(scale / coverScale);
+    }
+
     frame.addEventListener('pointerdown', function (e) {
       if (!img) return;
-      dragging = true;
-      dragStartX = e.clientX; dragStartY = e.clientY;
-      dragOrigX = offsetX; dragOrigY = offsetY;
       frame.setPointerCapture(e.pointerId);
-      frame.style.cursor = 'grabbing';
+      pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+      var ids = Object.keys(pointers);
+      if (ids.length === 1) {
+        panFrom = { x: e.clientX, y: e.clientY, offsetX: offsetX, offsetY: offsetY };
+        frame.style.cursor = 'grabbing';
+      } else if (ids.length === 2) {
+        panFrom = null;
+        pinchFrom = { dist: pointerDist(ids), scale: scale };
+      }
     });
     frame.addEventListener('pointermove', function (e) {
-      if (!dragging) return;
-      offsetX = dragOrigX + (e.clientX - dragStartX);
-      offsetY = dragOrigY + (e.clientY - dragStartY);
-      clampOffsets();
-      draw();
+      if (!pointers[e.pointerId] || !img) return;
+      pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+      var ids = Object.keys(pointers);
+      if (ids.length === 2 && pinchFrom) {
+        var rect = frame.getBoundingClientRect();
+        var mid = pointerMid(ids);
+        var localX = mid.x - rect.left, localY = mid.y - rect.top;
+        var newScale = Math.min(maxScale(), Math.max(minScale(), pinchFrom.scale * (pointerDist(ids) / pinchFrom.dist)));
+        var ratio = newScale / scale;
+        offsetX = localX - (localX - offsetX) * ratio;
+        offsetY = localY - (localY - offsetY) * ratio;
+        scale = newScale;
+        setZoomFromScale();
+        clampOffsets();
+        draw();
+      } else if (ids.length === 1 && panFrom) {
+        offsetX = panFrom.offsetX + (e.clientX - panFrom.x);
+        offsetY = panFrom.offsetY + (e.clientY - panFrom.y);
+        clampOffsets();
+        draw();
+      }
     });
+    function releasePointer(e) {
+      delete pointers[e.pointerId];
+      var ids = Object.keys(pointers);
+      pinchFrom = null;
+      if (ids.length === 1) {
+        var p = pointers[ids[0]];
+        panFrom = { x: p.x, y: p.y, offsetX: offsetX, offsetY: offsetY };
+      } else {
+        panFrom = null;
+      }
+      if (!ids.length) frame.style.cursor = 'grab';
+    }
     ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (evt) {
-      frame.addEventListener(evt, function () { dragging = false; frame.style.cursor = 'grab'; });
+      frame.addEventListener(evt, releasePointer);
     });
 
     zoomSlider.addEventListener('input', function () {

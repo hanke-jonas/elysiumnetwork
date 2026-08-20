@@ -296,7 +296,8 @@ CREATE TABLE IF NOT EXISTS dots_access_codes (
   label TEXT, -- optional staff note (e.g. the participant's name), never shown publicly
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   used_at TEXT,
-  dots_alumni_id TEXT REFERENCES dots_alumni(id)
+  dots_alumni_id TEXT REFERENCES dots_alumni(id),
+  entry_deleted_at TEXT -- set alongside nulling dots_alumni_id when the linked entry is deleted, so check-code.js can tell "this code's entry was removed" apart from the (should-never-happen) case of a code claimed but never linked -- see functions/api/dots-alumni/check-code.js
 );
 
 -- A folder (R2 key prefix) an admin has put a password on, reachable by

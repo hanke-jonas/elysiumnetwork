@@ -21,7 +21,7 @@ export async function onRequestPost({ request, env }) {
     const code = String((body && body.code) || '').trim().toUpperCase();
     if (!code) return badRequest('Code is required');
 
-    const row = await env.DB.prepare('SELECT edition, used_at, dots_alumni_id FROM dots_access_codes WHERE code = ?').bind(code).first();
+    const row = await env.DB.prepare('SELECT edition, used_at, dots_alumni_id, entry_deleted_at FROM dots_access_codes WHERE code = ?').bind(code).first();
     if (!row) return json({ valid: false, error: 'That code was not recognized.' });
 
     if (!row.used_at) {
@@ -29,9 +29,18 @@ export async function onRequestPost({ request, env }) {
     }
 
     if (!row.dots_alumni_id) {
-      // Used, but never actually produced an entry (shouldn't normally
-      // happen given how submit.js claims a code, but fail safe).
-      return json({ valid: false, error: "This code isn't linked to an entry — get in touch with staff if that seems wrong." });
+      // entry_deleted_at is set (by the admin delete / approve-deletion
+      // endpoints) whenever this is a real "your entry was removed" case --
+      // that's the overwhelmingly common way a used code ends up
+      // unlinked. Without it, dots_alumni_id is null only from the narrow
+      // race in submit.js between claiming the code and linking it (should
+      // basically never happen, but fail safe with a distinct message).
+      return json({
+        valid: false,
+        error: row.entry_deleted_at
+          ? 'The entry this code belonged to no longer exists — get in touch with staff if that seems wrong.'
+          : "This code isn't linked to an entry — get in touch with staff if that seems wrong.",
+      });
     }
 
     const alumnus = await env.DB.prepare('SELECT * FROM dots_alumni WHERE id = ?').bind(row.dots_alumni_id).first();
