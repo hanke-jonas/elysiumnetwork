@@ -30,7 +30,7 @@ permalink: /admin/dots-alumni/
       </div>
     </div>
 
-    <p class="text-xs text-muted mb-1">The whole page, one section at a time — drag to reorder anything, including name, photo and bio. Name, photo and bio are required and can't be removed entirely, only edited and repositioned.</p>
+    <p class="text-xs text-muted mb-1">The whole page, one section at a time — drag to reorder anything. Name and bio are required and can't be removed entirely, only edited and repositioned. A photo is recommended but optional, same as everything else.</p>
     <div id="blocksList" class="flex flex-col gap-3 mb-2"></div>
 
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -117,7 +117,7 @@ permalink: /admin/dots-alumni/
   var items = [];
   var editingId = null;
   var blocks = [];
-  var REQUIRED_TYPES = { name: true, photo: true, bio: true };
+  var REQUIRED_TYPES = { name: true, bio: true };
 
   var formCard = document.getElementById('formCard');
   var form = document.getElementById('alumniForm');
@@ -260,7 +260,7 @@ permalink: /admin/dots-alumni/
         photoFileIn.className = 'input'; photoFileIn.type = 'file'; photoFileIn.accept = 'image/jpeg,image/png,image/webp';
         var photoStatus = document.createElement('p');
         photoStatus.className = 'text-xs text-muted';
-        photoStatus.textContent = block.url ? 'Choose a new file to replace this photo.' : 'Required. Shown on the gallery card and their page.';
+        photoStatus.textContent = block.url ? 'Choose a new file to replace this photo.' : 'Optional, but recommended. Shown on the gallery card and their page.';
         photoFileIn.addEventListener('change', function () {
           if (!photoFileIn.files[0]) return;
           photoStatus.textContent = 'Uploading…';
@@ -704,8 +704,8 @@ permalink: /admin/dots-alumni/
     if (!editingId) return;
 
     var core = deriveCoreFields(blocks);
-    if (!core.name || !core.bio || !core.photoUrl) {
-      setFormStatus('Name, photo, and bio are all required.', true);
+    if (!core.name || !core.bio) {
+      setFormStatus('Name and bio are both required.', true);
       return;
     }
 

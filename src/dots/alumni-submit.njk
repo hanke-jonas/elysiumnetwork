@@ -30,7 +30,7 @@ permalink: /dots/alumni/submit/
       <p class="text-sm text-muted mb-5" id="editionLabel">Submissions are reviewed before they go live, so it may take a little while to appear.</p>
       <p class="text-sm mt-1 mb-5" id="pendingEditNotice" hidden style="color:var(--coral-ink)">You already have a change waiting for review — submitting again updates that same proposal rather than adding a new one.</p>
 
-      <p class="text-xs text-muted mb-4">This is your whole page, one section at a time — drag to reorder anything, including your name, photo and bio. Your name, photo and bio are required (shown in every gallery listing), so those three can be edited and repositioned but not removed entirely; everything else is fully optional.</p>
+      <p class="text-xs text-muted mb-4">This is your whole page, one section at a time — drag to reorder anything. Your name and bio are required (shown in every gallery listing), so those two can be edited and repositioned but not removed entirely. A photo is recommended but optional — everything else, including your photo, is fully optional and removable.</p>
 
       <form id="alumni-form" class="flex flex-col gap-3">
         <input type="hidden" id="hiddenCode" name="code">
@@ -129,7 +129,7 @@ permalink: /dots/alumni/submit/
   var blocksList = document.getElementById('blocksList');
   var blocksInput = document.getElementById('blocksInput');
   var dragIndex = null;
-  var REQUIRED_TYPES = { name: true, photo: true, bio: true };
+  var REQUIRED_TYPES = { name: true, bio: true };
 
   function uid() { return 'b' + Math.random().toString(36).slice(2, 10); }
 
@@ -275,7 +275,7 @@ permalink: /dots/alumni/submit/
         photoFileIn.accept = 'image/jpeg,image/png,image/webp';
         var photoStatus = document.createElement('p');
         photoStatus.className = 'text-xs text-muted';
-        photoStatus.textContent = block.url ? 'Choose a new file to replace your photo.' : 'JPEG, PNG, or WebP — 5MB maximum. Shown on the gallery card and your page.';
+        photoStatus.textContent = block.url ? 'Choose a new file to replace your photo.' : 'Optional, but recommended. JPEG, PNG, or WebP — 5MB maximum.';
         photoFileIn.addEventListener('change', function () {
           if (!photoFileIn.files[0]) return;
           photoStatus.textContent = 'Uploading…';
@@ -599,10 +599,8 @@ permalink: /dots/alumni/submit/
 
     var missing = [];
     var hasName = blocks.some(function (b) { return b.type === 'name' && b.text && b.text.trim(); });
-    var hasPhoto = blocks.some(function (b) { return b.type === 'photo' && b.url; });
     var hasBio = blocks.some(function (b) { return b.type === 'bio' && b.text && b.text.trim(); });
     if (!hasName) missing.push('a name');
-    if (!hasPhoto) missing.push('a photo');
     if (!hasBio) missing.push('a bio');
 
     var form = e.target;
