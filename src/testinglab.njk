@@ -27,25 +27,60 @@ noindex: true
         <div>
           <p class="eyebrow" style="color:var(--coral-ink)">Internal tool</p>
           <h1 class="h-hero mt-2" style="font-size:clamp(2rem,5vw,3.2rem)">🧪 Testing Lab</h1>
-          <p class="mt-3 text-muted max-w-xl">A scratch space for manually testing elysium.ngo — quick links to every corner of the site, a running checklist, live environment info, and a notes pad. Nothing here is public or saved to a server; it all lives in this browser.</p>
+          <p class="mt-3 text-muted max-w-xl">Runs real checks against the live site, from this browser — a health sweep of key pages, a crawl for broken internal links, and a way to fire test requests at real API endpoints. Nothing here touches a server of its own; it's all client-side against elysium.ngo itself.</p>
         </div>
         <button type="button" id="lockBtn" class="btn !py-1.5 !px-3 text-xs shrink-0">🔒 Lock</button>
       </div>
 
+      <!-- Site health check -->
       <div class="card p-6 sm:p-7 mb-6">
-        <h2 class="h-card mb-4">Quick links</h2>
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2" id="quickLinks"></div>
+        <div class="flex items-center justify-between gap-3 flex-wrap mb-1">
+          <h2 class="h-card">Site health check</h2>
+          <button type="button" id="healthRunBtn" class="btn btn-accent !py-1.5 !px-3 text-sm">Run check</button>
+        </div>
+        <p class="text-xs text-muted mb-4">Fetches every key page on the live site and reports its status code and response time.</p>
+        <p class="text-sm text-muted" id="healthIdle">Not run yet.</p>
+        <p class="text-sm" id="healthProgress" hidden></p>
+        <div style="overflow-x:auto" id="healthTableWrap" hidden>
+          <table class="w-full text-sm mono" style="border-collapse:collapse">
+            <thead>
+              <tr style="border-bottom:2px solid var(--ink)">
+                <th class="text-left py-2 pr-3">Page</th>
+                <th class="text-left py-2 pr-3">Status</th>
+                <th class="text-left py-2 pr-3">Time</th>
+                <th class="text-left py-2">Result</th>
+              </tr>
+            </thead>
+            <tbody id="healthTableBody"></tbody>
+          </table>
+        </div>
+        <p class="text-sm mt-3" id="healthSummary"></p>
       </div>
 
+      <!-- Broken link finder -->
       <div class="card p-6 sm:p-7 mb-6">
-        <h2 class="h-card mb-1">Testing checklist</h2>
-        <p class="text-xs text-muted mb-4">Tick things off as you verify them. Saved locally in this browser.</p>
-        <form id="checklistForm" class="flex gap-2 mb-4">
-          <input class="input" type="text" id="checklistInput" placeholder="Add something to test…" maxlength="200">
-          <button type="submit" class="btn !px-4">Add</button>
-        </form>
-        <ul id="checklistItems" class="flex flex-col gap-2"></ul>
-        <p class="text-sm text-muted mt-3" id="checklistEmpty" hidden>Nothing on the list yet — add something above.</p>
+        <div class="flex items-center justify-between gap-3 flex-wrap mb-1">
+          <h2 class="h-card">Broken link finder</h2>
+          <button type="button" id="linksRunBtn" class="btn btn-accent !py-1.5 !px-3 text-sm">Scan for broken links</button>
+        </div>
+        <p class="text-xs text-muted mb-4">Crawls every key page for internal links, then checks each one. External links are listed but not checked.</p>
+        <p class="text-sm text-muted" id="linksIdle">Not run yet.</p>
+        <p class="text-sm" id="linksProgress" hidden></p>
+        <div id="linksResults" hidden>
+          <div id="linksBrokenWrap"></div>
+          <p class="text-sm mt-3" id="linksSummary"></p>
+          <details class="mt-3" id="linksExternalDetails" hidden>
+            <summary class="text-sm font-semibold cursor-pointer">External links found (not checked)</summary>
+            <ul class="text-xs mono mt-2 flex flex-col gap-1" id="linksExternalList"></ul>
+          </details>
+        </div>
+      </div>
+
+      <!-- Endpoint tester -->
+      <div class="card p-6 sm:p-7 mb-6">
+        <h2 class="h-card mb-1">Endpoint tester</h2>
+        <p class="text-xs text-muted mb-4">Fires real requests at real API endpoints so you can see the actual response. Endpoints marked <span style="color:var(--coral-ink);font-weight:700">⚠️ creates a real record</span> need an extra confirmation before sending.</p>
+        <div id="endpointList" class="flex flex-col gap-4"></div>
       </div>
 
       <div class="grid sm:grid-cols-2 gap-6 mb-6">
@@ -54,9 +89,8 @@ noindex: true
           <dl class="text-sm flex flex-col gap-2 mono" id="envInfo"></dl>
         </div>
         <div class="card p-6 sm:p-7">
-          <h2 class="h-card mb-1">Notes</h2>
-          <p class="text-xs text-muted mb-3">Autosaved locally as you type.</p>
-          <textarea id="notesArea" class="input" style="min-height:9rem;resize:vertical" placeholder="Bugs, ideas, things to follow up on…"></textarea>
+          <h2 class="h-card mb-4">Quick links</h2>
+          <div class="grid grid-cols-2 gap-2" id="quickLinks"></div>
         </div>
       </div>
 
@@ -105,122 +139,386 @@ noindex: true
 
   lockBtn.addEventListener('click', lock);
 
+  // Every key static page on the site -- shared by the health check (which
+  // just fetches each one) and the broken-link finder (which also crawls
+  // each one's <a href> tags). Kept as plain paths, resolved against
+  // location.origin so this works the same on localhost and production.
+  var SEED_PAGES = [
+    '/', '/about/', '/commitments/', '/standards/', '/privacy/', '/support/', '/contact/',
+    '/dissemination/', '/blog/', '/events/', '/calls/', '/resources/', '/against-the-war/',
+    '/projects/peacebuilding/', '/dots/alumni/', '/dots/alumni/submit/',
+    '/ukraine/', '/poland/', '/italy/', '/germany/',
+    '/account/login/', '/account/signup/', '/admin/login/', '/portal/login/',
+  ];
+
+  // Runs `worker` over `items` with at most `limit` in flight at once,
+  // calling `onEach(result, item, index)` as each one resolves -- so the
+  // UI can render rows incrementally instead of waiting for the whole
+  // batch, which matters here since a full site crawl is dozens of
+  // requests.
+  function runWithConcurrency(items, limit, worker, onEach) {
+    return new Promise(function (resolve) {
+      var results = new Array(items.length);
+      var next = 0;
+      var inFlight = 0;
+      var done = 0;
+      if (!items.length) return resolve(results);
+      function pump() {
+        while (inFlight < limit && next < items.length) {
+          (function (index) {
+            var item = items[index];
+            inFlight++;
+            next++;
+            worker(item, index).then(function (result) {
+              results[index] = result;
+              inFlight--; done++;
+              if (onEach) onEach(result, item, index);
+              if (done === items.length) resolve(results);
+              else pump();
+            });
+          })(next);
+        }
+      }
+      pump();
+    });
+  }
+
   // --- Lab content, built once on first unlock -------------------------
   var labInitialized = false;
   function initLab() {
     if (labInitialized) return;
     labInitialized = true;
 
-    var LINKS = [
-      { label: 'Homepage', href: '/' },
-      { label: 'About', href: '/about/' },
-      { label: 'Commitments', href: '/commitments/' },
-      { label: 'Blog', href: '/blog/' },
-      { label: 'Events', href: '/events/' },
-      { label: 'Calls', href: '/calls/' },
-      { label: 'Resources', href: '/resources/' },
-      { label: 'Against the War', href: '/against-the-war/' },
-      { label: 'DOTS Alumni', href: '/dots/alumni/' },
-      { label: 'DOTS Submit', href: '/dots/alumni/submit/' },
-      { label: 'Admin panel', href: '/admin/' },
-      { label: 'Member portal', href: '/portal/' },
-      { label: 'Ukraine branch', href: '/ukraine/' },
-      { label: 'Poland branch', href: '/poland/' },
-      { label: 'Italy branch', href: '/italy/' },
-      { label: 'Germany branch', href: '/germany/' },
-    ];
-    var quickLinks = document.getElementById('quickLinks');
-    LINKS.forEach(function (l) {
-      var a = document.createElement('a');
-      a.href = l.href;
-      a.target = '_blank';
-      a.rel = 'noopener';
-      a.className = 'rounded-lg border-2 border-ink px-3 py-2 text-sm font-semibold text-center hover:-translate-y-0.5 transition break-words';
-      a.style.background = '#fff';
-      a.textContent = l.label;
-      quickLinks.appendChild(a);
-    });
+    // --- Site health check ------------------------------------------------
+    var healthRunBtn = document.getElementById('healthRunBtn');
+    var healthIdle = document.getElementById('healthIdle');
+    var healthProgress = document.getElementById('healthProgress');
+    var healthTableWrap = document.getElementById('healthTableWrap');
+    var healthTableBody = document.getElementById('healthTableBody');
+    var healthSummary = document.getElementById('healthSummary');
 
-    // --- Checklist, persisted to localStorage ---------------------------
-    var CHECKLIST_KEY = 'testinglab_checklist';
-    var checklistItems = document.getElementById('checklistItems');
-    var checklistForm = document.getElementById('checklistForm');
-    var checklistInput = document.getElementById('checklistInput');
-    var checklistEmpty = document.getElementById('checklistEmpty');
-
-    function loadChecklist() {
-      try {
-        var raw = JSON.parse(localStorage.getItem(CHECKLIST_KEY) || 'null');
-        if (Array.isArray(raw)) return raw;
-      } catch (e) {}
-      return [
-        { text: 'Drag and drop reordering works on mobile and desktop', done: false },
-        { text: 'DOTS submission requires a photo', done: false },
-        { text: 'Extra photos (+More Photos) are optional, not required', done: false },
-      ];
-    }
-
-    var checklist = loadChecklist();
-
-    function saveChecklist() {
-      localStorage.setItem(CHECKLIST_KEY, JSON.stringify(checklist));
-    }
-
-    function renderChecklist() {
-      checklistItems.innerHTML = '';
-      checklistEmpty.hidden = checklist.length > 0;
-      checklist.forEach(function (item, index) {
-        var li = document.createElement('li');
-        li.className = 'flex items-start gap-3 rounded-lg border-2 p-2.5';
-        li.style.borderColor = 'var(--ink)';
-        li.style.background = item.done ? 'var(--paper-2)' : '#fff';
-
-        var checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.checked = item.done;
-        checkbox.style.width = '1.15rem';
-        checkbox.style.height = '1.15rem';
-        checkbox.style.flexShrink = '0';
-        checkbox.style.marginTop = '.15rem';
-        checkbox.addEventListener('change', function () {
-          checklist[index].done = checkbox.checked;
-          saveChecklist();
-          renderChecklist();
-        });
-
-        var text = document.createElement('span');
-        text.className = 'text-sm flex-1';
-        text.textContent = item.text;
-        if (item.done) { text.style.textDecoration = 'line-through'; text.style.opacity = '.55'; }
-
-        var del = document.createElement('button');
-        del.type = 'button';
-        del.className = 'btn btn-coral !py-1 !px-2 text-xs shrink-0';
-        del.textContent = 'Remove';
-        del.addEventListener('click', function () {
-          checklist.splice(index, 1);
-          saveChecklist();
-          renderChecklist();
-        });
-
-        li.appendChild(checkbox);
-        li.appendChild(text);
-        li.appendChild(del);
-        checklistItems.appendChild(li);
+    function checkPage(path) {
+      var url = location.origin + path;
+      var started = performance.now();
+      return fetch(url, { method: 'GET', cache: 'no-store' }).then(function (res) {
+        return { path: path, status: res.status, ok: res.ok, ms: Math.round(performance.now() - started) };
+      }).catch(function (err) {
+        return { path: path, status: 0, ok: false, ms: Math.round(performance.now() - started), error: String(err) };
       });
     }
 
-    checklistForm.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var value = checklistInput.value.trim();
-      if (!value) return;
-      checklist.push({ text: value, done: false });
-      saveChecklist();
-      checklistInput.value = '';
-      renderChecklist();
+    healthRunBtn.addEventListener('click', function () {
+      healthRunBtn.disabled = true;
+      healthIdle.hidden = true;
+      healthTableWrap.hidden = false;
+      healthTableBody.innerHTML = '';
+      healthSummary.textContent = '';
+      healthProgress.hidden = false;
+      var doneCount = 0;
+      healthProgress.textContent = 'Checking 0 / ' + SEED_PAGES.length + '…';
+
+      runWithConcurrency(SEED_PAGES, 5, checkPage, function (result) {
+        doneCount++;
+        healthProgress.textContent = 'Checking ' + doneCount + ' / ' + SEED_PAGES.length + '…';
+        var tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid var(--line)';
+        tr.innerHTML =
+          '<td class="py-1.5 pr-3">' + result.path + '</td>' +
+          '<td class="py-1.5 pr-3">' + (result.status || 'ERR') + '</td>' +
+          '<td class="py-1.5 pr-3">' + result.ms + 'ms</td>' +
+          '<td class="py-1.5" style="color:' + (result.ok ? 'var(--mint-ink)' : 'var(--coral-ink)') + ';font-weight:700">' + (result.ok ? '✓ OK' : '✗ FAIL') + '</td>';
+        healthTableBody.appendChild(tr);
+      }).then(function (results) {
+        healthProgress.hidden = true;
+        healthRunBtn.disabled = false;
+        var broken = results.filter(function (r) { return !r.ok; });
+        healthSummary.style.color = broken.length ? 'var(--coral-ink)' : 'var(--mint-ink)';
+        healthSummary.style.fontWeight = '700';
+        healthSummary.textContent = broken.length
+          ? broken.length + ' of ' + results.length + ' pages failed.'
+          : 'All ' + results.length + ' pages OK.';
+      });
     });
 
-    renderChecklist();
+    // --- Broken link finder -------------------------------------------------
+    var linksRunBtn = document.getElementById('linksRunBtn');
+    var linksIdle = document.getElementById('linksIdle');
+    var linksProgress = document.getElementById('linksProgress');
+    var linksResults = document.getElementById('linksResults');
+    var linksBrokenWrap = document.getElementById('linksBrokenWrap');
+    var linksSummary = document.getElementById('linksSummary');
+    var linksExternalDetails = document.getElementById('linksExternalDetails');
+    var linksExternalList = document.getElementById('linksExternalList');
+
+    function extractLinks(html, fromPath) {
+      var doc = new DOMParser().parseFromString(html, 'text/html');
+      var anchors = doc.querySelectorAll('a[href]');
+      var internal = [];
+      var external = [];
+      anchors.forEach(function (a) {
+        var href = a.getAttribute('href');
+        if (!href || href.indexOf('mailto:') === 0 || href.indexOf('tel:') === 0 || href.indexOf('javascript:') === 0) return;
+        if (href.indexOf('#') === 0) return;
+        var resolved;
+        try { resolved = new URL(href, location.origin + fromPath); } catch (e) { return; }
+        if (resolved.origin !== location.origin) {
+          external.push(resolved.href);
+        } else {
+          internal.push({ path: resolved.pathname + resolved.search, foundOn: fromPath });
+        }
+      });
+      return { internal: internal, external: external };
+    }
+
+    linksRunBtn.addEventListener('click', function () {
+      linksRunBtn.disabled = true;
+      linksIdle.hidden = true;
+      linksResults.hidden = true;
+      linksProgress.hidden = false;
+      linksProgress.textContent = 'Crawling ' + SEED_PAGES.length + ' pages…';
+
+      runWithConcurrency(SEED_PAGES, 5, function (path) {
+        return fetch(location.origin + path, { cache: 'no-store' }).then(function (res) {
+          if (!res.ok) return { internal: [], external: [] };
+          return res.text().then(function (html) { return extractLinks(html, path); });
+        }).catch(function () { return { internal: [], external: [] }; });
+      }).then(function (crawlResults) {
+        var linkMap = {}; // path -> [foundOn, foundOn, ...]
+        var externalSet = {};
+        crawlResults.forEach(function (r) {
+          r.internal.forEach(function (l) {
+            if (!linkMap[l.path]) linkMap[l.path] = [];
+            if (linkMap[l.path].indexOf(l.foundOn) === -1) linkMap[l.path].push(l.foundOn);
+          });
+          r.external.forEach(function (u) { externalSet[u] = true; });
+        });
+
+        var uniquePaths = Object.keys(linkMap);
+        linksProgress.textContent = 'Checking ' + uniquePaths.length + ' unique internal links…';
+
+        return runWithConcurrency(uniquePaths, 6, checkPage, function (result, path, index) {
+          linksProgress.textContent = 'Checked ' + (index + 1) + ' / ' + uniquePaths.length + ' links…';
+        }).then(function (results) {
+          linksProgress.hidden = true;
+          linksRunBtn.disabled = false;
+          linksResults.hidden = false;
+
+          var broken = results.filter(function (r) { return !r.ok; });
+          linksBrokenWrap.innerHTML = '';
+          if (broken.length) {
+            var table = document.createElement('table');
+            table.className = 'w-full text-sm mono';
+            table.style.borderCollapse = 'collapse';
+            table.innerHTML = '<thead><tr style="border-bottom:2px solid var(--ink)">' +
+              '<th class="text-left py-2 pr-3">Broken link</th><th class="text-left py-2 pr-3">Status</th><th class="text-left py-2">Found on</th></tr></thead>';
+            var tbody = document.createElement('tbody');
+            broken.forEach(function (r) {
+              var tr = document.createElement('tr');
+              tr.style.borderBottom = '1px solid var(--line)';
+              tr.innerHTML = '<td class="py-1.5 pr-3" style="color:var(--coral-ink);font-weight:700">' + r.path + '</td>' +
+                '<td class="py-1.5 pr-3">' + (r.status || 'ERR') + '</td>' +
+                '<td class="py-1.5 text-xs">' + linkMap[r.path].join(', ') + '</td>';
+              tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+            var wrapDiv = document.createElement('div');
+            wrapDiv.style.overflowX = 'auto';
+            wrapDiv.appendChild(table);
+            linksBrokenWrap.appendChild(wrapDiv);
+          }
+
+          linksSummary.style.color = broken.length ? 'var(--coral-ink)' : 'var(--mint-ink)';
+          linksSummary.style.fontWeight = '700';
+          linksSummary.textContent = broken.length
+            ? broken.length + ' broken link(s) out of ' + uniquePaths.length + ' internal links checked.'
+            : 'All ' + uniquePaths.length + ' internal links OK.';
+
+          var externalLinks = Object.keys(externalSet);
+          if (externalLinks.length) {
+            linksExternalDetails.hidden = false;
+            linksExternalList.innerHTML = '';
+            externalLinks.forEach(function (u) {
+              var li = document.createElement('li');
+              li.textContent = u;
+              linksExternalList.appendChild(li);
+            });
+          }
+        });
+      });
+    });
+
+    // --- Endpoint tester ------------------------------------------------
+    var endpointList = document.getElementById('endpointList');
+    var stamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14);
+
+    var ENDPOINTS = [
+      {
+        method: 'POST', path: '/api/dots-alumni/check-code', mutating: false,
+        note: 'Read-only -- validates a code without using it up.',
+        fields: [{ key: 'code', label: 'Access code', value: '' }],
+      },
+      {
+        method: 'POST', path: '/api/auth/login', mutating: false,
+        note: 'Read-only unless the credentials are actually correct.',
+        fields: [{ key: 'email', label: 'Email', value: 'testinglab@example.com' }, { key: 'password', label: 'Password', value: 'wrong-password', type: 'password' }],
+      },
+      {
+        method: 'GET', path: '/api/shared/{slug}', mutating: false,
+        note: 'Read-only -- confirms a shared-folder link exists (never returns its files).',
+        fields: [{ key: 'slug', label: 'Slug', value: '' }],
+      },
+      {
+        method: 'GET', path: '/api/auth/me', mutating: false,
+        note: "Read-only -- shows whoever's session cookie this browser currently has, if any.",
+        fields: [],
+      },
+      {
+        method: 'POST', path: '/api/newsletter/subscribe', mutating: true,
+        note: 'Creates a real subscriber row and sends a real confirmation email.',
+        fields: [{ key: 'email', label: 'Email', value: 'testinglab+' + stamp + '@example.com' }],
+      },
+      {
+        method: 'POST', path: '/api/calls/interest', mutating: true,
+        note: 'Requires a signed-in public/staff session in this browser -- creates a real interest row tied to that account.',
+        fields: [{ key: 'callId', label: 'Call ID', value: '' }],
+      },
+      {
+        method: 'POST', path: '/api/events/rsvp', mutating: true,
+        note: 'Requires a signed-in public/staff session in this browser -- creates a real RSVP tied to that account.',
+        fields: [{ key: 'eventId', label: 'Event ID', value: '' }],
+      },
+    ];
+
+    ENDPOINTS.forEach(function (ep, epIndex) {
+      var wrap = document.createElement('div');
+      wrap.className = 'rounded-xl border-2 p-4';
+      wrap.style.borderColor = 'var(--ink)';
+      wrap.style.background = ep.mutating ? 'var(--paper-2)' : '#fff';
+
+      var head = document.createElement('div');
+      head.className = 'flex items-center gap-2 flex-wrap mb-1';
+      var methodTag = document.createElement('span');
+      methodTag.className = 'tag';
+      methodTag.style.background = ep.method === 'GET' ? 'var(--mint)' : 'var(--blue)';
+      methodTag.textContent = ep.method;
+      var pathEl = document.createElement('span');
+      pathEl.className = 'mono text-sm font-semibold';
+      pathEl.textContent = ep.path;
+      head.appendChild(methodTag);
+      head.appendChild(pathEl);
+      if (ep.mutating) {
+        var warn = document.createElement('span');
+        warn.className = 'text-xs font-bold';
+        warn.style.color = 'var(--coral-ink)';
+        warn.textContent = '⚠️ creates a real record';
+        head.appendChild(warn);
+      }
+      wrap.appendChild(head);
+
+      var note = document.createElement('p');
+      note.className = 'text-xs text-muted mb-3';
+      note.textContent = ep.note;
+      wrap.appendChild(note);
+
+      var form = document.createElement('form');
+      form.className = 'flex flex-col gap-2';
+      var fieldEls = {};
+      ep.fields.forEach(function (f) {
+        var fieldWrap = document.createElement('div');
+        var label = document.createElement('label');
+        label.className = 'form-label';
+        label.style.fontSize = '.75rem';
+        label.textContent = f.label;
+        var input = document.createElement('input');
+        input.className = 'input';
+        input.type = f.type || 'text';
+        input.value = f.value || '';
+        input.style.padding = '.45rem .7rem';
+        fieldEls[f.key] = input;
+        fieldWrap.appendChild(label);
+        fieldWrap.appendChild(input);
+        form.appendChild(fieldWrap);
+      });
+
+      var confirmWrap = null;
+      var confirmBox = null;
+      if (ep.mutating) {
+        confirmWrap = document.createElement('label');
+        confirmWrap.className = 'flex items-center gap-2 text-xs';
+        confirmBox = document.createElement('input');
+        confirmBox.type = 'checkbox';
+        confirmWrap.appendChild(confirmBox);
+        confirmWrap.appendChild(document.createTextNode('I understand this creates a real record.'));
+        form.appendChild(confirmWrap);
+      }
+
+      var sendBtn = document.createElement('button');
+      sendBtn.type = 'submit';
+      sendBtn.className = 'btn !py-1.5 !px-3 text-sm self-start';
+      sendBtn.textContent = 'Send';
+      form.appendChild(sendBtn);
+
+      var resultBox = document.createElement('pre');
+      resultBox.className = 'text-xs mono mt-2';
+      resultBox.style.whiteSpace = 'pre-wrap';
+      resultBox.style.wordBreak = 'break-word';
+      resultBox.style.display = 'none';
+      resultBox.style.background = 'var(--paper)';
+      resultBox.style.border = '2px solid var(--ink)';
+      resultBox.style.borderRadius = '.5rem';
+      resultBox.style.padding = '.6rem .75rem';
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (ep.mutating && confirmBox && !confirmBox.checked) {
+          resultBox.style.display = 'block';
+          resultBox.style.color = 'var(--coral-ink)';
+          resultBox.textContent = 'Check the confirmation box first.';
+          return;
+        }
+        sendBtn.disabled = true;
+        resultBox.style.display = 'block';
+        resultBox.style.color = 'var(--ink)';
+        resultBox.textContent = 'Sending…';
+
+        var path = ep.path;
+        var body = {};
+        ep.fields.forEach(function (f) {
+          if (path.indexOf('{' + f.key + '}') !== -1) {
+            path = path.replace('{' + f.key + '}', encodeURIComponent(fieldEls[f.key].value));
+          } else {
+            body[f.key] = fieldEls[f.key].value;
+          }
+        });
+
+        var opts = { method: ep.method };
+        if (ep.method !== 'GET') {
+          opts.headers = { 'Content-Type': 'application/json' };
+          opts.body = JSON.stringify(body);
+        }
+
+        var started = performance.now();
+        fetch(path, opts).then(function (res) {
+          var ms = Math.round(performance.now() - started);
+          return res.text().then(function (text) {
+            var parsed;
+            try { parsed = JSON.stringify(JSON.parse(text), null, 2); } catch (e) { parsed = text; }
+            if (parsed.length > 2000) parsed = parsed.slice(0, 2000) + '\n… (truncated, ' + parsed.length + ' chars total)';
+            sendBtn.disabled = false;
+            resultBox.style.color = res.ok ? 'var(--mint-ink)' : 'var(--coral-ink)';
+            resultBox.textContent = res.status + ' (' + ms + 'ms)\n' + parsed;
+          });
+        }).catch(function (err) {
+          sendBtn.disabled = false;
+          resultBox.style.color = 'var(--coral-ink)';
+          resultBox.textContent = 'Request failed: ' + err;
+        });
+      });
+
+      wrap.appendChild(form);
+      wrap.appendChild(resultBox);
+      endpointList.appendChild(wrap);
+    });
 
     // --- Environment info, live -----------------------------------------
     var envInfo = document.getElementById('envInfo');
@@ -249,12 +547,23 @@ noindex: true
     renderEnv();
     window.addEventListener('resize', renderEnv);
 
-    // --- Notes, persisted to localStorage --------------------------------
-    var NOTES_KEY = 'testinglab_notes';
-    var notesArea = document.getElementById('notesArea');
-    notesArea.value = localStorage.getItem(NOTES_KEY) || '';
-    notesArea.addEventListener('input', function () {
-      localStorage.setItem(NOTES_KEY, notesArea.value);
+    // --- Quick links --------------------------------------------------
+    var LINKS = [
+      { label: 'Homepage', href: '/' },
+      { label: 'DOTS Submit', href: '/dots/alumni/submit/' },
+      { label: 'Admin panel', href: '/admin/' },
+      { label: 'Member portal', href: '/portal/' },
+    ];
+    var quickLinks = document.getElementById('quickLinks');
+    LINKS.forEach(function (l) {
+      var a = document.createElement('a');
+      a.href = l.href;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.className = 'rounded-lg border-2 border-ink px-3 py-2 text-sm font-semibold text-center hover:-translate-y-0.5 transition break-words';
+      a.style.background = '#fff';
+      a.textContent = l.label;
+      quickLinks.appendChild(a);
     });
   }
 
