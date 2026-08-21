@@ -52,6 +52,10 @@ permalink: /admin/dots/
     <div id="blocksList" class="flex flex-col gap-3 mb-2"></div>
 
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+      <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="photo">
+        <span class="block font-semibold text-sm">+ More Photos</span>
+        <span class="block text-xs text-muted mt-0.5">Add another photo, on top of the main one</span>
+      </button>
       <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="quote">
         <span class="block font-semibold text-sm">+ Quote</span>
         <span class="block text-xs text-muted mt-0.5">A line of advice or a memory</span>
@@ -524,7 +528,10 @@ permalink: /admin/dots/
   function renderBlocks() {
     blocksList.innerHTML = '';
     blocks.forEach(function (block, index) {
-      var required = !!REQUIRED_TYPES[block.type];
+      // Only the FIRST block of a required type is mandatory/locked --
+      // extra photo blocks (added via +More Photos) are ordinary,
+      // removable blocks, matching deriveCoreFields below.
+      var required = !!REQUIRED_TYPES[block.type] && blocks.findIndex(function (b) { return b.type === block.type; }) === index;
       var card = document.createElement('div');
       card.className = 'rounded-xl border-2 p-4';
       card.style.background = required ? 'var(--paper-2)' : '#fff';
@@ -535,7 +542,7 @@ permalink: /admin/dots/
       head.className = 'flex items-center justify-between mb-3';
       var tag = document.createElement('span');
       tag.className = 'tag';
-      tag.textContent = '⠿ ' + blockLabel(block.type);
+      tag.textContent = '⠿ ' + (block.type === 'photo' && required ? 'Your Photo' : blockLabel(block.type));
       tag.style.userSelect = 'none';
       if (required) tag.style.background = 'var(--sun)';
       makeHandleDraggable(tag, card);
@@ -1170,6 +1177,7 @@ permalink: /admin/dots/
           </div>
           <div id="proposedBlocksList" class="flex flex-col gap-3 mb-3"></div>
           <div class="grid grid-cols-2 gap-2">
+            <button type="button" class="rounded-lg border-2 border-ink p-2 text-left text-xs" style="background:#fff" data-add="photo">+ More Photos</button>
             <button type="button" class="rounded-lg border-2 border-ink p-2 text-left text-xs" style="background:#fff" data-add="quote">+ Quote</button>
             <button type="button" class="rounded-lg border-2 border-ink p-2 text-left text-xs" style="background:#fff" data-add="subtitle">+ What &amp; where</button>
             <button type="button" class="rounded-lg border-2 border-ink p-2 text-left text-xs" style="background:#fff" data-add="links">+ Links</button>
@@ -1312,6 +1320,7 @@ permalink: /admin/dots/
   function uid() { return 'b' + Math.random().toString(36).slice(2, 10); }
 
   function newBlock(type) {
+    if (type === 'photo') return { id: uid(), type: type, url: '' };
     if (type === 'quote') return { id: uid(), type: type, text: '' };
     if (type === 'subtitle') return { id: uid(), type: type, role: '', location: '' };
     if (type === 'links') return { id: uid(), type: type, instagram: '', linkedin: '', website: '' };
@@ -1425,7 +1434,10 @@ permalink: /admin/dots/
   function renderProposedBlocks() {
     proposedBlocksList.innerHTML = '';
     proposedBlocks.forEach(function (block, index) {
-      var required = !!REQUIRED_TYPES[block.type];
+      // Only the FIRST block of a required type is mandatory/locked --
+      // extra photo blocks are ordinary, removable blocks, matching
+      // deriveCore below.
+      var required = !!REQUIRED_TYPES[block.type] && proposedBlocks.findIndex(function (b) { return b.type === block.type; }) === index;
       var card = document.createElement('div');
       card.className = 'rounded-xl border-2 p-3';
       card.style.background = required ? 'var(--paper-2)' : '#fff';
@@ -1437,7 +1449,7 @@ permalink: /admin/dots/
       var tag = document.createElement('span');
       tag.className = 'tag';
       tag.style.fontSize = '.62rem';
-      tag.textContent = '⠿ ' + blockLabel(block.type);
+      tag.textContent = '⠿ ' + (block.type === 'photo' && required ? 'Your Photo' : blockLabel(block.type));
       tag.style.userSelect = 'none';
       if (required) tag.style.background = 'var(--sun)';
       makeHandleDraggable(tag, card);

@@ -54,6 +54,10 @@ permalink: /dots/alumni/submit/
         <div id="blocksList" class="flex flex-col gap-3 mb-2"></div>
 
         <div id="paletteGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="photo">
+            <span class="block font-semibold text-sm">+ More Photos</span>
+            <span class="block text-xs text-muted mt-0.5">Add another photo, on top of your main one</span>
+          </button>
           <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="quote">
             <span class="block font-semibold text-sm">+ Quote</span>
             <span class="block text-xs text-muted mt-0.5">A line of advice or a memory</span>
@@ -752,7 +756,14 @@ permalink: /dots/alumni/submit/
   function renderBlocks() {
     blocksList.innerHTML = '';
     blocks.forEach(function (block, index) {
-      var required = !!REQUIRED_TYPES[block.type];
+      // A participant can add extra photo blocks beyond the required one
+      // (see the +Photo palette button below), so "required" can't just be
+      // a type check any more -- only the FIRST block of a required type
+      // is the one that's mandatory and locked in place; any later ones of
+      // the same type are ordinary, removable blocks. This matches
+      // deriveCoreFields in functions/_lib/dotsBlocks.js, which also
+      // always takes the first block of each identity type.
+      var required = !!REQUIRED_TYPES[block.type] && blocks.findIndex(function (b) { return b.type === block.type; }) === index;
       var card = document.createElement('div');
       card.className = 'rounded-xl border-2 p-4';
       card.style.background = required ? 'var(--paper-2)' : '#fff';
@@ -764,7 +775,7 @@ permalink: /dots/alumni/submit/
       head.className = 'flex items-center justify-between mb-3';
       var tag = document.createElement('span');
       tag.className = 'tag';
-      tag.textContent = '⠿ ' + blockLabel(block.type);
+      tag.textContent = '⠿ ' + (block.type === 'photo' && required ? 'Your Photo' : blockLabel(block.type));
       tag.style.userSelect = 'none';
       if (required) tag.style.background = 'var(--sun)';
       makeHandleDraggable(tag, card);
@@ -1228,7 +1239,11 @@ permalink: /dots/alumni/submit/
 
     var missing = [];
     var hasName = blocks.some(function (b) { return b.type === 'name' && b.text && b.text.trim(); });
-    var hasPhoto = blocks.some(function (b) { return b.type === 'photo' && b.url; });
+    // Matches deriveCoreFields server-side: the FIRST photo block is the
+    // one that counts, so a filled-in second photo block doesn't mask an
+    // empty required one.
+    var firstPhotoBlock = blocks.find(function (b) { return b.type === 'photo'; });
+    var hasPhoto = !!(firstPhotoBlock && firstPhotoBlock.url);
     var hasBio = blocks.some(function (b) { return b.type === 'bio' && b.text && b.text.trim(); });
     if (!hasName) missing.push('a name');
     if (!hasPhoto) missing.push('a photo');
