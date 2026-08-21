@@ -198,26 +198,24 @@ permalink: /admin/dots/
   // HTML5 Drag and Drop API implementation (it never fired on touch
   // devices at all).
   function makeHandleDraggable(handle, card) {
+    // pointerdown attaches move/up listeners to `document`, not `handle` --
+    // relying on setPointerCapture alone to keep receiving events once the
+    // cursor leaves the handle's own small hit area isn't reliable in real
+    // use. Listening on the document guarantees pointermove keeps firing
+    // regardless of what's physically under the cursor.
     handle.style.touchAction = 'none';
+    handle.style.webkitTouchCallout = 'none';
     handle.style.cursor = 'grab';
     var dragging = false;
+    var activePointerId = null;
     var baseY = 0;
 
     function applyTransform(clientY) {
       card.style.transform = 'translateY(' + (clientY - baseY) + 'px)';
     }
 
-    handle.addEventListener('pointerdown', function (e) {
-      handle.setPointerCapture(e.pointerId);
-      dragging = true;
-      baseY = e.clientY;
-      card.style.position = 'relative';
-      card.style.zIndex = '50';
-      card.classList.add('block-dragging');
-      handle.style.cursor = 'grabbing';
-    });
-    handle.addEventListener('pointermove', function (e) {
-      if (!dragging) return;
+    function onMove(e) {
+      if (!dragging || e.pointerId !== activePointerId) return;
       applyTransform(e.clientY);
 
       var gap = parseFloat(getComputedStyle(blocksList).rowGap) || 12;
@@ -243,22 +241,39 @@ permalink: /admin/dots/
           break;
         }
       }
-    });
-    function finish() {
-      if (!dragging) return;
+    }
+
+    function finish(e) {
+      if (!dragging || (e && e.pointerId !== activePointerId)) return;
       dragging = false;
+      activePointerId = null;
       card.style.transform = '';
       card.style.position = '';
       card.style.zIndex = '';
       card.classList.remove('block-dragging');
       handle.style.cursor = 'grab';
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', finish);
+      document.removeEventListener('pointercancel', finish);
       var newBlocks = Array.prototype.slice.call(blocksList.children).map(function (el) {
         return blocks.find(function (b) { return b.id === el.dataset.blockId; });
       }).filter(Boolean);
       if (newBlocks.length === blocks.length) blocks = newBlocks;
     }
-    handle.addEventListener('pointerup', finish);
-    handle.addEventListener('pointercancel', finish);
+
+    handle.addEventListener('pointerdown', function (e) {
+      dragging = true;
+      activePointerId = e.pointerId;
+      baseY = e.clientY;
+      card.style.position = 'relative';
+      card.style.zIndex = '50';
+      card.classList.add('block-dragging');
+      handle.style.cursor = 'grabbing';
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', finish);
+      document.addEventListener('pointercancel', finish);
+      e.preventDefault();
+    });
   }
 
   function newBlock(type) {
@@ -1322,26 +1337,24 @@ permalink: /admin/dots/
   // HTML5 Drag and Drop API implementation (it never fired on touch
   // devices at all).
   function makeHandleDraggable(handle, card) {
+    // pointerdown attaches move/up listeners to `document`, not `handle` --
+    // relying on setPointerCapture alone to keep receiving events once the
+    // cursor leaves the handle's own small hit area isn't reliable in real
+    // use. Listening on the document guarantees pointermove keeps firing
+    // regardless of what's physically under the cursor.
     handle.style.touchAction = 'none';
+    handle.style.webkitTouchCallout = 'none';
     handle.style.cursor = 'grab';
     var dragging = false;
+    var activePointerId = null;
     var baseY = 0;
 
     function applyTransform(clientY) {
       card.style.transform = 'translateY(' + (clientY - baseY) + 'px)';
     }
 
-    handle.addEventListener('pointerdown', function (e) {
-      handle.setPointerCapture(e.pointerId);
-      dragging = true;
-      baseY = e.clientY;
-      card.style.position = 'relative';
-      card.style.zIndex = '50';
-      card.classList.add('block-dragging');
-      handle.style.cursor = 'grabbing';
-    });
-    handle.addEventListener('pointermove', function (e) {
-      if (!dragging) return;
+    function onMove(e) {
+      if (!dragging || e.pointerId !== activePointerId) return;
       applyTransform(e.clientY);
 
       var gap = parseFloat(getComputedStyle(proposedBlocksList).rowGap) || 12;
@@ -1367,22 +1380,39 @@ permalink: /admin/dots/
           break;
         }
       }
-    });
-    function finish() {
-      if (!dragging) return;
+    }
+
+    function finish(e) {
+      if (!dragging || (e && e.pointerId !== activePointerId)) return;
       dragging = false;
+      activePointerId = null;
       card.style.transform = '';
       card.style.position = '';
       card.style.zIndex = '';
       card.classList.remove('block-dragging');
       handle.style.cursor = 'grab';
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', finish);
+      document.removeEventListener('pointercancel', finish);
       var reordered = Array.prototype.slice.call(proposedBlocksList.children).map(function (el) {
         return proposedBlocks.find(function (b) { return b.id === el.dataset.blockId; });
       }).filter(Boolean);
       if (reordered.length === proposedBlocks.length) proposedBlocks = reordered;
     }
-    handle.addEventListener('pointerup', finish);
-    handle.addEventListener('pointercancel', finish);
+
+    handle.addEventListener('pointerdown', function (e) {
+      dragging = true;
+      activePointerId = e.pointerId;
+      baseY = e.clientY;
+      card.style.position = 'relative';
+      card.style.zIndex = '50';
+      card.classList.add('block-dragging');
+      handle.style.cursor = 'grabbing';
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', finish);
+      document.addEventListener('pointercancel', finish);
+      e.preventDefault();
+    });
   }
 
   function renderProposedBlocks() {

@@ -474,26 +474,27 @@ permalink: /dots/alumni/submit/
   // adjusted by exactly that sibling's footprint in the same step, to
   // keep the on-screen position continuous instead of jumping.
   function makeHandleDraggable(handle, card) {
+    // pointerdown attaches move/up listeners to `document`, not `handle` --
+    // relying on setPointerCapture alone to keep receiving events once the
+    // cursor/finger leaves the handle's own small hit area turned out not
+    // to be reliable in real use (worked fine in scripted tests that
+    // dispatch events directly to the handle, but a real drag moves the
+    // pointer well outside that tiny element within the first few pixels).
+    // Listening on the document guarantees pointermove keeps firing
+    // regardless of what's physically under the cursor/finger.
     handle.style.touchAction = 'none';
+    handle.style.webkitTouchCallout = 'none';
     handle.style.cursor = 'grab';
     var dragging = false;
+    var activePointerId = null;
     var baseY = 0;
 
     function applyTransform(clientY) {
       card.style.transform = 'translateY(' + (clientY - baseY) + 'px)';
     }
 
-    handle.addEventListener('pointerdown', function (e) {
-      handle.setPointerCapture(e.pointerId);
-      dragging = true;
-      baseY = e.clientY;
-      card.style.position = 'relative';
-      card.style.zIndex = '50';
-      card.classList.add('block-dragging');
-      handle.style.cursor = 'grabbing';
-    });
-    handle.addEventListener('pointermove', function (e) {
-      if (!dragging) return;
+    function onMove(e) {
+      if (!dragging || e.pointerId !== activePointerId) return;
       applyTransform(e.clientY);
 
       var gap = parseFloat(getComputedStyle(blocksList).rowGap) || 12;
@@ -519,15 +520,20 @@ permalink: /dots/alumni/submit/
           break;
         }
       }
-    });
-    function finish() {
-      if (!dragging) return;
+    }
+
+    function finish(e) {
+      if (!dragging || (e && e.pointerId !== activePointerId)) return;
       dragging = false;
+      activePointerId = null;
       card.style.transform = '';
       card.style.position = '';
       card.style.zIndex = '';
       card.classList.remove('block-dragging');
       handle.style.cursor = 'grab';
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', finish);
+      document.removeEventListener('pointercancel', finish);
       // Read the DOM back into the data array -- the DOM order is the
       // source of truth after a drag, since that's what the participant
       // actually saw and ended up with.
@@ -538,8 +544,20 @@ permalink: /dots/alumni/submit/
       syncBlocksInput();
       document.dispatchEvent(new CustomEvent('elysium:blockMoved'));
     }
-    handle.addEventListener('pointerup', finish);
-    handle.addEventListener('pointercancel', finish);
+
+    handle.addEventListener('pointerdown', function (e) {
+      dragging = true;
+      activePointerId = e.pointerId;
+      baseY = e.clientY;
+      card.style.position = 'relative';
+      card.style.zIndex = '50';
+      card.classList.add('block-dragging');
+      handle.style.cursor = 'grabbing';
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', finish);
+      document.addEventListener('pointercancel', finish);
+      e.preventDefault();
+    });
   }
 
   // --- Guided tour ---------------------------------------------------
