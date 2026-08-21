@@ -63,14 +63,14 @@ noindex: true
           <h2 class="h-card">Broken link finder</h2>
           <button type="button" id="linksRunBtn" class="btn btn-accent !py-1.5 !px-3 text-sm">Scan for broken links</button>
         </div>
-        <p class="text-xs text-muted mb-4">Crawls every key page for internal links, then checks each one. External links are listed but not checked.</p>
+        <p class="text-xs text-muted mb-4">Crawls every key page for internal and external links, then checks each one. External links are checked via HEAD request with an 8-second timeout.</p>
         <p class="text-sm text-muted" id="linksIdle">Not run yet.</p>
         <p class="text-sm" id="linksProgress" hidden></p>
         <div id="linksResults" hidden>
           <div id="linksBrokenWrap"></div>
           <p class="text-sm mt-3" id="linksSummary"></p>
           <details class="mt-3" id="linksExternalDetails" hidden>
-            <summary class="text-sm font-semibold cursor-pointer">External links found (not checked)</summary>
+            <summary class="text-sm font-semibold cursor-pointer">External links OK (working)</summary>
             <ul class="text-xs mono mt-2 flex flex-col gap-1" id="linksExternalList"></ul>
           </details>
         </div>
@@ -287,41 +287,76 @@ noindex: true
           return res.text().then(function (html) { return extractLinks(html, path); });
         }).catch(function () { return { internal: [], external: [] }; });
       }).then(function (crawlResults) {
-        var linkMap = {}; // path -> [foundOn, foundOn, ...]
-        var externalSet = {};
+        var internalMap = {}; // path -> [foundOn, foundOn, ...]
+        var externalMap = {}; // url -> [foundOn, foundOn, ...]
         crawlResults.forEach(function (r) {
           r.internal.forEach(function (l) {
-            if (!linkMap[l.path]) linkMap[l.path] = [];
-            if (linkMap[l.path].indexOf(l.foundOn) === -1) linkMap[l.path].push(l.foundOn);
+            if (!internalMap[l.path]) internalMap[l.path] = [];
+            if (internalMap[l.path].indexOf(l.foundOn) === -1) internalMap[l.path].push(l.foundOn);
           });
-          r.external.forEach(function (u) { externalSet[u] = true; });
+          r.external.forEach(function (u) {
+            if (!externalMap[u]) externalMap[u] = ['(multiple pages)'];
+          });
         });
 
-        var uniquePaths = Object.keys(linkMap);
-        linksProgress.textContent = 'Checking ' + uniquePaths.length + ' unique internal links…';
+        var internalPaths = Object.keys(internalMap);
+        var externalUrls = Object.keys(externalMap);
+        var totalLinks = internalPaths.length + externalUrls.length;
+        linksProgress.textContent = 'Checking ' + internalPaths.length + ' internal + ' + externalUrls.length + ' external…';
 
-        return runWithConcurrency(uniquePaths, 6, checkPage, function (result, path, index) {
-          linksProgress.textContent = 'Checked ' + (index + 1) + ' / ' + uniquePaths.length + ' links…';
-        }).then(function (results) {
+        function checkExternal(url) {
+          var started = performance.now();
+          return Promise.race([
+            fetch(url, { method: 'HEAD', cache: 'no-store' }).then(function (res) {
+              return { url: url, status: res.status, ok: res.ok, ms: Math.round(performance.now() - started) };
+            }).catch(function (err) {
+              // CORS errors and network errors — mark as unreachable, not broken,
+              // since many external domains block browser fetch() intentionally
+              var isCors = String(err).indexOf('CORS') !== -1 || String(err).indexOf('fetch') !== -1;
+              return { url: url, status: 0, ok: isCors, ms: Math.round(performance.now() - started), error: isCors ? 'CORS blocked' : 'unreachable' };
+            }),
+            new Promise(function (_, reject) {
+              setTimeout(function () { reject(new Error('timeout')); }, 8000);
+            })
+          ]).catch(function () {
+            return { url: url, status: 0, ok: true, ms: Math.round(performance.now() - started), error: 'timeout' };
+          });
+        }
+
+        var checked = 0;
+        function trackProgress() {
+          checked++;
+          linksProgress.textContent = 'Checked ' + checked + ' / ' + totalLinks + ' links…';
+        }
+
+        return Promise.all([
+          runWithConcurrency(internalPaths, 6, checkPage, trackProgress),
+          runWithConcurrency(externalUrls, 3, checkExternal, trackProgress),
+        ]).then(function (resultPairs) {
+          var allResults = (resultPairs[0] || []).concat(resultPairs[1] || []);
           linksProgress.hidden = true;
           linksRunBtn.disabled = false;
           linksResults.hidden = false;
 
-          var broken = results.filter(function (r) { return !r.ok; });
+          var broken = allResults.filter(function (r) { return !r.ok; });
           linksBrokenWrap.innerHTML = '';
           if (broken.length) {
             var table = document.createElement('table');
             table.className = 'w-full text-sm mono';
             table.style.borderCollapse = 'collapse';
             table.innerHTML = '<thead><tr style="border-bottom:2px solid var(--ink)">' +
-              '<th class="text-left py-2 pr-3">Broken link</th><th class="text-left py-2 pr-3">Status</th><th class="text-left py-2">Found on</th></tr></thead>';
+              '<th class="text-left py-2 pr-3">Link</th><th class="text-left py-2 pr-3">Status</th><th class="text-left py-2">Found on</th></tr></thead>';
             var tbody = document.createElement('tbody');
             broken.forEach(function (r) {
+              var isExternal = r.url !== undefined;
+              var linkKey = isExternal ? r.url : r.path;
+              var locations = isExternal ? externalMap[linkKey] : internalMap[linkKey];
               var tr = document.createElement('tr');
               tr.style.borderBottom = '1px solid var(--line)';
-              tr.innerHTML = '<td class="py-1.5 pr-3" style="color:var(--coral-ink);font-weight:700">' + r.path + '</td>' +
+              var label = isExternal ? '🔗 ' + linkKey : linkKey;
+              tr.innerHTML = '<td class="py-1.5 pr-3" style="color:var(--coral-ink);font-weight:700">' + label + '</td>' +
                 '<td class="py-1.5 pr-3">' + (r.status || 'ERR') + '</td>' +
-                '<td class="py-1.5 text-xs">' + linkMap[r.path].join(', ') + '</td>';
+                '<td class="py-1.5 text-xs">' + (locations ? locations.join(', ') : '?') + '</td>';
               tbody.appendChild(tr);
             });
             table.appendChild(tbody);
@@ -331,19 +366,28 @@ noindex: true
             linksBrokenWrap.appendChild(wrapDiv);
           }
 
+          var internalBroken = broken.filter(function (r) { return r.path !== undefined; });
+          var externalBroken = broken.filter(function (r) { return r.url !== undefined; });
+          var summary = '';
+          if (internalBroken.length || externalBroken.length) {
+            if (internalBroken.length) summary += internalBroken.length + ' internal broken; ';
+            if (externalBroken.length) summary += externalBroken.length + ' external broken';
+          } else {
+            summary = 'All ' + totalLinks + ' links OK.';
+          }
           linksSummary.style.color = broken.length ? 'var(--coral-ink)' : 'var(--mint-ink)';
           linksSummary.style.fontWeight = '700';
-          linksSummary.textContent = broken.length
-            ? broken.length + ' broken link(s) out of ' + uniquePaths.length + ' internal links checked.'
-            : 'All ' + uniquePaths.length + ' internal links OK.';
+          linksSummary.textContent = summary;
 
-          var externalLinks = Object.keys(externalSet);
-          if (externalLinks.length) {
+          var workingExternal = externalUrls.filter(function (u) {
+            return allResults.some(function (r) { return r.url === u && r.ok; });
+          });
+          if (workingExternal.length) {
             linksExternalDetails.hidden = false;
             linksExternalList.innerHTML = '';
-            externalLinks.forEach(function (u) {
+            workingExternal.forEach(function (u) {
               var li = document.createElement('li');
-              li.textContent = u;
+              li.textContent = '✓ ' + u;
               linksExternalList.appendChild(li);
             });
           }
