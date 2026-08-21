@@ -263,7 +263,11 @@ noindex: true
         try { resolved = new URL(href, location.origin + fromPath); } catch (e) { return; }
         if (resolved.origin !== location.origin) {
           external.push(resolved.href);
-        } else {
+        } else if (resolved.pathname.indexOf('/cdn-cgi/') !== 0) {
+          // /cdn-cgi/l/email-protection is Cloudflare's own email-obfuscation
+          // rewrite of a mailto: link -- its real payload lives in the URL
+          // fragment, which browsers never send to the server, so fetching
+          // it plain always 404s. Not a real link on the site.
           internal.push({ path: resolved.pathname + resolved.search, foundOn: fromPath });
         }
       });
