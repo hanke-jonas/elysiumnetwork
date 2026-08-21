@@ -21,7 +21,7 @@ export async function onRequestGet({ request, env }) {
               a.quote AS current_quote, a.bio AS current_bio, a.story AS current_story,
               a.photo_url AS current_photo_url, a.photos_json AS current_photos_json,
               a.links_json AS current_links_json, a.blocks_json AS current_blocks_json,
-              a.slug AS alumni_slug
+              a.slug AS current_slug
        FROM dots_alumni_edits e
        JOIN dots_alumni a ON a.id = e.alumni_id
        WHERE e.status = ?

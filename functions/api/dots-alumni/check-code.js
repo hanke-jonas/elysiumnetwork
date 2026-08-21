@@ -65,6 +65,7 @@ export async function onRequestPost({ request, env }) {
       hasPendingEdit: Boolean(pendingEdit) && !pendingDeletion,
       hasPendingDeletion: pendingDeletion,
       current: {
+        slug: source.slug || alumnus.slug,
         name: source.name,
         pronouns: source.pronouns,
         currentRole: source.current_role,
@@ -75,6 +76,7 @@ export async function onRequestPost({ request, env }) {
         photoUrl: source.photo_url,
         photos: JSON.parse(source.photos_json || '[]'),
         links: JSON.parse(source.links_json || '[]'),
+        blocks: JSON.parse(source.blocks_json || 'null'),
       },
     });
   } catch (err) {

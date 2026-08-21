@@ -1,4 +1,5 @@
 import { badRequest, json, randomId } from '../../_lib/http.js';
+import { sanitizeBlocks, deriveCoreFields, validateCoreFields } from '../../_lib/dotsBlocks.js';
 
 // A participant reuses their already-claimed access code to propose a
 // change to their own existing entry. Never touches the live dots_alumni
@@ -9,32 +10,15 @@ import { badRequest, json, randomId } from '../../_lib/http.js';
 // check-code.js's "edit" mode), so the same code that got someone in
 // keeps working as their ongoing edit key.
 //
-// The submitted fields are always the participant's FULL current page
-// (the edit form pre-fills every field from check-code's response, same
-// as create mode), so there's no partial-field merging to do -- validate,
-// store, done. blocks_json is explicitly nulled in the proposal: an older
-// entry built through the since-retired drag-and-drop page builder still
-// has one, and leaving it untouched would make the public profile page
-// keep rendering the stale block order instead of these new field edits
-// (see the {% if unified %} branch in src/dots/alumni-profile.njk).
-const MAX_NAME_CHARS = 100;
-const MAX_PRONOUNS_CHARS = 30;
-const MAX_ROLE_CHARS = 120;
-const MAX_LOCATION_CHARS = 80;
-const MAX_QUOTE_CHARS = 300;
-const MAX_BIO_CHARS = 600;
-const MAX_STORY_CHARS = 4000;
-const MAX_EXTRA_PHOTOS = 6;
-const LINK_FIELDS = [
-  ['instagram', 'Instagram'],
-  ['linkedin', 'LinkedIn'],
-  ['website', 'Website'],
-];
+// The submitted `blocks` is always the participant's FULL current page
+// (the edit form pre-fills every block from check-code's response, same
+// as create mode), so unlike the old per-field version of this endpoint
+// there's no partial-field merging to do -- sanitize, derive, validate,
+// store, done.
+const MAX_SLUG_CHARS = 60;
 
-function normalizeUrl(value) {
-  const trimmed = String(value || '').trim();
-  if (!trimmed) return null;
-  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+function slugify(value) {
+  return String(value || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, MAX_SLUG_CHARS).replace(/-+$/, '');
 }
 
 export async function onRequestPost({ request, env }) {
@@ -51,42 +35,38 @@ export async function onRequestPost({ request, env }) {
       return badRequest('That access code is not linked to an existing entry.');
     }
 
-    const current = await env.DB.prepare('SELECT id FROM dots_alumni WHERE id = ?').bind(codeRow.dots_alumni_id).first();
+    const current = await env.DB.prepare('SELECT id, slug FROM dots_alumni WHERE id = ?').bind(codeRow.dots_alumni_id).first();
     if (!current) return badRequest('That entry no longer exists.');
 
-    const name = String(form.get('name') || '').trim().slice(0, MAX_NAME_CHARS);
-    const pronouns = String(form.get('pronouns') || '').trim().slice(0, MAX_PRONOUNS_CHARS);
-    const currentRole = String(form.get('current_role') || '').trim().slice(0, MAX_ROLE_CHARS);
-    const location = String(form.get('location') || '').trim().slice(0, MAX_LOCATION_CHARS);
-    const quote = String(form.get('quote') || '').trim().slice(0, MAX_QUOTE_CHARS);
-    const bio = String(form.get('bio') || '').trim().slice(0, MAX_BIO_CHARS);
-    const story = String(form.get('story') || '').trim().slice(0, MAX_STORY_CHARS);
-    const photoUrl = String(form.get('photo_url') || '').trim().slice(0, 500);
+    let blocks;
+    try { blocks = sanitizeBlocks(JSON.parse(form.get('blocks') || '[]')); } catch { blocks = null; }
+    if (!blocks) return badRequest('Your page is empty — add at least a name and bio.');
 
-    let extraPhotos;
-    try { extraPhotos = JSON.parse(form.get('photos') || '[]'); } catch { extraPhotos = []; }
-    if (!Array.isArray(extraPhotos)) extraPhotos = [];
-    extraPhotos = extraPhotos.filter((u) => typeof u === 'string' && u).slice(0, MAX_EXTRA_PHOTOS);
+    const core = deriveCoreFields(blocks);
+    const coreError = validateCoreFields(core);
+    if (coreError) return badRequest(coreError);
 
-    if (!name) return badRequest('A name is required');
-    if (!bio) return badRequest('A short bio is required');
-
-    const links = LINK_FIELDS
-      .map(([field, label]) => ({ label, url: normalizeUrl(form.get(field)) }))
-      .filter((l) => l.url);
+    // The participant can change their own page address here too (staff
+    // approve it like everything else) -- unchanged from their current
+    // one is always fine even though it "collides" with their own row.
+    const requestedSlug = slugify(form.get('slug')) || slugify(core.name) || 'alumnus';
+    if (requestedSlug !== current.slug) {
+      const existing = await env.DB.prepare('SELECT id FROM dots_alumni WHERE slug = ? AND id != ?').bind(requestedSlug, current.id).first();
+      if (existing) return badRequest(`elysium.ngo/dots/alumni/${requestedSlug}/ is already taken — try a different page address.`);
+    }
 
     const proposed = {
-      name,
-      pronouns: pronouns || null,
-      current_role: currentRole || null,
-      location: location || null,
-      quote: quote || null,
-      bio,
-      story: story || null,
-      photo_url: photoUrl,
-      photos_json: JSON.stringify(extraPhotos),
-      links_json: JSON.stringify(links),
-      blocks_json: null,
+      slug: requestedSlug,
+      name: core.name,
+      pronouns: core.pronouns,
+      current_role: core.current_role,
+      location: core.location,
+      quote: core.quote,
+      bio: core.bio,
+      photo_url: core.photo_url,
+      photos_json: '[]',
+      links_json: core.links_json,
+      blocks_json: JSON.stringify(blocks),
     };
 
     // If an earlier visit already left a proposal awaiting review, this

@@ -27,84 +27,73 @@ permalink: /dots/alumni/submit/
     </div>
 
     <div class="card p-8 mt-8" id="formCard" hidden>
-      <p class="text-sm text-muted mb-6" id="editionLabel">This is your page. Fill in what you'd like — only your name and a short bio are needed, everything else is up to you.</p>
+      <p class="text-sm text-muted mb-5" id="editionLabel">Submissions are reviewed before they go live, so it may take a little while to appear.</p>
       <p class="text-sm mt-1 mb-5" id="pendingEditNotice" hidden style="color:var(--coral-ink)">You already have a change waiting for review — submitting again updates that same proposal rather than adding a new one.</p>
 
-      <form id="alumni-form" class="flex flex-col gap-7">
+      <div class="flex items-start justify-between gap-3 mb-4">
+        <p class="text-xs text-muted">This is your whole page, one section at a time — drag to reorder anything. Your name and bio are required (shown in every gallery listing), so those two can be edited and repositioned but not removed entirely. A photo is recommended but optional — everything else, including your photo, is fully optional and removable.</p>
+        <button type="button" id="takeTourBtn" class="btn !py-1.5 !px-3 text-xs shrink-0">🎓 Take the tour</button>
+      </div>
+
+      <form id="alumni-form" class="flex flex-col gap-3">
         <input type="hidden" id="hiddenCode" name="code">
 
-        <div>
-          <label class="form-label" for="nameInput">Your name *</label>
-          <input class="input" type="text" id="nameInput" name="name" maxlength="100" required placeholder="e.g. Alex Müller">
-        </div>
-
-        <div>
-          <label class="form-label" for="pronounsInput">Your pronouns (optional)</label>
-          <input class="input" type="text" id="pronounsInput" name="pronouns" maxlength="30" placeholder="e.g. she/her, he/him, they/them">
-        </div>
-
-        <div>
-          <p class="form-label">Your photo (optional)</p>
-          <p class="text-xs text-muted mb-2">Add a photo of yourself, or skip this — totally fine either way.</p>
-          <input type="hidden" id="photoUrlInput" name="photo_url">
-          <div id="photoEmpty">
-            <label class="btn cursor-pointer inline-flex">📷 Add a photo<input type="file" id="photoFile" accept="image/jpeg,image/png,image/webp" class="sr-only"></label>
+        <div class="rounded-xl border-2 p-4 mb-1" id="slugCard" style="background:var(--paper-2);border-color:var(--ink)">
+          <label class="form-label" for="slugInput">Your page address</label>
+          <p class="text-xs text-muted mb-2">Pick something simple, like your name — this is the web link people will use to find your page.</p>
+          <div class="flex items-center gap-1 flex-wrap">
+            <span class="text-xs text-muted mono">elysium.ngo/dots/alumni/</span>
+            <input class="input" style="width:auto;flex:1;min-width:7rem;padding-top:.4rem;padding-bottom:.4rem" type="text" id="slugInput" name="slug" maxlength="60" placeholder="your-name" autocomplete="off">
+            <span class="text-xs text-muted mono">/</span>
           </div>
-          <div id="photoFilled" hidden class="flex items-center gap-3">
-            <img id="photoPreview" src="" alt="" class="w-20 h-20 rounded-xl object-cover border-2 border-ink">
-            <div class="flex gap-2">
-              <label class="btn !py-1.5 !px-3 text-xs cursor-pointer inline-flex">Change<input type="file" id="photoFileChange" accept="image/jpeg,image/png,image/webp" class="sr-only"></label>
-              <button type="button" id="photoRemoveBtn" class="btn btn-coral !py-1.5 !px-3 text-xs">Remove</button>
-            </div>
-          </div>
-          <p id="photoStatus" role="status" aria-live="polite" class="text-xs mt-2 text-muted"></p>
+          <p class="text-xs mt-2" id="slugStatus" style="color:var(--mint-ink)"></p>
         </div>
 
-        <div>
-          <label class="form-label" for="bioInput">A short bio *</label>
-          <p class="text-xs text-muted mb-2">A few sentences about yourself — this is what shows on your gallery card.</p>
-          <textarea class="input" id="bioInput" name="bio" rows="3" maxlength="600" required placeholder="A little about who you are…"></textarea>
-        </div>
+        <div id="blocksList" class="flex flex-col gap-3 mb-2"></div>
 
-        <div>
-          <label class="form-label" for="roleInput">What are you doing now? (optional)</label>
-          <p class="text-xs text-muted mb-2">Studying, working, a project you're excited about — anything!</p>
-          <input class="input" type="text" id="roleInput" name="current_role" maxlength="120" placeholder="e.g. Studying law in Berlin">
+        <div id="paletteGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="photo">
+            <span class="block font-semibold text-sm">+ Photo</span>
+            <span class="block text-xs text-muted mt-0.5">Add a photo back if you removed it</span>
+          </button>
+          <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="quote">
+            <span class="block font-semibold text-sm">+ Quote</span>
+            <span class="block text-xs text-muted mt-0.5">A line of advice or a memory</span>
+          </button>
+          <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="subtitle">
+            <span class="block font-semibold text-sm">+ What &amp; where</span>
+            <span class="block text-xs text-muted mt-0.5">What you're up to, where you're based</span>
+          </button>
+          <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="links">
+            <span class="block font-semibold text-sm">+ Links</span>
+            <span class="block text-xs text-muted mt-0.5">Instagram, LinkedIn, your website</span>
+          </button>
+          <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="heading">
+            <span class="block font-semibold text-sm">+ Heading</span>
+            <span class="block text-xs text-muted mt-0.5">A short section title</span>
+          </button>
+          <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="paragraph">
+            <span class="block font-semibold text-sm">+ Text</span>
+            <span class="block text-xs text-muted mt-0.5">A paragraph of writing</span>
+          </button>
+          <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="image">
+            <span class="block font-semibold text-sm">+ Image</span>
+            <span class="block text-xs text-muted mt-0.5">One photo, with a caption</span>
+          </button>
+          <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="gallery">
+            <span class="block font-semibold text-sm">+ Gallery</span>
+            <span class="block text-xs text-muted mt-0.5">A grid of several photos</span>
+          </button>
+          <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="button">
+            <span class="block font-semibold text-sm">+ Button</span>
+            <span class="block text-xs text-muted mt-0.5">A clickable link, e.g. to your website</span>
+          </button>
+          <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="spacer">
+            <span class="block font-semibold text-sm">+ Spacer</span>
+            <span class="block text-xs text-muted mt-0.5">Blank space between sections</span>
+          </button>
         </div>
-
-        <div>
-          <label class="form-label" for="locationInput">Where are you based? (optional)</label>
-          <input class="input" type="text" id="locationInput" name="location" maxlength="80" placeholder="e.g. Leipzig, Germany">
-        </div>
-
-        <div>
-          <label class="form-label" for="quoteInput">A favourite quote or piece of advice (optional)</label>
-          <input class="input" type="text" id="quoteInput" name="quote" maxlength="300" placeholder="Something you'd want future participants to hear">
-        </div>
-
-        <div>
-          <label class="form-label" for="storyInput">Your story (optional)</label>
-          <p class="text-xs text-muted mb-2">Want to share more? This only shows on your own page, not the gallery.</p>
-          <textarea class="input" id="storyInput" name="story" rows="5" maxlength="4000" placeholder="Tell us more, if you'd like…"></textarea>
-        </div>
-
-        <div>
-          <p class="form-label">Your links (optional)</p>
-          <div class="flex flex-col gap-2 mt-1">
-            <input class="input" type="text" name="instagram" maxlength="300" placeholder="Instagram">
-            <input class="input" type="text" name="linkedin" maxlength="300" placeholder="LinkedIn">
-            <input class="input" type="text" name="website" maxlength="300" placeholder="Website">
-          </div>
-        </div>
-
-        <div>
-          <p class="form-label">More photos (optional)</p>
-          <p class="text-xs text-muted mb-2">Add a few extra photos if you'd like — up to 6.</p>
-          <input type="hidden" id="photosInput" name="photos">
-          <div id="extraPhotosGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-2"></div>
-          <label id="addExtraPhotoBtn" class="btn !py-1.5 !px-3 text-xs cursor-pointer inline-flex">+ Add a photo<input type="file" id="extraPhotoFile" accept="image/jpeg,image/png,image/webp" class="sr-only"></label>
-          <p id="extraPhotoStatus" role="status" aria-live="polite" class="text-xs mt-2 text-muted"></p>
-        </div>
+        <input type="hidden" id="blocksInput" name="blocks">
 
         <!-- Honeypot: hidden from real visitors via CSS, invisible to screen
              readers via aria-hidden — a bot filling this out is the tell. -->
@@ -113,12 +102,12 @@ permalink: /dots/alumni/submit/
           <input type="text" id="website_hp" name="website_hp" tabindex="-1" autocomplete="off">
         </div>
 
-        <label class="flex items-start gap-2.5 text-xs text-muted" style="cursor:pointer">
+        <label class="flex items-start gap-2.5 text-xs text-muted mt-2" style="cursor:pointer">
           <input type="checkbox" id="consentCheck" name="consent" required class="mt-0.5 shrink-0" style="width:1rem;height:1rem">
           <span>I agree that the name, photo, and any other details I add here will be reviewed by Elysium+ Network staff and published on this public page — and that I can come back and edit or remove it any time using this same access code. See our <a href="/privacy/" target="_blank" class="underline">privacy policy</a> for how we handle this.</span>
         </label>
 
-        <button type="submit" id="submit-btn" class="btn btn-accent w-full justify-center">Submit</button>
+        <button type="submit" id="submit-btn" class="btn btn-accent w-full justify-center mt-3">Submit</button>
       </form>
       <p id="status-msg" role="status" aria-live="polite" class="text-sm mt-4"></p>
 
@@ -134,6 +123,22 @@ permalink: /dots/alumni/submit/
   </div>
 </section>
 {% include "dialog.njk" %}
+
+<div id="tourSpotlight" style="position:fixed;z-index:310;display:none;border-radius:.85rem;pointer-events:none;box-shadow:0 0 0 3px var(--coral),0 0 0 9999px rgba(25,23,18,.68);transition:top .2s ease,left .2s ease,width .2s ease,height .2s ease"></div>
+<div id="tourCard" class="card" style="position:fixed;left:0;right:0;bottom:0;z-index:311;border-radius:1.25rem 1.25rem 0 0;max-height:62vh;overflow-y:auto;display:none;padding:1.25rem 1.5rem calc(1.25rem + env(safe-area-inset-bottom))">
+  <div class="flex items-center gap-1.5 mb-3" id="tourDots"></div>
+  <p class="eyebrow" style="color:var(--coral-ink)" id="tourStepLabel"></p>
+  <h3 class="h-card mt-1" id="tourTitle" style="font-size:1.2rem"></h3>
+  <p class="text-muted leading-relaxed mt-2" id="tourBody"></p>
+  <p class="text-sm mt-2 font-semibold" id="tourHint" style="color:var(--coral-ink);display:none"></p>
+  <div class="flex items-center justify-between mt-4">
+    <button type="button" id="tourSkipBtn" class="text-xs text-muted underline">Skip tour</button>
+    <div class="flex gap-2">
+      <button type="button" id="tourBackBtn" class="btn !py-2 !px-3 text-sm">Back</button>
+      <button type="button" id="tourNextBtn" class="btn btn-accent !py-2 !px-4 text-sm">Next</button>
+    </div>
+  </div>
+</div>
 
 <div id="cropModalOverlay" style="position:fixed;inset:0;background:rgba(25,23,18,.85);z-index:300;display:none;align-items:center;justify-content:center;padding:1rem">
   <div style="background:#fff;border:2px solid var(--ink);border-radius:1rem;box-shadow:8px 8px 0 var(--ink);max-width:26rem;width:100%;padding:1.5rem;max-height:92vh;overflow-y:auto">
@@ -178,7 +183,52 @@ permalink: /dots/alumni/submit/
   var hiddenCode = document.getElementById('hiddenCode');
   var alumniForm = document.getElementById('alumni-form');
 
-  function uploadImage(file, onDone) {
+  function slugify(v) { return String(v || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60).replace(/-+$/, ''); }
+
+  // --- Page address (slug) ------------------------------------------------
+  // Lives outside the block canvas since it's a property of the whole page,
+  // not a section on it. Auto-follows the name block as the participant
+  // types, until they touch this field themselves -- then it's theirs.
+  var slugInput = document.getElementById('slugInput');
+  var slugStatus = document.getElementById('slugStatus');
+  var slugTouched = false;
+  function updateSlugPreview() {
+    var s = slugify(slugInput.value) || 'your-page';
+    slugStatus.style.color = 'var(--mint-ink)';
+    slugStatus.textContent = 'Your page will be at elysium.ngo/dots/alumni/' + s + '/';
+  }
+  slugInput.addEventListener('input', function () { slugTouched = true; updateSlugPreview(); });
+  updateSlugPreview();
+
+  // --- Block builder ---------------------------------------------------
+  // `blocks` is the single source of truth for the ENTIRE page now,
+  // including identity (matches functions/_lib/dotsBlocks.js's shape
+  // exactly) -- name/photo/bio are required block types (pre-seeded,
+  // not removable, but freely reorderable like everything else).
+  var blocks = [];
+  var blocksList = document.getElementById('blocksList');
+  var blocksInput = document.getElementById('blocksInput');
+  var REQUIRED_TYPES = { name: true, bio: true };
+
+  function uid() { return 'b' + Math.random().toString(36).slice(2, 10); }
+
+  function newBlock(type) {
+    if (type === 'name') return { id: uid(), type: type, text: '', pronouns: '' };
+    if (type === 'photo') return { id: uid(), type: type, url: '' };
+    if (type === 'bio') return { id: uid(), type: type, text: '' };
+    if (type === 'quote') return { id: uid(), type: type, text: '' };
+    if (type === 'subtitle') return { id: uid(), type: type, role: '', location: '' };
+    if (type === 'links') return { id: uid(), type: type, instagram: '', linkedin: '', website: '' };
+    if (type === 'heading') return { id: uid(), type: type, text: '' };
+    if (type === 'paragraph') return { id: uid(), type: type, text: '' };
+    if (type === 'image') return { id: uid(), type: type, url: '', caption: '' };
+    if (type === 'gallery') return { id: uid(), type: type, images: [] };
+    if (type === 'button') return { id: uid(), type: type, label: '', href: '' };
+    if (type === 'spacer') return { id: uid(), type: type, height: 48 };
+    return null;
+  }
+
+  function uploadBlockImage(file, onDone) {
     var fd = new FormData();
     fd.append('code', hiddenCode.value);
     fd.append('file', file);
@@ -189,18 +239,18 @@ permalink: /dots/alumni/submit/
   }
 
   // --- Crop / reposition modal ------------------------------------------
-  // Every uploaded photo goes to R2 as-is first (uploadImage above), then
-  // this modal opens on that already-hosted URL so there's always a real
-  // file to fall back to if the user cancels. Two ways out: "recommended"
-  // just keeps that original URL untouched -- every photo display on the
-  // site already runs it through Cloudflare's automatic face-aware crop
-  // (functions/uploads/[[path]].js's ?face=1 transform, via the faceCrop
-  // filter in templates), so "recommended" genuinely means "let the
-  // system already built for this handle it," not a placeholder. "Save
-  // this crop" renders the current pan/zoom to a fixed frame and uploads
-  // THAT as a new, separate file -- the manual choice takes precedence
-  // over automatic cropping from then on, since it's now the only image
-  // faceCrop has to work with.
+  // Every uploaded photo goes to R2 as-is first (uploadBlockImage above),
+  // then this modal opens on that already-hosted URL so there's always a
+  // real file to fall back to if the user cancels. Two ways out:
+  // "recommended" just keeps that original URL untouched -- every photo
+  // display on the site already runs it through Cloudflare's automatic
+  // face-aware crop (functions/uploads/[[path]].js's ?face=1 transform,
+  // via the faceCrop filter in templates), so "recommended" genuinely
+  // means "let the system already built for this handle it," not a
+  // placeholder. "Save this crop" renders the current pan/zoom to a fixed
+  // frame and uploads THAT as a new, separate file -- the manual choice
+  // takes precedence over automatic cropping from then on, since it's now
+  // the only image faceCrop has to work with.
   (function () {
     var overlay = document.getElementById('cropModalOverlay');
     var frame = document.getElementById('cropFrame');
@@ -216,16 +266,9 @@ permalink: /dots/alumni/submit/
     var activeOriginalUrl = null, activeOnDone = null;
     var OUT_W = 960, OUT_H = 960;
 
-    // Pointer Events unify mouse + touch, so a plain single-pointer drag
-    // already works on phones -- but WhatsApp's actual feel comes from
-    // pinch-to-zoom, which needs BOTH active touches tracked at once.
-    // `pointers` holds every currently-down pointer by id; one active
-    // pointer means "pan", two means "pinch", and lifting one finger
-    // during a pinch drops back to panning from wherever that remaining
-    // finger already is (no jump).
     var pointers = {};
-    var panFrom = null; // {x, y, offsetX, offsetY}
-    var pinchFrom = null; // {dist, scale} while two pointers are down
+    var panFrom = null;
+    var pinchFrom = null;
 
     function frameSize() {
       var rect = frame.getBoundingClientRect();
@@ -399,7 +442,7 @@ permalink: /dots/alumni/submit/
         }
         var file = new File([blob], 'cropped.jpg', { type: 'image/jpeg' });
         var onDone = activeOnDone;
-        uploadImage(file, function (url, err) {
+        uploadBlockImage(file, function (url, err) {
           saveBtn.disabled = false;
           if (!url) {
             cropStatus.style.color = 'var(--coral-ink)';
@@ -413,110 +456,621 @@ permalink: /dots/alumni/submit/
     });
   })();
 
-  // --- Main photo -------------------------------------------------------
-  var photoUrlInput = document.getElementById('photoUrlInput');
-  var photoEmpty = document.getElementById('photoEmpty');
-  var photoFilled = document.getElementById('photoFilled');
-  var photoPreview = document.getElementById('photoPreview');
-  var photoStatus = document.getElementById('photoStatus');
+  // --- Touch-and-mouse-compatible reordering ------------------------------
+  // The previous version used the native HTML5 Drag and Drop API
+  // (draggable=true + dragstart/dragover/drop) -- those events never fire
+  // on touch devices at all, so dragging silently did nothing on a phone
+  // (the ↑/↓ buttons were the only thing that ever worked there). Pointer
+  // Events unify mouse and touch, same technique already used for the
+  // crop tool's pan/pinch above, so this rebuilds reordering on top of
+  // those instead: pointerdown on a card's ⠿ handle picks it up, dragging
+  // it past a sibling's midpoint swaps their DOM position immediately
+  // (no smooth pixel-following -- simpler and avoids the DOM node getting
+  // torn out from under an in-progress pointer capture on a full
+  // re-render), and pointerup reads the final DOM order back into
+  // `blocks` and re-renders for real.
+  function makeHandleDraggable(handle, card) {
+    handle.style.touchAction = 'none';
+    handle.style.cursor = 'grab';
+    var dragging = false;
 
-  function setPhoto(url) {
-    photoUrlInput.value = url || '';
-    if (url) {
-      photoPreview.src = url;
-      photoEmpty.hidden = true;
-      photoFilled.hidden = false;
-    } else {
-      photoEmpty.hidden = false;
-      photoFilled.hidden = true;
+    handle.addEventListener('pointerdown', function (e) {
+      handle.setPointerCapture(e.pointerId);
+      dragging = true;
+      card.classList.add('block-dragging');
+      handle.style.cursor = 'grabbing';
+    });
+    handle.addEventListener('pointermove', function (e) {
+      if (!dragging) return;
+      var siblings = Array.prototype.slice.call(blocksList.children);
+      var myIndex = siblings.indexOf(card);
+      siblings.forEach(function (sib, i) {
+        if (sib === card) return;
+        var r = sib.getBoundingClientRect();
+        var mid = r.top + r.height / 2;
+        if (i < myIndex && e.clientY < mid) {
+          blocksList.insertBefore(card, sib);
+        } else if (i > myIndex && e.clientY > mid) {
+          blocksList.insertBefore(card, sib.nextSibling);
+        }
+      });
+    });
+    function finish() {
+      if (!dragging) return;
+      dragging = false;
+      card.classList.remove('block-dragging');
+      handle.style.cursor = 'grab';
+      // Read the DOM back into the data array -- the DOM order is the
+      // source of truth after a drag, since that's what the participant
+      // actually saw and ended up with.
+      var newBlocks = Array.prototype.slice.call(blocksList.children).map(function (el) {
+        return blocks.find(function (b) { return b.id === el.dataset.blockId; });
+      }).filter(Boolean);
+      if (newBlocks.length === blocks.length) blocks = newBlocks;
+      syncBlocksInput();
+      document.dispatchEvent(new CustomEvent('elysium:blockMoved'));
     }
+    handle.addEventListener('pointerup', finish);
+    handle.addEventListener('pointercancel', finish);
   }
 
-  function handlePhotoFile(file) {
-    if (!file) return;
-    photoStatus.style.color = '';
-    photoStatus.textContent = 'Uploading…';
-    uploadImage(file, function (url, err) {
-      if (!url) {
-        photoStatus.style.color = 'var(--coral-ink)';
-        photoStatus.textContent = err || 'Upload failed — try again.';
-        return;
+  // --- Guided tour ---------------------------------------------------
+  // Shown automatically the first time someone reaches the form with a
+  // fresh code (mode === 'create'); always re-openable via "Take the
+  // tour" in either mode. Each step spotlights the REAL element it's
+  // talking about (getEl is a function, re-queried live, since
+  // renderBlocks() tears down and rebuilds blocksList's DOM on every
+  // add/remove) and a couple of steps (waitFor) actually wait for the
+  // participant to perform the action -- add a block, move one -- via
+  // the elysium:blockAdded / blockMoved events dispatched from the real
+  // add/move handlers, advancing automatically instead of just
+  // describing the action and moving on. The card itself is pinned to
+  // the bottom of the screen (a "sheet") rather than trying to float
+  // next to whatever's spotlighted -- on a small phone screen there's
+  // rarely room for both, and a fixed, predictable location for the
+  // instructions is easier to follow than one that jumps around.
+  (function () {
+    var STEPS = [
+      {
+        label: 'Step 1 of 8', title: 'Your page address',
+        body: "This is the web link to your page — like a house address, so people can find it. We've already suggested one based on your name; type here if you'd rather use something else.",
+        getEl: function () { return document.getElementById('slugCard'); },
+      },
+      {
+        label: 'Step 2 of 8', title: 'Your name',
+        body: "Every section below is a card you can edit, remove, or drag into a new order. Let's start here: type your name (and pronouns, if you'd like) right in this card.",
+        getEl: function () { return blocksList.querySelector('[data-block-type="name"]'); },
+      },
+      {
+        label: 'Step 3 of 8', title: 'Add a photo (optional)',
+        body: "Upload a photo here if you'd like one — you'll get a drag-and-zoom tool afterward, or automatic face detection can frame it for you. Skip it if you'd rather not.",
+        getEl: function () { return blocksList.querySelector('[data-block-type="photo"]'); },
+        fallbackGetEl: function () { return document.querySelector('[data-add="photo"]'); },
+      },
+      {
+        label: 'Step 4 of 8', title: 'Your bio',
+        body: 'A short bio is required — it\'s what shows on your gallery card and profile page. Write a few sentences about yourself right here.',
+        getEl: function () { return blocksList.querySelector('[data-block-type="bio"]'); },
+      },
+      {
+        label: 'Step 5 of 8', title: 'Add more, any time',
+        body: "A quote, what you're up to and where, social links, free text, extra photos — try tapping one of these now to add a section to your page.",
+        getEl: function () { return document.getElementById('paletteGrid'); },
+        waitFor: 'elysium:blockAdded',
+        hint: 'Tap any button above to add a section — or hit Next to move on without adding one.',
+      },
+      {
+        label: 'Step 6 of 8', title: 'Drag to reorder',
+        body: 'Press and hold the ⠿ handle on any card, then drag it up or down to put your page in exactly the order you want — this works with a finger on your phone too. Try moving one now.',
+        getEl: function () { return blocksList.firstElementChild; },
+        waitFor: 'elysium:blockMoved',
+        hint: 'Drag any ⠿ handle up or down — or hit Next to move on without reordering.',
+      },
+      {
+        label: 'Step 7 of 8', title: 'Remove anything you don\'t want',
+        body: 'Any optional section (everything except name and bio) has a Remove button on it. Nothing is final until you submit, so feel free to experiment — you can always add it back from the buttons above.',
+        getEl: function () {
+          var cards = blocksList.querySelectorAll('[data-block-type]');
+          for (var i = 0; i < cards.length; i++) {
+            if (!['name', 'bio'].includes(cards[i].dataset.blockType)) return cards[i];
+          }
+          return blocksList.firstElementChild;
+        },
+      },
+      {
+        label: 'Step 8 of 8', title: "Submitting, and editing later",
+        body: "When you submit, staff review it before it goes live — usually within a day or two. Your access code never expires: come back to this same page any time to edit your page, change its address, or ask for it to be removed.",
+        getEl: function () { return document.getElementById('submit-btn'); },
+      },
+    ];
+    var step = 0;
+    var open = false;
+    var spotlight = document.getElementById('tourSpotlight');
+    var card = document.getElementById('tourCard');
+    var dotsWrap = document.getElementById('tourDots');
+    var stepLabel = document.getElementById('tourStepLabel');
+    var titleEl = document.getElementById('tourTitle');
+    var bodyEl = document.getElementById('tourBody');
+    var hintEl = document.getElementById('tourHint');
+    var backBtn = document.getElementById('tourBackBtn');
+    var nextBtn = document.getElementById('tourNextBtn');
+    var skipBtn = document.getElementById('tourSkipBtn');
+    var takeTourBtn = document.getElementById('takeTourBtn');
+
+    function currentTarget() {
+      var s = STEPS[step];
+      return s.getEl() || (s.fallbackGetEl && s.fallbackGetEl()) || null;
+    }
+
+    function positionSpotlight() {
+      if (!open) return;
+      var target = currentTarget();
+      var rect = target ? target.getBoundingClientRect() : null;
+      if (rect && rect.width) {
+        var pad = 6;
+        spotlight.style.display = 'block';
+        spotlight.style.top = (rect.top - pad) + 'px';
+        spotlight.style.left = (rect.left - pad) + 'px';
+        spotlight.style.width = (rect.width + pad * 2) + 'px';
+        spotlight.style.height = (rect.height + pad * 2) + 'px';
+      } else {
+        spotlight.style.display = 'none';
       }
-      photoStatus.textContent = '';
-      window.openCropModal(url, function (finalUrl) { setPhoto(finalUrl); });
+    }
+
+    // Scrolls so the target sits centered in whatever space is left ABOVE
+    // the bottom sheet, rather than the default scrollIntoView (which
+    // doesn't know the sheet exists and can tuck the target right behind
+    // it). Instant, not smooth -- smooth-scroll completion timing isn't
+    // reliable enough to hang a position recalculation off of.
+    function scrollTargetIntoView(target) {
+      var sheetHeight = card.getBoundingClientRect().height;
+      var available = window.innerHeight - sheetHeight;
+      if (available < 100) available = window.innerHeight;
+      var rect = target.getBoundingClientRect();
+      var targetCenter = rect.top + window.scrollY + rect.height / 2;
+      var desired = targetCenter - available / 2;
+      window.scrollTo(0, Math.max(0, desired));
+    }
+
+    function renderStep() {
+      var s = STEPS[step];
+      stepLabel.textContent = s.label;
+      titleEl.textContent = s.title;
+      bodyEl.textContent = s.body;
+      hintEl.style.display = s.hint ? 'block' : 'none';
+      hintEl.textContent = s.hint || '';
+      backBtn.style.visibility = step === 0 ? 'hidden' : 'visible';
+      nextBtn.textContent = step === STEPS.length - 1 ? 'Got it' : 'Next';
+      dotsWrap.innerHTML = '';
+      STEPS.forEach(function (_, i) {
+        var dot = document.createElement('span');
+        dot.style.cssText = 'width:.5rem;height:.5rem;border-radius:999px;display:inline-block;background:' + (i === step ? 'var(--coral)' : 'var(--line)');
+        dotsWrap.appendChild(dot);
+      });
+      var target = currentTarget();
+      if (target) scrollTargetIntoView(target);
+      positionSpotlight();
+    }
+
+    function advance() {
+      if (step === STEPS.length - 1) { closeTour(); return; }
+      step++; renderStep();
+    }
+
+    window.openTour = function () {
+      step = 0;
+      open = true;
+      card.style.display = 'block';
+      renderStep();
+    };
+    function closeTour() {
+      open = false;
+      spotlight.style.display = 'none';
+      card.style.display = 'none';
+    }
+
+    nextBtn.addEventListener('click', advance);
+    backBtn.addEventListener('click', function () { if (step > 0) { step--; renderStep(); } });
+    skipBtn.addEventListener('click', closeTour);
+    takeTourBtn.addEventListener('click', function () { window.openTour(); });
+    document.addEventListener('elysium:blockAdded', function () {
+      if (open && STEPS[step].waitFor === 'elysium:blockAdded') setTimeout(advance, 500);
     });
+    document.addEventListener('elysium:blockMoved', function () {
+      if (open && STEPS[step].waitFor === 'elysium:blockMoved') setTimeout(advance, 500);
+    });
+    window.addEventListener('resize', positionSpotlight);
+    window.addEventListener('scroll', positionSpotlight, true);
+  })();
+
+  function blockLabel(type) {
+    return {
+      name: 'Name', photo: 'Photo', bio: 'Bio', quote: 'Quote', subtitle: "What & where", links: 'Links',
+      heading: 'Heading', paragraph: 'Text', image: 'Image', gallery: 'Gallery', button: 'Button', spacer: 'Spacer',
+    }[type] || type;
   }
 
-  document.getElementById('photoFile').addEventListener('change', function (e) { handlePhotoFile(e.target.files[0]); e.target.value = ''; });
-  document.getElementById('photoFileChange').addEventListener('change', function (e) { handlePhotoFile(e.target.files[0]); e.target.value = ''; });
-  document.getElementById('photoRemoveBtn').addEventListener('click', function () { setPhoto(''); });
+  function renderBlocks() {
+    blocksList.innerHTML = '';
+    blocks.forEach(function (block, index) {
+      var required = !!REQUIRED_TYPES[block.type];
+      var card = document.createElement('div');
+      card.className = 'rounded-xl border-2 p-4';
+      card.style.background = required ? 'var(--paper-2)' : '#fff';
+      card.style.borderColor = 'var(--ink)';
+      card.dataset.blockId = block.id;
+      card.dataset.blockType = block.type;
 
-  // --- Extra photos -------------------------------------------------------
-  var MAX_EXTRA_PHOTOS = 6;
-  var extraPhotos = [];
-  var extraPhotosGrid = document.getElementById('extraPhotosGrid');
-  var photosInput = document.getElementById('photosInput');
-  var extraPhotoStatus = document.getElementById('extraPhotoStatus');
-  var addExtraPhotoBtn = document.getElementById('addExtraPhotoBtn');
+      var head = document.createElement('div');
+      head.className = 'flex items-center justify-between mb-3';
+      var tag = document.createElement('span');
+      tag.className = 'tag';
+      tag.textContent = '⠿ ' + blockLabel(block.type);
+      tag.style.userSelect = 'none';
+      if (required) tag.style.background = 'var(--sun)';
+      makeHandleDraggable(tag, card);
+      head.appendChild(tag);
 
-  function renderExtraPhotos() {
-    extraPhotosGrid.innerHTML = '';
-    extraPhotos.forEach(function (url, i) {
-      var wrap = document.createElement('div');
-      wrap.style.cssText = 'position:relative';
-      var img = document.createElement('img');
-      img.src = url;
-      img.alt = '';
-      img.className = 'w-full aspect-square object-cover rounded-lg border-2 border-ink';
-      var rm = document.createElement('button');
-      rm.type = 'button';
-      rm.textContent = '×';
-      rm.setAttribute('aria-label', 'Remove this photo');
-      rm.style.cssText = 'position:absolute;top:-.4rem;right:-.4rem;width:1.5rem;height:1.5rem;border-radius:999px;background:var(--coral);border:2px solid var(--ink);font-weight:700;line-height:1';
-      rm.addEventListener('click', function () { extraPhotos.splice(i, 1); renderExtraPhotos(); });
-      wrap.appendChild(img);
-      wrap.appendChild(rm);
-      extraPhotosGrid.appendChild(wrap);
-    });
-    photosInput.value = JSON.stringify(extraPhotos);
-    addExtraPhotoBtn.style.display = extraPhotos.length >= MAX_EXTRA_PHOTOS ? 'none' : '';
-  }
-
-  document.getElementById('extraPhotoFile').addEventListener('change', function (e) {
-    var file = e.target.files[0];
-    e.target.value = '';
-    if (!file || extraPhotos.length >= MAX_EXTRA_PHOTOS) return;
-    extraPhotoStatus.style.color = '';
-    extraPhotoStatus.textContent = 'Uploading…';
-    uploadImage(file, function (url, err) {
-      extraPhotoStatus.textContent = '';
-      if (!url) {
-        extraPhotoStatus.style.color = 'var(--coral-ink)';
-        extraPhotoStatus.textContent = err || 'Upload failed — try again.';
-        return;
+      var controls = document.createElement('div');
+      controls.className = 'flex items-center gap-1';
+      var upBtn = document.createElement('button');
+      upBtn.type = 'button';
+      upBtn.className = 'btn !py-1 !px-2 text-xs';
+      upBtn.textContent = '↑';
+      upBtn.disabled = index === 0;
+      upBtn.addEventListener('click', function () {
+        if (index === 0) return;
+        blocks.splice(index - 1, 0, blocks.splice(index, 1)[0]);
+        renderBlocks();
+        document.dispatchEvent(new CustomEvent('elysium:blockMoved'));
+      });
+      var downBtn = document.createElement('button');
+      downBtn.type = 'button';
+      downBtn.className = 'btn !py-1 !px-2 text-xs';
+      downBtn.textContent = '↓';
+      downBtn.disabled = index === blocks.length - 1;
+      downBtn.addEventListener('click', function () {
+        if (index === blocks.length - 1) return;
+        blocks.splice(index + 1, 0, blocks.splice(index, 1)[0]);
+        renderBlocks();
+        document.dispatchEvent(new CustomEvent('elysium:blockMoved'));
+      });
+      controls.appendChild(upBtn);
+      controls.appendChild(downBtn);
+      if (!required) {
+        var removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'btn btn-coral !py-1 !px-2 text-xs';
+        removeBtn.textContent = 'Remove';
+        removeBtn.addEventListener('click', function () {
+          blocks.splice(index, 1);
+          renderBlocks();
+        });
+        controls.appendChild(removeBtn);
+      } else {
+        var reqLabel = document.createElement('span');
+        reqLabel.className = 'text-xs text-muted';
+        reqLabel.style.padding = '0 .4rem';
+        reqLabel.textContent = 'Required';
+        controls.appendChild(reqLabel);
       }
-      extraPhotos.push(url);
-      renderExtraPhotos();
+      head.appendChild(controls);
+      card.appendChild(head);
+
+      var body = document.createElement('div');
+      body.className = 'flex flex-col gap-2';
+
+      if (block.type === 'name') {
+        var nameIn = document.createElement('input');
+        nameIn.className = 'input';
+        nameIn.type = 'text';
+        nameIn.maxLength = 100;
+        nameIn.placeholder = 'Your name';
+        nameIn.value = block.text || '';
+        nameIn.addEventListener('input', function () {
+          block.text = nameIn.value;
+          syncBlocksInput();
+          if (!slugTouched) { slugInput.value = slugify(nameIn.value); updateSlugPreview(); }
+        });
+        var pronounsIn = document.createElement('input');
+        pronounsIn.className = 'input';
+        pronounsIn.type = 'text';
+        pronounsIn.maxLength = 30;
+        pronounsIn.placeholder = 'Pronouns (optional), e.g. she/her';
+        pronounsIn.value = block.pronouns || '';
+        pronounsIn.addEventListener('input', function () { block.pronouns = pronounsIn.value; syncBlocksInput(); });
+        body.appendChild(nameIn);
+        body.appendChild(pronounsIn);
+      } else if (block.type === 'photo') {
+        if (block.url) {
+          var photoPrev = document.createElement('img');
+          photoPrev.src = block.url;
+          photoPrev.alt = '';
+          photoPrev.style.cssText = 'max-height:8rem;border-radius:.5rem;border:2px solid var(--ink);object-fit:cover';
+          body.appendChild(photoPrev);
+        }
+        var photoFileIn = document.createElement('input');
+        photoFileIn.className = 'input';
+        photoFileIn.type = 'file';
+        photoFileIn.accept = 'image/jpeg,image/png,image/webp';
+        var photoStatus = document.createElement('p');
+        photoStatus.className = 'text-xs text-muted';
+        photoStatus.textContent = block.url ? 'Choose a new file to replace your photo.' : 'Optional, but recommended. JPEG, PNG, or WebP — 5MB maximum.';
+        photoFileIn.addEventListener('change', function () {
+          if (!photoFileIn.files[0]) return;
+          photoStatus.textContent = 'Uploading…';
+          uploadBlockImage(photoFileIn.files[0], function (url, err) {
+            if (!url) { photoStatus.style.color = 'var(--coral-ink)'; photoStatus.textContent = err || 'Upload failed.'; return; }
+            photoStatus.textContent = '';
+            window.openCropModal(url, function (finalUrl) {
+              block.url = finalUrl;
+              syncBlocksInput();
+              renderBlocks();
+            });
+          });
+        });
+        body.appendChild(photoFileIn);
+        body.appendChild(photoStatus);
+      } else if (block.type === 'bio') {
+        var bioIn = document.createElement('textarea');
+        bioIn.className = 'input';
+        bioIn.rows = 3;
+        bioIn.maxLength = 600;
+        bioIn.placeholder = 'A sentence or two — shown on the gallery card.';
+        bioIn.value = block.text || '';
+        bioIn.addEventListener('input', function () { block.text = bioIn.value; syncBlocksInput(); });
+        body.appendChild(bioIn);
+      } else if (block.type === 'quote') {
+        var quoteIn = document.createElement('input');
+        quoteIn.className = 'input';
+        quoteIn.type = 'text';
+        quoteIn.maxLength = 300;
+        quoteIn.placeholder = 'A line of advice, a favourite memory — shown as a pull-quote.';
+        quoteIn.value = block.text || '';
+        quoteIn.addEventListener('input', function () { block.text = quoteIn.value; syncBlocksInput(); });
+        body.appendChild(quoteIn);
+      } else if (block.type === 'subtitle') {
+        var roleIn = document.createElement('input');
+        roleIn.className = 'input';
+        roleIn.type = 'text';
+        roleIn.maxLength = 120;
+        roleIn.placeholder = "What you're up to now, e.g. Studying law in Warsaw";
+        roleIn.value = block.role || '';
+        roleIn.addEventListener('input', function () { block.role = roleIn.value; syncBlocksInput(); });
+        var locIn = document.createElement('input');
+        locIn.className = 'input';
+        locIn.type = 'text';
+        locIn.maxLength = 80;
+        locIn.placeholder = 'Where you live now, e.g. Warsaw, Poland';
+        locIn.value = block.location || '';
+        locIn.addEventListener('input', function () { block.location = locIn.value; syncBlocksInput(); });
+        body.appendChild(roleIn);
+        body.appendChild(locIn);
+      } else if (block.type === 'links') {
+        var igIn = document.createElement('input');
+        igIn.className = 'input';
+        igIn.type = 'text';
+        igIn.placeholder = 'Instagram, e.g. instagram.com/you';
+        igIn.value = block.instagram || '';
+        igIn.addEventListener('input', function () { block.instagram = igIn.value; syncBlocksInput(); });
+        var liIn = document.createElement('input');
+        liIn.className = 'input';
+        liIn.type = 'text';
+        liIn.placeholder = 'LinkedIn, e.g. linkedin.com/in/you';
+        liIn.value = block.linkedin || '';
+        liIn.addEventListener('input', function () { block.linkedin = liIn.value; syncBlocksInput(); });
+        var webIn = document.createElement('input');
+        webIn.className = 'input';
+        webIn.type = 'text';
+        webIn.placeholder = 'Website, e.g. your-site.com';
+        webIn.value = block.website || '';
+        webIn.addEventListener('input', function () { block.website = webIn.value; syncBlocksInput(); });
+        body.appendChild(igIn);
+        body.appendChild(liIn);
+        body.appendChild(webIn);
+      } else if (block.type === 'heading') {
+        var hIn = document.createElement('input');
+        hIn.className = 'input';
+        hIn.type = 'text';
+        hIn.maxLength = 200;
+        hIn.placeholder = 'Section heading';
+        hIn.value = block.text || '';
+        hIn.addEventListener('input', function () { block.text = hIn.value; syncBlocksInput(); });
+        body.appendChild(hIn);
+      } else if (block.type === 'paragraph') {
+        var pIn = document.createElement('textarea');
+        pIn.className = 'input';
+        pIn.rows = 4;
+        pIn.maxLength = 4000;
+        pIn.placeholder = 'Write as much as you like…';
+        pIn.value = block.text || '';
+        pIn.addEventListener('input', function () { block.text = pIn.value; syncBlocksInput(); });
+        body.appendChild(pIn);
+      } else if (block.type === 'image') {
+        if (block.url) {
+          var prevImg = document.createElement('img');
+          prevImg.src = block.url;
+          prevImg.alt = '';
+          prevImg.style.cssText = 'max-height:8rem;border-radius:.5rem;border:2px solid var(--ink);object-fit:cover';
+          body.appendChild(prevImg);
+        }
+        var fIn = document.createElement('input');
+        fIn.className = 'input';
+        fIn.type = 'file';
+        fIn.accept = 'image/jpeg,image/png,image/webp';
+        var upStatus = document.createElement('p');
+        upStatus.className = 'text-xs text-muted';
+        upStatus.textContent = block.url ? 'Choose a new file to replace this photo.' : '';
+        fIn.addEventListener('change', function () {
+          if (!fIn.files[0]) return;
+          upStatus.textContent = 'Uploading…';
+          uploadBlockImage(fIn.files[0], function (url, err) {
+            if (!url) { upStatus.style.color = 'var(--coral-ink)'; upStatus.textContent = err || 'Upload failed.'; return; }
+            upStatus.textContent = '';
+            window.openCropModal(url, function (finalUrl) {
+              block.url = finalUrl;
+              syncBlocksInput();
+              renderBlocks();
+            });
+          });
+        });
+        body.appendChild(fIn);
+        body.appendChild(upStatus);
+        var capIn = document.createElement('input');
+        capIn.className = 'input';
+        capIn.type = 'text';
+        capIn.maxLength = 300;
+        capIn.placeholder = 'Caption (optional)';
+        capIn.value = block.caption || '';
+        capIn.addEventListener('input', function () { block.caption = capIn.value; syncBlocksInput(); });
+        body.appendChild(capIn);
+      } else if (block.type === 'gallery') {
+        if (block.images && block.images.length) {
+          var grid = document.createElement('div');
+          grid.className = 'flex flex-wrap gap-2';
+          block.images.forEach(function (url, imgIdx) {
+            var wrap = document.createElement('div');
+            wrap.style.position = 'relative';
+            var gImg = document.createElement('img');
+            gImg.src = url;
+            gImg.alt = '';
+            gImg.style.cssText = 'width:4rem;height:4rem;border-radius:.5rem;object-fit:cover;border:2px solid var(--ink)';
+            wrap.appendChild(gImg);
+            var rmBtn = document.createElement('button');
+            rmBtn.type = 'button';
+            rmBtn.textContent = '×';
+            rmBtn.title = 'Remove photo';
+            rmBtn.style.cssText = 'position:absolute;top:-.4rem;right:-.4rem;width:1.25rem;height:1.25rem;border-radius:999px;background:var(--coral-ink);color:#fff;font-size:.75rem;line-height:1;border:none;cursor:pointer';
+            rmBtn.addEventListener('click', function () {
+              block.images.splice(imgIdx, 1);
+              syncBlocksInput();
+              renderBlocks();
+            });
+            wrap.appendChild(rmBtn);
+            grid.appendChild(wrap);
+          });
+          body.appendChild(grid);
+        }
+        var gIn = document.createElement('input');
+        gIn.className = 'input';
+        gIn.type = 'file';
+        gIn.accept = 'image/jpeg,image/png,image/webp';
+        gIn.multiple = true;
+        var gStatus = document.createElement('p');
+        gStatus.className = 'text-xs text-muted';
+        gStatus.textContent = 'Up to 12 photos.';
+        gIn.addEventListener('change', function () {
+          var files = Array.prototype.slice.call(gIn.files).slice(0, 12 - (block.images || []).length);
+          if (!files.length) return;
+          gStatus.textContent = 'Uploading…';
+          var remaining = files.length;
+          files.forEach(function (file) {
+            uploadBlockImage(file, function (url) {
+              if (url) { block.images = block.images || []; block.images.push(url); }
+              remaining -= 1;
+              if (remaining === 0) { syncBlocksInput(); renderBlocks(); }
+            });
+          });
+        });
+        body.appendChild(gIn);
+        body.appendChild(gStatus);
+      } else if (block.type === 'button') {
+        var lblIn = document.createElement('input');
+        lblIn.className = 'input';
+        lblIn.type = 'text';
+        lblIn.maxLength = 100;
+        lblIn.placeholder = 'Button label, e.g. "Visit my website"';
+        lblIn.value = block.label || '';
+        lblIn.addEventListener('input', function () { block.label = lblIn.value; syncBlocksInput(); });
+        var hrefIn = document.createElement('input');
+        hrefIn.className = 'input mt-2';
+        hrefIn.type = 'text';
+        hrefIn.maxLength = 500;
+        hrefIn.placeholder = 'Link (https://…)';
+        hrefIn.value = block.href || '';
+        hrefIn.addEventListener('input', function () { block.href = hrefIn.value; syncBlocksInput(); });
+        body.appendChild(lblIn);
+        body.appendChild(hrefIn);
+      } else if (block.type === 'spacer') {
+        var SPACER_SIZES = [{ label: 'Little space', value: 20 }, { label: 'Middle space', value: 48 }, { label: 'Big space', value: 96 }];
+        var closest = SPACER_SIZES.reduce(function (a, b) {
+          return Math.abs(b.value - (block.height || 40)) < Math.abs(a.value - (block.height || 40)) ? b : a;
+        });
+        var spacerRow = document.createElement('div');
+        spacerRow.className = 'flex gap-2';
+        SPACER_SIZES.forEach(function (s) {
+          var sBtn = document.createElement('button');
+          sBtn.type = 'button';
+          var active = s.value === closest.value;
+          sBtn.className = 'btn !py-2 !px-3 text-xs' + (active ? ' btn-accent' : '');
+          sBtn.textContent = s.label;
+          sBtn.addEventListener('click', function () { block.height = s.value; syncBlocksInput(); renderBlocks(); });
+          spacerRow.appendChild(sBtn);
+        });
+        body.appendChild(spacerRow);
+      }
+
+      card.appendChild(body);
+      blocksList.appendChild(card);
+    });
+    syncBlocksInput();
+  }
+
+  function syncBlocksInput() {
+    blocksInput.value = JSON.stringify(blocks);
+  }
+
+  document.querySelectorAll('[data-add]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var type = btn.getAttribute('data-add');
+      var b = newBlock(type);
+      if (b) {
+        blocks.push(b);
+        renderBlocks();
+        document.dispatchEvent(new CustomEvent('elysium:blockAdded', { detail: { type: type } }));
+      }
     });
   });
 
-  // --- Prefill for editing -------------------------------------------------
-  function fillForm(current) {
-    document.getElementById('nameInput').value = current.name || '';
-    document.getElementById('pronounsInput').value = current.pronouns || '';
-    document.getElementById('bioInput').value = current.bio || '';
-    document.getElementById('roleInput').value = current.currentRole || '';
-    document.getElementById('locationInput').value = current.location || '';
-    document.getElementById('quoteInput').value = current.quote || '';
-    document.getElementById('storyInput').value = current.story || '';
-    setPhoto(current.photoUrl || '');
-    var links = current.links || [];
-    links.forEach(function (l) {
-      var field = l.label === 'Instagram' ? 'instagram' : l.label === 'LinkedIn' ? 'linkedin' : l.label === 'Website' ? 'website' : null;
-      if (field) alumniForm.elements[field].value = l.url || '';
-    });
-    extraPhotos = (current.photos || []).slice(0, MAX_EXTRA_PHOTOS);
-    renderExtraPhotos();
+  // --- Prefill / migration ----------------------------------------------
+  // Builds the unified block list an existing entry should start from.
+  // If it was already created/edited under this system, `current.blocks`
+  // already has a 'name' block and is used as-is. Otherwise (an entry
+  // that predates the unified builder) this synthesizes the equivalent
+  // blocks from the old flat fields, so opening the edit form is itself
+  // the migration -- nothing is lost, nothing needs a separate one-time
+  // script.
+  function isUnified(list) {
+    return Array.isArray(list) && list.some(function (b) { return b.type === 'name'; });
+  }
+
+  function buildBlocksFromCurrent(current) {
+    if (isUnified(current.blocks)) {
+      return current.blocks.map(function (b) { return Object.assign({}, b); });
+    }
+    var out = [
+      { id: uid(), type: 'name', text: current.name || '', pronouns: current.pronouns || '' },
+      { id: uid(), type: 'photo', url: current.photoUrl || '' },
+      { id: uid(), type: 'bio', text: current.bio || '' },
+    ];
+    if (current.currentRole || current.location) {
+      out.push({ id: uid(), type: 'subtitle', role: current.currentRole || '', location: current.location || '' });
+    }
+    if (current.quote) out.push({ id: uid(), type: 'quote', text: current.quote });
+    if (current.links && current.links.length) {
+      var lb = { id: uid(), type: 'links', instagram: '', linkedin: '', website: '' };
+      current.links.forEach(function (l) {
+        if (l.label === 'Instagram') lb.instagram = l.url || '';
+        if (l.label === 'LinkedIn') lb.linkedin = l.url || '';
+        if (l.label === 'Website') lb.website = l.url || '';
+      });
+      out.push(lb);
+    }
+    if (current.story) out.push({ id: uid(), type: 'paragraph', text: current.story });
+    if (current.photos && current.photos.length) out.push({ id: uid(), type: 'gallery', images: current.photos.slice() });
+    if (current.blocks && current.blocks.length) out.push.apply(out, current.blocks.map(function (b) { return Object.assign({}, b); }));
+    return out;
   }
 
   function checkCode(code) {
@@ -542,13 +1096,21 @@ permalink: /dots/alumni/submit/
         editionLabel.textContent = 'Changes are reviewed before they go live, so your current page stays up until then.';
         document.getElementById('submit-btn').textContent = 'Propose changes';
         pendingEditNotice.hidden = !data.hasPendingEdit;
-        if (data.current) fillForm(data.current);
+        if (data.current) {
+          blocks = buildBlocksFromCurrent(data.current);
+          renderBlocks();
+          if (data.current.slug) { slugInput.value = data.current.slug; slugTouched = true; updateSlugPreview(); }
+        }
         deleteSection.hidden = false;
         deletePendingNotice.hidden = !data.hasPendingDeletion;
         deletePrompt.hidden = !!data.hasPendingDeletion;
+      } else {
+        blocks = [newBlock('name'), newBlock('photo'), newBlock('bio')];
+        renderBlocks();
       }
       codeCard.hidden = true;
       formCard.hidden = false;
+      if (mode === 'create' && window.openTour) window.openTour();
     }).catch(function () {
       codeBtn.disabled = false;
       codeStatus.style.color = 'var(--coral-ink)';
@@ -573,9 +1135,21 @@ permalink: /dots/alumni/submit/
   alumniForm.addEventListener('submit', function (e) {
     e.preventDefault();
 
+    var missing = [];
+    var hasName = blocks.some(function (b) { return b.type === 'name' && b.text && b.text.trim(); });
+    var hasBio = blocks.some(function (b) { return b.type === 'bio' && b.text && b.text.trim(); });
+    if (!hasName) missing.push('a name');
+    if (!hasBio) missing.push('a bio');
+
     var form = e.target;
     var statusMsg = document.getElementById('status-msg');
     var submitBtn = document.getElementById('submit-btn');
+
+    if (missing.length) {
+      statusMsg.style.color = 'var(--coral-ink)';
+      statusMsg.textContent = 'Your page needs ' + missing.join(', ') + ' before you can submit.';
+      return;
+    }
 
     statusMsg.style.color = 'unset';
     statusMsg.textContent = mode === 'edit' ? 'Submitting your changes…' : 'Submitting…';
@@ -641,3 +1215,6 @@ permalink: /dots/alumni/submit/
   });
 })();
 </script>
+<style>
+  .block-dragging { opacity: .6; box-shadow: 0 8px 16px rgba(25,23,18,.25); transform: scale(1.01); }
+</style>

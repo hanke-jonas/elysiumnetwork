@@ -1,4 +1,5 @@
 import { badRequest, json, randomId } from '../../_lib/http.js';
+import { sanitizeBlocks, deriveCoreFields, validateCoreFields } from '../../_lib/dotsBlocks.js';
 
 // Public, unauthenticated (but invite-gated) submission for the DOTS
 // alumni gallery -- the first public upload endpoint in this codebase
@@ -14,39 +15,21 @@ import { badRequest, json, randomId } from '../../_lib/http.js';
 // /dots/alumni/<slug>/) once staff approve them via /admin/dots-alumni/,
 // so an open code doesn't mean open publishing either.
 //
-// A simple fixed set of fields -- name, photo, bio, and a few optional
-// extras -- rather than a drag-and-drop page builder; every image is
-// uploaded ahead of time via upload-block-image.js as the participant
-// fills out the form, so this endpoint only ever receives already-hosted
-// URLs, never a raw file.
+// The whole page is one unified block list (name/photo/bio are block
+// types too, not separate fixed fields) -- see functions/_lib/
+// dotsBlocks.js. Every image (including the identity photo) is uploaded
+// ahead of time via upload-block-image.js as the participant builds their
+// page, so this endpoint only ever receives already-hosted URLs inside
+// the blocks JSON, never a raw file. That also means there's no upload
+// work left for this handler to do itself.
 //
 // A plain honeypot field is kept as defense-in-depth even with the code
 // gate -- this codebase has no rate-limiting or Turnstile anywhere yet
 // (documented gap, see functions/api/shared/[slug].js).
-const MAX_NAME_CHARS = 100;
-const MAX_PRONOUNS_CHARS = 30;
-const MAX_ROLE_CHARS = 120;
-const MAX_LOCATION_CHARS = 80;
-const MAX_QUOTE_CHARS = 300;
-const MAX_BIO_CHARS = 600;
-const MAX_STORY_CHARS = 4000;
-const MAX_EXTRA_PHOTOS = 6;
-const LINK_FIELDS = [
-  ['instagram', 'Instagram'],
-  ['linkedin', 'LinkedIn'],
-  ['website', 'Website'],
-];
+const MAX_SLUG_CHARS = 60;
 
-function slugify(name) {
-  return String(name).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-}
-
-// Forgiving on purpose: a public form shouldn't reject "instagram.com/x"
-// just because someone didn't type the scheme.
-function normalizeUrl(value) {
-  const trimmed = String(value || '').trim();
-  if (!trimmed) return null;
-  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+function slugify(value) {
+  return String(value || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, MAX_SLUG_CHARS).replace(/-+$/, '');
 }
 
 export async function onRequestPost({ request, env }) {
@@ -71,26 +54,22 @@ export async function onRequestPost({ request, env }) {
     if (!codeRow) return badRequest('That access code was not recognized.');
     if (codeRow.used_at) return badRequest('That access code has already been used to create an entry — enter it again on the submission page to edit that entry instead.');
 
-    const name = String(form.get('name') || '').trim().slice(0, MAX_NAME_CHARS);
-    const pronouns = String(form.get('pronouns') || '').trim().slice(0, MAX_PRONOUNS_CHARS);
-    const currentRole = String(form.get('current_role') || '').trim().slice(0, MAX_ROLE_CHARS);
-    const location = String(form.get('location') || '').trim().slice(0, MAX_LOCATION_CHARS);
-    const quote = String(form.get('quote') || '').trim().slice(0, MAX_QUOTE_CHARS);
-    const bio = String(form.get('bio') || '').trim().slice(0, MAX_BIO_CHARS);
-    const story = String(form.get('story') || '').trim().slice(0, MAX_STORY_CHARS);
-    const photoUrl = String(form.get('photo_url') || '').trim().slice(0, 500);
+    let blocks;
+    try { blocks = sanitizeBlocks(JSON.parse(form.get('blocks') || '[]')); } catch { blocks = null; }
+    if (!blocks) return badRequest('Your page is empty — add at least a name and bio.');
 
-    let extraPhotos;
-    try { extraPhotos = JSON.parse(form.get('photos') || '[]'); } catch { extraPhotos = []; }
-    if (!Array.isArray(extraPhotos)) extraPhotos = [];
-    extraPhotos = extraPhotos.filter((u) => typeof u === 'string' && u).slice(0, MAX_EXTRA_PHOTOS);
+    const core = deriveCoreFields(blocks);
+    const coreError = validateCoreFields(core);
+    if (coreError) return badRequest(coreError);
 
-    if (!name) return badRequest('A name is required');
-    if (!bio) return badRequest('A short bio is required');
-
-    const links = LINK_FIELDS
-      .map(([field, label]) => ({ label, url: normalizeUrl(form.get(field)) }))
-      .filter((l) => l.url);
+    // The participant can pick their own page address (previewed live as
+    // they type on the form); falls back to their name if left blank.
+    // Checked for a collision BEFORE the code is claimed below, so a
+    // taken address never burns their one-time code -- they just get
+    // sent back to try a different one.
+    const requestedSlug = slugify(form.get('slug')) || slugify(core.name) || 'alumnus';
+    const existing = await env.DB.prepare('SELECT id FROM dots_alumni WHERE slug = ?').bind(requestedSlug).first();
+    if (existing) return badRequest(`elysium.ngo/dots/alumni/${requestedSlug}/ is already taken — try a different page address.`);
 
     // Claimed last, right before the insert, and only if everything else
     // above already succeeded -- so a validation error never burns the
@@ -103,16 +82,15 @@ export async function onRequestPost({ request, env }) {
     if (!claim.meta || claim.meta.changes !== 1) return badRequest('That access code has already been used.');
 
     const id = randomId();
-    const slug = `${slugify(name) || 'alumnus'}-${id.slice(0, 6)}`;
 
     await env.DB.prepare(
-      `INSERT INTO dots_alumni (id, slug, edition, name, pronouns, current_role, location, quote, bio, story, photo_url, photos_json, links_json, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
-    ).bind(id, slug, codeRow.edition, name, pronouns || null, currentRole || null, location || null, quote || null, bio, story || null, photoUrl, JSON.stringify(extraPhotos), JSON.stringify(links)).run();
+      `INSERT INTO dots_alumni (id, slug, edition, name, pronouns, current_role, location, quote, bio, photo_url, photos_json, links_json, blocks_json, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', ?, ?, 'pending')`,
+    ).bind(id, requestedSlug, codeRow.edition, core.name, core.pronouns, core.current_role, core.location, core.quote, core.bio, core.photo_url, core.links_json, JSON.stringify(blocks)).run();
 
     await env.DB.prepare('UPDATE dots_access_codes SET dots_alumni_id = ? WHERE code = ?').bind(id, code).run();
 
-    return json({ ok: true, id }, { status: 201 });
+    return json({ ok: true, id, slug: requestedSlug }, { status: 201 });
   } catch (err) {
     return json({ error: 'Unexpected server error', detail: String(err) }, { status: 500 });
   }

@@ -18,6 +18,10 @@ const FIELD_MAP = {
   status: 'status',
 };
 const VALID_STATUSES = new Set(['pending', 'published', 'rejected']);
+const MAX_SLUG_CHARS = 60;
+function slugify(value) {
+  return String(value || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, MAX_SLUG_CHARS).replace(/-+$/, '');
+}
 
 export async function onRequestGet({ request, env, params }) {
   try {
@@ -42,11 +46,20 @@ export async function onRequestPut({ request, env, params, waitUntil }) {
       return badRequest("status must be 'pending', 'published', or 'rejected'");
     }
 
-    const current = await env.DB.prepare('SELECT published_at FROM dots_alumni WHERE id = ?').bind(params.id).first();
+    const current = await env.DB.prepare('SELECT published_at, slug FROM dots_alumni WHERE id = ?').bind(params.id).first();
     if (!current) return json({ error: 'Not found' }, { status: 404 });
 
     const sets = [];
     const values = [];
+    if ('slug' in body) {
+      const requestedSlug = slugify(body.slug) || current.slug;
+      if (requestedSlug !== current.slug) {
+        const collision = await env.DB.prepare('SELECT id FROM dots_alumni WHERE slug = ? AND id != ?').bind(requestedSlug, params.id).first();
+        if (collision) return badRequest(`elysium.ngo/dots/alumni/${requestedSlug}/ is already taken by another entry.`);
+      }
+      sets.push('slug = ?');
+      values.push(requestedSlug);
+    }
     for (const [key, col] of Object.entries(FIELD_MAP)) {
       if (!(key in body)) continue;
       sets.push(`${col} = ?`);
