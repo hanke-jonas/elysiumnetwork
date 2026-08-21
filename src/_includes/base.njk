@@ -6,6 +6,7 @@
 {% set pageDescription = description or site.default_description %}
 {% set pageTitle = title or site.network_full %}
 <meta name="description" content="{{ pageDescription }}">
+{% if noindex %}<meta name="robots" content="noindex, nofollow">{% endif %}
 <meta name="theme-color" content="#F6F1E4">
 <title>{{ pageTitle }}</title>
 <link rel="canonical" href="{{ site.url }}{{ page.url }}">

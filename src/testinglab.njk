@@ -1,0 +1,263 @@
+---
+layout: base.njk
+title: Testing Lab — Elysium+ Network
+description: Internal testing lab.
+permalink: /testinglab/
+noindex: true
+---
+<section class="bg-paper" style="min-height:70vh">
+  <div class="max-w-3xl mx-auto px-5 sm:px-8 pt-14 pb-24">
+
+    <div id="gateCard" class="card p-8 sm:p-10 mx-auto" style="max-width:26rem">
+      <p class="eyebrow" style="color:var(--coral-ink)">Staff only</p>
+      <h1 class="h-card mt-2 text-2xl">🔒 Website Testing Lab</h1>
+      <p class="mt-3 text-sm text-muted leading-relaxed">This page is password-protected. Enter the password to continue.</p>
+      <form id="gateForm" class="mt-5 flex flex-col gap-3">
+        <div>
+          <label class="form-label" for="gatePassword">Password</label>
+          <input class="input" type="password" id="gatePassword" autocomplete="off" autofocus>
+        </div>
+        <p class="text-sm" id="gateStatus" style="color:var(--coral-ink);min-height:1.2em"></p>
+        <button type="submit" class="btn btn-accent">Unlock</button>
+      </form>
+    </div>
+
+    <div id="labCard" hidden>
+      <div class="flex items-start justify-between gap-3 mb-8">
+        <div>
+          <p class="eyebrow" style="color:var(--coral-ink)">Internal tool</p>
+          <h1 class="h-hero mt-2" style="font-size:clamp(2rem,5vw,3.2rem)">🧪 Testing Lab</h1>
+          <p class="mt-3 text-muted max-w-xl">A scratch space for manually testing elysium.ngo — quick links to every corner of the site, a running checklist, live environment info, and a notes pad. Nothing here is public or saved to a server; it all lives in this browser.</p>
+        </div>
+        <button type="button" id="lockBtn" class="btn !py-1.5 !px-3 text-xs shrink-0">🔒 Lock</button>
+      </div>
+
+      <div class="card p-6 sm:p-7 mb-6">
+        <h2 class="h-card mb-4">Quick links</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2" id="quickLinks"></div>
+      </div>
+
+      <div class="card p-6 sm:p-7 mb-6">
+        <h2 class="h-card mb-1">Testing checklist</h2>
+        <p class="text-xs text-muted mb-4">Tick things off as you verify them. Saved locally in this browser.</p>
+        <form id="checklistForm" class="flex gap-2 mb-4">
+          <input class="input" type="text" id="checklistInput" placeholder="Add something to test…" maxlength="200">
+          <button type="submit" class="btn !px-4">Add</button>
+        </form>
+        <ul id="checklistItems" class="flex flex-col gap-2"></ul>
+        <p class="text-sm text-muted mt-3" id="checklistEmpty" hidden>Nothing on the list yet — add something above.</p>
+      </div>
+
+      <div class="grid sm:grid-cols-2 gap-6 mb-6">
+        <div class="card p-6 sm:p-7">
+          <h2 class="h-card mb-4">Environment</h2>
+          <dl class="text-sm flex flex-col gap-2 mono" id="envInfo"></dl>
+        </div>
+        <div class="card p-6 sm:p-7">
+          <h2 class="h-card mb-1">Notes</h2>
+          <p class="text-xs text-muted mb-3">Autosaved locally as you type.</p>
+          <textarea id="notesArea" class="input" style="min-height:9rem;resize:vertical" placeholder="Bugs, ideas, things to follow up on…"></textarea>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<script>
+(function () {
+  var PASSWORD = 'Trump';
+  var UNLOCK_KEY = 'testinglab_unlocked';
+
+  var gateCard = document.getElementById('gateCard');
+  var labCard = document.getElementById('labCard');
+  var gateForm = document.getElementById('gateForm');
+  var gatePassword = document.getElementById('gatePassword');
+  var gateStatus = document.getElementById('gateStatus');
+  var lockBtn = document.getElementById('lockBtn');
+
+  function unlock() {
+    gateCard.hidden = true;
+    labCard.hidden = false;
+    initLab();
+  }
+
+  function lock() {
+    localStorage.removeItem(UNLOCK_KEY);
+    labCard.hidden = true;
+    gateCard.hidden = false;
+    gatePassword.value = '';
+    gateStatus.textContent = '';
+    gatePassword.focus();
+  }
+
+  gateForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (gatePassword.value === PASSWORD) {
+      localStorage.setItem(UNLOCK_KEY, 'yes');
+      unlock();
+    } else {
+      gateStatus.textContent = 'Incorrect password.';
+      gatePassword.value = '';
+      gatePassword.focus();
+    }
+  });
+
+  lockBtn.addEventListener('click', lock);
+
+  // --- Lab content, built once on first unlock -------------------------
+  var labInitialized = false;
+  function initLab() {
+    if (labInitialized) return;
+    labInitialized = true;
+
+    var LINKS = [
+      { label: 'Homepage', href: '/' },
+      { label: 'About', href: '/about/' },
+      { label: 'Commitments', href: '/commitments/' },
+      { label: 'Blog', href: '/blog/' },
+      { label: 'Events', href: '/events/' },
+      { label: 'Calls', href: '/calls/' },
+      { label: 'Resources', href: '/resources/' },
+      { label: 'Against the War', href: '/against-the-war/' },
+      { label: 'DOTS Alumni', href: '/dots/alumni/' },
+      { label: 'DOTS Submit', href: '/dots/alumni/submit/' },
+      { label: 'Admin panel', href: '/admin/' },
+      { label: 'Member portal', href: '/portal/' },
+      { label: 'Ukraine branch', href: '/ukraine/' },
+      { label: 'Poland branch', href: '/poland/' },
+      { label: 'Italy branch', href: '/italy/' },
+      { label: 'Germany branch', href: '/germany/' },
+    ];
+    var quickLinks = document.getElementById('quickLinks');
+    LINKS.forEach(function (l) {
+      var a = document.createElement('a');
+      a.href = l.href;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.className = 'rounded-lg border-2 border-ink px-3 py-2 text-sm font-semibold text-center hover:-translate-y-0.5 transition break-words';
+      a.style.background = '#fff';
+      a.textContent = l.label;
+      quickLinks.appendChild(a);
+    });
+
+    // --- Checklist, persisted to localStorage ---------------------------
+    var CHECKLIST_KEY = 'testinglab_checklist';
+    var checklistItems = document.getElementById('checklistItems');
+    var checklistForm = document.getElementById('checklistForm');
+    var checklistInput = document.getElementById('checklistInput');
+    var checklistEmpty = document.getElementById('checklistEmpty');
+
+    function loadChecklist() {
+      try {
+        var raw = JSON.parse(localStorage.getItem(CHECKLIST_KEY) || 'null');
+        if (Array.isArray(raw)) return raw;
+      } catch (e) {}
+      return [
+        { text: 'Drag and drop reordering works on mobile and desktop', done: false },
+        { text: 'DOTS submission requires a photo', done: false },
+        { text: 'Extra photos (+More Photos) are optional, not required', done: false },
+      ];
+    }
+
+    var checklist = loadChecklist();
+
+    function saveChecklist() {
+      localStorage.setItem(CHECKLIST_KEY, JSON.stringify(checklist));
+    }
+
+    function renderChecklist() {
+      checklistItems.innerHTML = '';
+      checklistEmpty.hidden = checklist.length > 0;
+      checklist.forEach(function (item, index) {
+        var li = document.createElement('li');
+        li.className = 'flex items-start gap-3 rounded-lg border-2 p-2.5';
+        li.style.borderColor = 'var(--ink)';
+        li.style.background = item.done ? 'var(--paper-2)' : '#fff';
+
+        var checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = item.done;
+        checkbox.style.width = '1.15rem';
+        checkbox.style.height = '1.15rem';
+        checkbox.style.flexShrink = '0';
+        checkbox.style.marginTop = '.15rem';
+        checkbox.addEventListener('change', function () {
+          checklist[index].done = checkbox.checked;
+          saveChecklist();
+          renderChecklist();
+        });
+
+        var text = document.createElement('span');
+        text.className = 'text-sm flex-1';
+        text.textContent = item.text;
+        if (item.done) { text.style.textDecoration = 'line-through'; text.style.opacity = '.55'; }
+
+        var del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'btn btn-coral !py-1 !px-2 text-xs shrink-0';
+        del.textContent = 'Remove';
+        del.addEventListener('click', function () {
+          checklist.splice(index, 1);
+          saveChecklist();
+          renderChecklist();
+        });
+
+        li.appendChild(checkbox);
+        li.appendChild(text);
+        li.appendChild(del);
+        checklistItems.appendChild(li);
+      });
+    }
+
+    checklistForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var value = checklistInput.value.trim();
+      if (!value) return;
+      checklist.push({ text: value, done: false });
+      saveChecklist();
+      checklistInput.value = '';
+      renderChecklist();
+    });
+
+    renderChecklist();
+
+    // --- Environment info, live -----------------------------------------
+    var envInfo = document.getElementById('envInfo');
+    function renderEnv() {
+      var rows = [
+        ['Viewport', window.innerWidth + ' × ' + window.innerHeight],
+        ['Device pixel ratio', String(window.devicePixelRatio || 1)],
+        ['Touch support', ('ontouchstart' in window || navigator.maxTouchPoints > 0) ? 'Yes' : 'No'],
+        ['Color scheme', window.matchMedia('(prefers-color-scheme: dark)').matches ? 'Dark' : 'Light'],
+        ['User agent', navigator.userAgent],
+      ];
+      envInfo.innerHTML = '';
+      rows.forEach(function (r) {
+        var wrap = document.createElement('div');
+        var dt = document.createElement('dt');
+        dt.className = 'text-xs uppercase tracking-wide text-muted';
+        dt.textContent = r[0];
+        var dd = document.createElement('dd');
+        dd.className = 'text-xs break-words';
+        dd.textContent = r[1];
+        wrap.appendChild(dt);
+        wrap.appendChild(dd);
+        envInfo.appendChild(wrap);
+      });
+    }
+    renderEnv();
+    window.addEventListener('resize', renderEnv);
+
+    // --- Notes, persisted to localStorage --------------------------------
+    var NOTES_KEY = 'testinglab_notes';
+    var notesArea = document.getElementById('notesArea');
+    notesArea.value = localStorage.getItem(NOTES_KEY) || '';
+    notesArea.addEventListener('input', function () {
+      localStorage.setItem(NOTES_KEY, notesArea.value);
+    });
+  }
+
+  if (localStorage.getItem(UNLOCK_KEY) === 'yes') unlock();
+})();
+</script>
