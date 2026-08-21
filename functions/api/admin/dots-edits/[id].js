@@ -25,7 +25,7 @@ const PROPOSED_FIELD_MAP = {
 
 // Approve on an 'edit' row normally copies proposed_json's fields onto
 // the live dots_alumni row verbatim -- but the review screen
-// (src/admin/dots-edits.njk) lets staff adjust the proposed blocks (and
+// (src/admin/dots.njk) lets staff adjust the proposed blocks (and
 // the requested page address) right there before approving, so an
 // optional `blocks` array (and `slug` string) in the request body
 // overrides the stored proposal entirely: this re-derives the flat

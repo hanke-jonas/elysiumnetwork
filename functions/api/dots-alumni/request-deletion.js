@@ -3,7 +3,7 @@ import { badRequest, json, randomId } from '../../_lib/http.js';
 // A participant reuses their already-claimed access code to ask for their
 // whole entry to be removed, instead of proposing an edit. Reuses the same
 // dots_alumni_edits review queue as propose-edit.js (type='delete' instead
-// of 'edit') so staff review it in the same place, in /admin/dots-edits/,
+// of 'edit') so staff review it in the same place, in /admin/dots/ (Edit requests tab),
 // with the same one-pending-row-per-alumnus rule: this overwrites a
 // pending edit on the same row rather than creating a second pending item
 // (see also propose-edit.js, which does the reverse -- an edit submitted

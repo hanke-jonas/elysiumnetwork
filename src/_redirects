@@ -2,3 +2,10 @@
 # following stale links/search results from the pre-Eleventy site (see
 # src/about.njk's link to old.elysium.ngo for the archived prior platform).
 /about-us/ /about/ 301
+
+# The three separate DOTS admin pages were merged into one tabbed page
+# (src/admin/dots.njk) -- these catch any bookmarks or muscle-memory URLs
+# staff had for the old ones.
+/admin/dots-alumni/ /admin/dots/#alumni 301
+/admin/dots-edits/ /admin/dots/#edits 301
+/admin/dots-codes/ /admin/dots/#codes 301

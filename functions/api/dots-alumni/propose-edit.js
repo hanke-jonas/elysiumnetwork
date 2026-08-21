@@ -4,7 +4,7 @@ import { sanitizeBlocks, deriveCoreFields, validateCoreFields } from '../../_lib
 // A participant reuses their already-claimed access code to propose a
 // change to their own existing entry. Never touches the live dots_alumni
 // row directly -- writes to dots_alumni_edits as 'pending', which staff
-// review and approve/reject in /admin/dots-edits/. This is the
+// review and approve/reject in /admin/dots/ (Edit requests tab). This is the
 // "complex system" half of the invite flow: functions/api/dots-alumni/
 // submit.js's code claim is permanent once linked to an entry (see
 // check-code.js's "edit" mode), so the same code that got someone in

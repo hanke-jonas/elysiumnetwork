@@ -4,7 +4,7 @@ import { json } from '../../../_lib/http.js';
 // Staff-only queue of edit proposals participants submitted via their
 // access code (functions/api/dots-alumni/propose-edit.js). Joins in the
 // live alumnus's current field values alongside each proposal's
-// proposed_json so the review UI (src/admin/dots-edits.njk) can render a
+// proposed_json so the review UI (src/admin/dots.njk) can render a
 // side-by-side before/after without a second round-trip per row.
 export async function onRequestGet({ request, env }) {
   try {

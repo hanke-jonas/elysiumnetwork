@@ -4,7 +4,7 @@ import { sanitizeBlocks, deriveCoreFields, validateCoreFields } from '../../_lib
 // Public, unauthenticated (but invite-gated) submission for the DOTS
 // alumni gallery -- the first public upload endpoint in this codebase
 // (every other one is staff- or account-gated). Gated by a personal
-// access code staff generate per real participant in /admin/dots-codes/
+// access code staff generate per real participant in /admin/dots/ (Access codes tab)
 // -- this isn't a fully open form, just one that doesn't require a full
 // account. The code is single-use for CREATING an entry (claimed
 // atomically below), but once linked to that entry it becomes a
@@ -12,7 +12,7 @@ import { sanitizeBlocks, deriveCoreFields, validateCoreFields } from '../../_lib
 // propose-edit.js, which the same code keeps unlocking indefinitely.
 // Submissions land as 'pending' in dots_alumni and only appear
 // on the public gallery (and get an individual portfolio page at
-// /dots/alumni/<slug>/) once staff approve them via /admin/dots-alumni/,
+// /dots/alumni/<slug>/) once staff approve them via /admin/dots/,
 // so an open code doesn't mean open publishing either.
 //
 // The whole page is one unified block list (name/photo/bio are block
