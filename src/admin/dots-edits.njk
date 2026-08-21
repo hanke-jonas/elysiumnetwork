@@ -85,6 +85,28 @@ permalink: /admin/dots-edits/
   </div>
 </div>
 
+<div id="cropModalOverlay" style="position:fixed;inset:0;background:rgba(25,23,18,.85);z-index:300;display:none;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:#fff;border:2px solid var(--ink);border-radius:1rem;box-shadow:8px 8px 0 var(--ink);max-width:26rem;width:100%;padding:1.5rem;max-height:92vh;overflow-y:auto">
+    <h3 class="h-card mb-1">Move and scale</h3>
+    <p class="text-xs text-muted mb-3">Drag to reposition, pinch or use the slider to zoom — or skip straight to automatic face detection.</p>
+    <div id="cropFrame" style="position:relative;width:100%;aspect-ratio:1/1;overflow:hidden;border-radius:1rem;background:#191712;cursor:grab;touch-action:none">
+      <canvas id="cropCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%"></canvas>
+      <div style="position:absolute;inset:0;pointer-events:none;border-radius:50%;box-shadow:0 0 0 9999px rgba(25,23,18,.72);outline:2px solid rgba(255,255,255,.9)"></div>
+    </div>
+    <div class="flex items-center gap-3 mt-4">
+      <span class="text-xs text-muted mono" aria-hidden="true">–</span>
+      <input type="range" id="cropZoom" min="1" max="3" step="0.01" value="1" style="flex:1" aria-label="Zoom">
+      <span class="text-xs text-muted mono" aria-hidden="true">+</span>
+    </div>
+    <div class="flex flex-wrap gap-2 mt-4">
+      <button type="button" id="cropUseRecommendedBtn" class="btn btn-accent">✨ Use recommended (automatic face detection)</button>
+      <button type="button" id="cropSaveBtn" class="btn">Save this crop</button>
+      <button type="button" id="cropCancelBtn" class="btn btn-coral">Cancel</button>
+    </div>
+    <p id="cropStatus" role="status" aria-live="polite" class="text-xs mt-2 text-muted"></p>
+  </div>
+</div>
+
 <script>
 (function () {
   var items = [];
@@ -225,6 +247,215 @@ permalink: /admin/dots-edits/
     });
   }
 
+  // --- Crop / reposition modal (mirrors src/admin/dots-alumni.njk's --
+  // this review screen lets staff replace or adjust a proposed photo
+  // before approving, so it needs the same tool, not just a raw upload
+  // with no way to frame it.) -----------------------------------------
+  (function () {
+    var overlay = document.getElementById('cropModalOverlay');
+    var frame = document.getElementById('cropFrame');
+    var canvas = document.getElementById('cropCanvas');
+    var ctx = canvas.getContext('2d');
+    var zoomSlider = document.getElementById('cropZoom');
+    var useRecommendedBtn = document.getElementById('cropUseRecommendedBtn');
+    var saveBtn = document.getElementById('cropSaveBtn');
+    var cancelBtn = document.getElementById('cropCancelBtn');
+    var cropStatus = document.getElementById('cropStatus');
+
+    var img = null, coverScale = 1, scale = 1, offsetX = 0, offsetY = 0;
+    var activeOriginalUrl = null, activeOnDone = null;
+    var OUT_W = 960, OUT_H = 960;
+
+    var pointers = {};
+    var panFrom = null;
+    var pinchFrom = null;
+
+    function frameSize() {
+      var rect = frame.getBoundingClientRect();
+      return { w: rect.width, h: rect.height };
+    }
+
+    function minScale() { return coverScale; }
+    function maxScale() { return coverScale * 3; }
+
+    function clampOffsets() {
+      var fs = frameSize();
+      var iw = img.naturalWidth * scale, ih = img.naturalHeight * scale;
+      offsetX = Math.min(0, Math.max(fs.w - iw, offsetX));
+      offsetY = Math.min(0, Math.max(fs.h - ih, offsetY));
+    }
+
+    function draw() {
+      var fs = frameSize();
+      var dpr = window.devicePixelRatio || 1;
+      canvas.width = fs.w * dpr;
+      canvas.height = fs.h * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, fs.w, fs.h);
+      if (!img) return;
+      ctx.drawImage(img, offsetX, offsetY, img.naturalWidth * scale, img.naturalHeight * scale);
+    }
+
+    function pointerDist(ids) {
+      var a = pointers[ids[0]], b = pointers[ids[1]];
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    }
+    function pointerMid(ids) {
+      var a = pointers[ids[0]], b = pointers[ids[1]];
+      return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    }
+
+    function setZoomFromScale() {
+      zoomSlider.value = String(scale / coverScale);
+    }
+
+    frame.addEventListener('pointerdown', function (e) {
+      if (!img) return;
+      frame.setPointerCapture(e.pointerId);
+      pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+      var ids = Object.keys(pointers);
+      if (ids.length === 1) {
+        panFrom = { x: e.clientX, y: e.clientY, offsetX: offsetX, offsetY: offsetY };
+        frame.style.cursor = 'grabbing';
+      } else if (ids.length === 2) {
+        panFrom = null;
+        pinchFrom = { dist: pointerDist(ids), scale: scale };
+      }
+    });
+    frame.addEventListener('pointermove', function (e) {
+      if (!pointers[e.pointerId] || !img) return;
+      pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+      var ids = Object.keys(pointers);
+      if (ids.length === 2 && pinchFrom) {
+        var rect = frame.getBoundingClientRect();
+        var mid = pointerMid(ids);
+        var localX = mid.x - rect.left, localY = mid.y - rect.top;
+        var newScale = Math.min(maxScale(), Math.max(minScale(), pinchFrom.scale * (pointerDist(ids) / pinchFrom.dist)));
+        var ratio = newScale / scale;
+        offsetX = localX - (localX - offsetX) * ratio;
+        offsetY = localY - (localY - offsetY) * ratio;
+        scale = newScale;
+        setZoomFromScale();
+        clampOffsets();
+        draw();
+      } else if (ids.length === 1 && panFrom) {
+        offsetX = panFrom.offsetX + (e.clientX - panFrom.x);
+        offsetY = panFrom.offsetY + (e.clientY - panFrom.y);
+        clampOffsets();
+        draw();
+      }
+    });
+    function releasePointer(e) {
+      delete pointers[e.pointerId];
+      var ids = Object.keys(pointers);
+      pinchFrom = null;
+      if (ids.length === 1) {
+        var p = pointers[ids[0]];
+        panFrom = { x: p.x, y: p.y, offsetX: offsetX, offsetY: offsetY };
+      } else {
+        panFrom = null;
+      }
+      if (!ids.length) frame.style.cursor = 'grab';
+    }
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (evt) {
+      frame.addEventListener(evt, releasePointer);
+    });
+
+    zoomSlider.addEventListener('input', function () {
+      if (!img) return;
+      var fs = frameSize();
+      var cx = fs.w / 2, cy = fs.h / 2;
+      var prevScale = scale;
+      scale = coverScale * Number(zoomSlider.value);
+      var ratio = scale / prevScale;
+      offsetX = cx - (cx - offsetX) * ratio;
+      offsetY = cy - (cy - offsetY) * ratio;
+      clampOffsets();
+      draw();
+    });
+
+    function loadImage(url) {
+      cropStatus.textContent = '';
+      cropStatus.style.color = '';
+      img = null;
+      var el = new Image();
+      el.onload = function () {
+        img = el;
+        var fs = frameSize();
+        coverScale = Math.max(fs.w / img.naturalWidth, fs.h / img.naturalHeight);
+        scale = coverScale;
+        zoomSlider.value = '1';
+        offsetX = (fs.w - img.naturalWidth * scale) / 2;
+        offsetY = (fs.h - img.naturalHeight * scale) / 2;
+        draw();
+      };
+      el.onerror = function () {
+        cropStatus.style.color = 'var(--coral-ink)';
+        cropStatus.textContent = "Couldn't load that image for cropping — try again.";
+      };
+      el.src = url;
+    }
+
+    window.openCropModal = function (originalUrl, onDone) {
+      activeOriginalUrl = originalUrl;
+      activeOnDone = onDone;
+      overlay.style.display = 'flex';
+      loadImage(originalUrl);
+    };
+
+    function close() {
+      overlay.style.display = 'none';
+      img = null;
+      activeOriginalUrl = null;
+      activeOnDone = null;
+    }
+
+    cancelBtn.addEventListener('click', close);
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+
+    useRecommendedBtn.addEventListener('click', function () {
+      var onDone = activeOnDone;
+      var url = activeOriginalUrl;
+      close();
+      if (onDone) onDone(url);
+    });
+
+    saveBtn.addEventListener('click', function () {
+      if (!img) return;
+      saveBtn.disabled = true;
+      cropStatus.style.color = '';
+      cropStatus.textContent = 'Saving your crop…';
+
+      var out = document.createElement('canvas');
+      out.width = OUT_W; out.height = OUT_H;
+      var octx = out.getContext('2d');
+      var fs = frameSize();
+      var sx = OUT_W / fs.w, sy = OUT_H / fs.h;
+      octx.drawImage(img, offsetX * sx, offsetY * sy, img.naturalWidth * scale * sx, img.naturalHeight * scale * sy);
+
+      out.toBlob(function (blob) {
+        if (!blob) {
+          saveBtn.disabled = false;
+          cropStatus.style.color = 'var(--coral-ink)';
+          cropStatus.textContent = "Couldn't process that crop — try again.";
+          return;
+        }
+        var file = new File([blob], 'cropped.jpg', { type: 'image/jpeg' });
+        var onDone = activeOnDone;
+        uploadAdminImage(file, function (url, err) {
+          saveBtn.disabled = false;
+          if (!url) {
+            cropStatus.style.color = 'var(--coral-ink)';
+            cropStatus.textContent = err || 'Upload failed — try again.';
+            return;
+          }
+          close();
+          if (onDone) onDone(url);
+        });
+      }, 'image/jpeg', 0.9);
+    });
+  })();
+
   function blockLabel(type) {
     return {
       name: 'Name', photo: 'Photo', bio: 'Bio', quote: 'Quote', subtitle: "What & where", links: 'Links',
@@ -240,30 +471,55 @@ permalink: /admin/dots-edits/
     handle.style.touchAction = 'none';
     handle.style.cursor = 'grab';
     var dragging = false;
+    var baseY = 0;
+
+    function applyTransform(clientY) {
+      card.style.transform = 'translateY(' + (clientY - baseY) + 'px)';
+    }
+
     handle.addEventListener('pointerdown', function (e) {
       handle.setPointerCapture(e.pointerId);
       dragging = true;
+      baseY = e.clientY;
+      card.style.position = 'relative';
+      card.style.zIndex = '50';
       card.classList.add('block-dragging');
       handle.style.cursor = 'grabbing';
     });
     handle.addEventListener('pointermove', function (e) {
       if (!dragging) return;
-      var siblings = Array.prototype.slice.call(proposedBlocksList.children);
-      var myIndex = siblings.indexOf(card);
-      siblings.forEach(function (sib, i) {
-        if (sib === card) return;
+      applyTransform(e.clientY);
+
+      var gap = parseFloat(getComputedStyle(proposedBlocksList).rowGap) || 12;
+      var cardRect = card.getBoundingClientRect();
+      var cardMid = cardRect.top + cardRect.height / 2;
+      var myIndex = Array.prototype.indexOf.call(proposedBlocksList.children, card);
+      var siblings = Array.prototype.slice.call(proposedBlocksList.children).filter(function (s) { return s !== card; });
+
+      for (var i = 0; i < siblings.length; i++) {
+        var sib = siblings[i];
+        var sibIndex = Array.prototype.indexOf.call(proposedBlocksList.children, sib);
         var r = sib.getBoundingClientRect();
-        var mid = r.top + r.height / 2;
-        if (i < myIndex && e.clientY < mid) {
-          proposedBlocksList.insertBefore(card, sib);
-        } else if (i > myIndex && e.clientY > mid) {
-          proposedBlocksList.insertBefore(card, sib.nextSibling);
+        var sibMid = r.top + r.height / 2;
+        if (sibIndex < myIndex && cardMid < sibMid) {
+          proposedBlocksList.insertBefore(sib, card.nextSibling);
+          baseY -= (r.height + gap);
+          applyTransform(e.clientY);
+          break;
+        } else if (sibIndex > myIndex && cardMid > sibMid) {
+          proposedBlocksList.insertBefore(sib, card);
+          baseY += (r.height + gap);
+          applyTransform(e.clientY);
+          break;
         }
-      });
+      }
     });
     function finish() {
       if (!dragging) return;
       dragging = false;
+      card.style.transform = '';
+      card.style.position = '';
+      card.style.zIndex = '';
       card.classList.remove('block-dragging');
       handle.style.cursor = 'grab';
       var reordered = Array.prototype.slice.call(proposedBlocksList.children).map(function (el) {
@@ -331,6 +587,14 @@ permalink: /admin/dots-edits/
           photoPrev.src = block.url; photoPrev.alt = '';
           photoPrev.style.cssText = 'max-height:6rem;border-radius:.5rem;border:2px solid var(--ink);object-fit:cover';
           body.appendChild(photoPrev);
+          var adjustPhotoBtn = document.createElement('button');
+          adjustPhotoBtn.type = 'button';
+          adjustPhotoBtn.className = 'btn !py-1 !px-2 text-xs self-start';
+          adjustPhotoBtn.textContent = 'Adjust photo';
+          adjustPhotoBtn.addEventListener('click', function () {
+            window.openCropModal(block.url, function (finalUrl) { block.url = finalUrl; renderProposedBlocks(); });
+          });
+          body.appendChild(adjustPhotoBtn);
         }
         var photoFileIn = document.createElement('input');
         photoFileIn.className = 'input text-sm'; photoFileIn.type = 'file'; photoFileIn.accept = 'image/jpeg,image/png,image/webp';
@@ -341,7 +605,8 @@ permalink: /admin/dots-edits/
           photoStatus.textContent = 'Uploading…';
           uploadAdminImage(photoFileIn.files[0], function (url, err) {
             if (!url) { photoStatus.style.color = 'var(--coral-ink)'; photoStatus.textContent = err || 'Upload failed.'; return; }
-            block.url = url; photoStatus.textContent = ''; renderProposedBlocks();
+            photoStatus.textContent = '';
+            window.openCropModal(url, function (finalUrl) { block.url = finalUrl; renderProposedBlocks(); });
           });
         });
         body.appendChild(photoFileIn); body.appendChild(photoStatus);
@@ -386,6 +651,14 @@ permalink: /admin/dots-edits/
           prevImg.src = block.url; prevImg.alt = '';
           prevImg.style.cssText = 'max-height:6rem;border-radius:.5rem;border:2px solid var(--ink);object-fit:cover';
           body.appendChild(prevImg);
+          var adjustImgBtn = document.createElement('button');
+          adjustImgBtn.type = 'button';
+          adjustImgBtn.className = 'btn !py-1 !px-2 text-xs self-start';
+          adjustImgBtn.textContent = 'Adjust photo';
+          adjustImgBtn.addEventListener('click', function () {
+            window.openCropModal(block.url, function (finalUrl) { block.url = finalUrl; renderProposedBlocks(); });
+          });
+          body.appendChild(adjustImgBtn);
         }
         var fIn = document.createElement('input');
         fIn.className = 'input text-sm'; fIn.type = 'file'; fIn.accept = 'image/jpeg,image/png,image/webp';
@@ -396,7 +669,8 @@ permalink: /admin/dots-edits/
           upStatus.textContent = 'Uploading…';
           uploadAdminImage(fIn.files[0], function (url, err) {
             if (!url) { upStatus.style.color = 'var(--coral-ink)'; upStatus.textContent = err || 'Upload failed.'; return; }
-            block.url = url; upStatus.textContent = ''; renderProposedBlocks();
+            upStatus.textContent = '';
+            window.openCropModal(url, function (finalUrl) { block.url = finalUrl; renderProposedBlocks(); });
           });
         });
         body.appendChild(fIn); body.appendChild(upStatus);

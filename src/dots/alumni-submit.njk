@@ -30,7 +30,7 @@ permalink: /dots/alumni/submit/
       <p class="text-sm text-muted mb-5" id="editionLabel">Submissions are reviewed before they go live, so it may take a little while to appear.</p>
       <p class="text-sm mt-1 mb-5" id="pendingEditNotice" hidden style="color:var(--coral-ink)">You already have a change waiting for review — submitting again updates that same proposal rather than adding a new one.</p>
 
-      <div class="flex items-start justify-between gap-3 mb-4">
+      <div class="flex items-start justify-between gap-3 mb-4" id="formIntroRow">
         <p class="text-xs text-muted">This is your whole page, one section at a time — drag to reorder anything. Your name and bio are required (shown in every gallery listing), so those two can be edited and repositioned but not removed entirely. A photo is recommended but optional — everything else, including your photo, is fully optional and removable.</p>
         <button type="button" id="takeTourBtn" class="btn !py-1.5 !px-3 text-xs shrink-0">🎓 Take the tour</button>
       </div>
@@ -125,7 +125,7 @@ permalink: /dots/alumni/submit/
 {% include "dialog.njk" %}
 
 <div id="tourSpotlight" style="position:fixed;z-index:310;display:none;border-radius:.85rem;pointer-events:none;box-shadow:0 0 0 3px var(--coral),0 0 0 9999px rgba(25,23,18,.68);transition:top .2s ease,left .2s ease,width .2s ease,height .2s ease"></div>
-<div id="tourCard" class="card" style="position:fixed;left:0;right:0;bottom:0;z-index:311;border-radius:1.25rem 1.25rem 0 0;max-height:62vh;overflow-y:auto;display:none;padding:1.25rem 1.5rem calc(1.25rem + env(safe-area-inset-bottom))">
+<div id="tourCard" class="card p-5" style="position:fixed;z-index:311;max-width:19rem;width:calc(100% - 2rem);max-height:70vh;overflow-y:auto;display:none;transition:top .2s ease,left .2s ease">
   <div class="flex items-center gap-1.5 mb-3" id="tourDots"></div>
   <p class="eyebrow" style="color:var(--coral-ink)" id="tourStepLabel"></p>
   <h3 class="h-card mt-1" id="tourTitle" style="font-size:1.2rem"></h3>
@@ -463,41 +463,67 @@ permalink: /dots/alumni/submit/
   // (the ↑/↓ buttons were the only thing that ever worked there). Pointer
   // Events unify mouse and touch, same technique already used for the
   // crop tool's pan/pinch above, so this rebuilds reordering on top of
-  // those instead: pointerdown on a card's ⠿ handle picks it up, dragging
-  // it past a sibling's midpoint swaps their DOM position immediately
-  // (no smooth pixel-following -- simpler and avoids the DOM node getting
-  // torn out from under an in-progress pointer capture on a full
-  // re-render), and pointerup reads the final DOM order back into
-  // `blocks` and re-renders for real.
+  // those instead. The card itself tracks the pointer 1:1 via a
+  // translateY transform (so it genuinely follows your finger/cursor,
+  // not just "snaps" once a threshold is crossed) while siblings swap
+  // DOM position under it as it passes their midpoint; each swap shifts
+  // where the card's untransformed layout position actually is, so
+  // `baseY` (the pointerdown Y position transform is measured from) is
+  // adjusted by exactly that sibling's footprint in the same step, to
+  // keep the on-screen position continuous instead of jumping.
   function makeHandleDraggable(handle, card) {
     handle.style.touchAction = 'none';
     handle.style.cursor = 'grab';
     var dragging = false;
+    var baseY = 0;
+
+    function applyTransform(clientY) {
+      card.style.transform = 'translateY(' + (clientY - baseY) + 'px)';
+    }
 
     handle.addEventListener('pointerdown', function (e) {
       handle.setPointerCapture(e.pointerId);
       dragging = true;
+      baseY = e.clientY;
+      card.style.position = 'relative';
+      card.style.zIndex = '50';
       card.classList.add('block-dragging');
       handle.style.cursor = 'grabbing';
     });
     handle.addEventListener('pointermove', function (e) {
       if (!dragging) return;
-      var siblings = Array.prototype.slice.call(blocksList.children);
-      var myIndex = siblings.indexOf(card);
-      siblings.forEach(function (sib, i) {
-        if (sib === card) return;
+      applyTransform(e.clientY);
+
+      var gap = parseFloat(getComputedStyle(blocksList).rowGap) || 12;
+      var cardRect = card.getBoundingClientRect();
+      var cardMid = cardRect.top + cardRect.height / 2;
+      var myIndex = Array.prototype.indexOf.call(blocksList.children, card);
+      var siblings = Array.prototype.slice.call(blocksList.children).filter(function (s) { return s !== card; });
+
+      for (var i = 0; i < siblings.length; i++) {
+        var sib = siblings[i];
+        var sibIndex = Array.prototype.indexOf.call(blocksList.children, sib);
         var r = sib.getBoundingClientRect();
-        var mid = r.top + r.height / 2;
-        if (i < myIndex && e.clientY < mid) {
-          blocksList.insertBefore(card, sib);
-        } else if (i > myIndex && e.clientY > mid) {
-          blocksList.insertBefore(card, sib.nextSibling);
+        var sibMid = r.top + r.height / 2;
+        if (sibIndex < myIndex && cardMid < sibMid) {
+          blocksList.insertBefore(sib, card.nextSibling);
+          baseY -= (r.height + gap);
+          applyTransform(e.clientY);
+          break;
+        } else if (sibIndex > myIndex && cardMid > sibMid) {
+          blocksList.insertBefore(sib, card);
+          baseY += (r.height + gap);
+          applyTransform(e.clientY);
+          break;
         }
-      });
+      }
     });
     function finish() {
       if (!dragging) return;
       dragging = false;
+      card.style.transform = '';
+      card.style.position = '';
+      card.style.zIndex = '';
       card.classList.remove('block-dragging');
       handle.style.cursor = 'grab';
       // Read the DOM back into the data array -- the DOM order is the
@@ -602,10 +628,19 @@ permalink: /dots/alumni/submit/
       return s.getEl() || (s.fallbackGetEl && s.fallbackGetEl()) || null;
     }
 
-    function positionSpotlight() {
+    // Positions both the spotlight cutout and the tooltip card against
+    // wherever the current step's real target actually is right now --
+    // re-queried live rather than cached, since renderBlocks() tears down
+    // and rebuilds blocksList's DOM on every add/move/remove. The card
+    // prefers sitting just below the target, falls back to just above it
+    // when there isn't room below, and is always clamped fully inside the
+    // viewport either way.
+    function positionAll() {
       if (!open) return;
       var target = currentTarget();
       var rect = target ? target.getBoundingClientRect() : null;
+      var vw = window.innerWidth, vh = window.innerHeight;
+
       if (rect && rect.width) {
         var pad = 6;
         spotlight.style.display = 'block';
@@ -616,21 +651,23 @@ permalink: /dots/alumni/submit/
       } else {
         spotlight.style.display = 'none';
       }
+
+      var cardRect = card.getBoundingClientRect();
+      var top, left;
+      if (rect && rect.width) {
+        var spaceBelow = vh - rect.bottom;
+        top = spaceBelow > cardRect.height + 24 ? rect.bottom + 16 : rect.top - cardRect.height - 16;
+        left = rect.left;
+      } else {
+        top = vh / 2 - cardRect.height / 2;
+        left = vw / 2 - cardRect.width / 2;
+      }
+      card.style.top = Math.max(12, Math.min(vh - cardRect.height - 12, top)) + 'px';
+      card.style.left = Math.max(12, Math.min(vw - cardRect.width - 12, left)) + 'px';
     }
 
-    // Scrolls so the target sits centered in whatever space is left ABOVE
-    // the bottom sheet, rather than the default scrollIntoView (which
-    // doesn't know the sheet exists and can tuck the target right behind
-    // it). Instant, not smooth -- smooth-scroll completion timing isn't
-    // reliable enough to hang a position recalculation off of.
     function scrollTargetIntoView(target) {
-      var sheetHeight = card.getBoundingClientRect().height;
-      var available = window.innerHeight - sheetHeight;
-      if (available < 100) available = window.innerHeight;
-      var rect = target.getBoundingClientRect();
-      var targetCenter = rect.top + window.scrollY + rect.height / 2;
-      var desired = targetCenter - available / 2;
-      window.scrollTo(0, Math.max(0, desired));
+      target.scrollIntoView({ block: 'center', behavior: 'auto' });
     }
 
     function renderStep() {
@@ -650,7 +687,7 @@ permalink: /dots/alumni/submit/
       });
       var target = currentTarget();
       if (target) scrollTargetIntoView(target);
-      positionSpotlight();
+      positionAll();
     }
 
     function advance() {
@@ -669,6 +706,7 @@ permalink: /dots/alumni/submit/
       spotlight.style.display = 'none';
       card.style.display = 'none';
     }
+    window.closeTour = closeTour;
 
     nextBtn.addEventListener('click', advance);
     backBtn.addEventListener('click', function () { if (step > 0) { step--; renderStep(); } });
@@ -680,8 +718,8 @@ permalink: /dots/alumni/submit/
     document.addEventListener('elysium:blockMoved', function () {
       if (open && STEPS[step].waitFor === 'elysium:blockMoved') setTimeout(advance, 500);
     });
-    window.addEventListener('resize', positionSpotlight);
-    window.addEventListener('scroll', positionSpotlight, true);
+    window.addEventListener('resize', positionAll);
+    window.addEventListener('scroll', positionAll, true);
   })();
 
   function blockLabel(type) {
@@ -789,6 +827,18 @@ permalink: /dots/alumni/submit/
           photoPrev.alt = '';
           photoPrev.style.cssText = 'max-height:8rem;border-radius:.5rem;border:2px solid var(--ink);object-fit:cover';
           body.appendChild(photoPrev);
+          var adjustPhotoBtn = document.createElement('button');
+          adjustPhotoBtn.type = 'button';
+          adjustPhotoBtn.className = 'btn !py-1 !px-2 text-xs self-start';
+          adjustPhotoBtn.textContent = 'Adjust photo';
+          adjustPhotoBtn.addEventListener('click', function () {
+            window.openCropModal(block.url, function (finalUrl) {
+              block.url = finalUrl;
+              syncBlocksInput();
+              renderBlocks();
+            });
+          });
+          body.appendChild(adjustPhotoBtn);
         }
         var photoFileIn = document.createElement('input');
         photoFileIn.className = 'input';
@@ -796,7 +846,7 @@ permalink: /dots/alumni/submit/
         photoFileIn.accept = 'image/jpeg,image/png,image/webp';
         var photoStatus = document.createElement('p');
         photoStatus.className = 'text-xs text-muted';
-        photoStatus.textContent = block.url ? 'Choose a new file to replace your photo.' : 'Optional, but recommended. JPEG, PNG, or WebP — 5MB maximum.';
+        photoStatus.textContent = block.url ? 'Choose a new file to replace your photo entirely.' : 'Optional, but recommended. JPEG, PNG, or WebP — 5MB maximum.';
         photoFileIn.addEventListener('change', function () {
           if (!photoFileIn.files[0]) return;
           photoStatus.textContent = 'Uploading…';
@@ -894,6 +944,18 @@ permalink: /dots/alumni/submit/
           prevImg.alt = '';
           prevImg.style.cssText = 'max-height:8rem;border-radius:.5rem;border:2px solid var(--ink);object-fit:cover';
           body.appendChild(prevImg);
+          var adjustImgBtn = document.createElement('button');
+          adjustImgBtn.type = 'button';
+          adjustImgBtn.className = 'btn !py-1 !px-2 text-xs self-start';
+          adjustImgBtn.textContent = 'Adjust photo';
+          adjustImgBtn.addEventListener('click', function () {
+            window.openCropModal(block.url, function (finalUrl) {
+              block.url = finalUrl;
+              syncBlocksInput();
+              renderBlocks();
+            });
+          });
+          body.appendChild(adjustImgBtn);
         }
         var fIn = document.createElement('input');
         fIn.className = 'input';
@@ -901,7 +963,7 @@ permalink: /dots/alumni/submit/
         fIn.accept = 'image/jpeg,image/png,image/webp';
         var upStatus = document.createElement('p');
         upStatus.className = 'text-xs text-muted';
-        upStatus.textContent = block.url ? 'Choose a new file to replace this photo.' : '';
+        upStatus.textContent = block.url ? 'Choose a new file to replace this photo entirely.' : '';
         fIn.addEventListener('change', function () {
           if (!fIn.files[0]) return;
           upStatus.textContent = 'Uploading…';
@@ -1170,6 +1232,13 @@ permalink: /dots/alumni/submit/
         return;
       }
       form.hidden = true;
+      // The tour spotlights real form elements -- once the form itself is
+      // hidden after a successful submit, "Take the tour" has nothing left
+      // to point at, so hide it (and close the tour if it's mid-way
+      // through) rather than leaving a button that opens a walkthrough of
+      // things that no longer exist on screen.
+      document.getElementById('formIntroRow').hidden = true;
+      if (window.closeTour) window.closeTour();
       statusMsg.style.color = 'var(--mint-ink)';
       statusMsg.textContent = mode === 'edit'
         ? 'Thanks! Your changes are in for review — your live page stays as it is until they’re approved.'

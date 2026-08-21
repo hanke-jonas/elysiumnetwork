@@ -192,30 +192,55 @@ permalink: /admin/dots-alumni/
     handle.style.touchAction = 'none';
     handle.style.cursor = 'grab';
     var dragging = false;
+    var baseY = 0;
+
+    function applyTransform(clientY) {
+      card.style.transform = 'translateY(' + (clientY - baseY) + 'px)';
+    }
+
     handle.addEventListener('pointerdown', function (e) {
       handle.setPointerCapture(e.pointerId);
       dragging = true;
+      baseY = e.clientY;
+      card.style.position = 'relative';
+      card.style.zIndex = '50';
       card.classList.add('block-dragging');
       handle.style.cursor = 'grabbing';
     });
     handle.addEventListener('pointermove', function (e) {
       if (!dragging) return;
-      var siblings = Array.prototype.slice.call(blocksList.children);
-      var myIndex = siblings.indexOf(card);
-      siblings.forEach(function (sib, i) {
-        if (sib === card) return;
+      applyTransform(e.clientY);
+
+      var gap = parseFloat(getComputedStyle(blocksList).rowGap) || 12;
+      var cardRect = card.getBoundingClientRect();
+      var cardMid = cardRect.top + cardRect.height / 2;
+      var myIndex = Array.prototype.indexOf.call(blocksList.children, card);
+      var siblings = Array.prototype.slice.call(blocksList.children).filter(function (s) { return s !== card; });
+
+      for (var i = 0; i < siblings.length; i++) {
+        var sib = siblings[i];
+        var sibIndex = Array.prototype.indexOf.call(blocksList.children, sib);
         var r = sib.getBoundingClientRect();
-        var mid = r.top + r.height / 2;
-        if (i < myIndex && e.clientY < mid) {
-          blocksList.insertBefore(card, sib);
-        } else if (i > myIndex && e.clientY > mid) {
-          blocksList.insertBefore(card, sib.nextSibling);
+        var sibMid = r.top + r.height / 2;
+        if (sibIndex < myIndex && cardMid < sibMid) {
+          blocksList.insertBefore(sib, card.nextSibling);
+          baseY -= (r.height + gap);
+          applyTransform(e.clientY);
+          break;
+        } else if (sibIndex > myIndex && cardMid > sibMid) {
+          blocksList.insertBefore(sib, card);
+          baseY += (r.height + gap);
+          applyTransform(e.clientY);
+          break;
         }
-      });
+      }
     });
     function finish() {
       if (!dragging) return;
       dragging = false;
+      card.style.transform = '';
+      card.style.position = '';
+      card.style.zIndex = '';
       card.classList.remove('block-dragging');
       handle.style.cursor = 'grab';
       var newBlocks = Array.prototype.slice.call(blocksList.children).map(function (el) {
@@ -533,12 +558,20 @@ permalink: /admin/dots-alumni/
           photoPrev.src = block.url; photoPrev.alt = '';
           photoPrev.style.cssText = 'max-height:8rem;border-radius:.5rem;border:2px solid var(--ink);object-fit:cover';
           body.appendChild(photoPrev);
+          var adjustPhotoBtn = document.createElement('button');
+          adjustPhotoBtn.type = 'button';
+          adjustPhotoBtn.className = 'btn !py-1 !px-2 text-xs self-start';
+          adjustPhotoBtn.textContent = 'Adjust photo';
+          adjustPhotoBtn.addEventListener('click', function () {
+            window.openCropModal(block.url, function (finalUrl) { block.url = finalUrl; renderBlocks(); });
+          });
+          body.appendChild(adjustPhotoBtn);
         }
         var photoFileIn = document.createElement('input');
         photoFileIn.className = 'input'; photoFileIn.type = 'file'; photoFileIn.accept = 'image/jpeg,image/png,image/webp';
         var photoStatus = document.createElement('p');
         photoStatus.className = 'text-xs text-muted';
-        photoStatus.textContent = block.url ? 'Choose a new file to replace this photo.' : 'Optional, but recommended. Shown on the gallery card and their page.';
+        photoStatus.textContent = block.url ? 'Choose a new file to replace this photo entirely.' : 'Optional, but recommended. Shown on the gallery card and their page.';
         photoFileIn.addEventListener('change', function () {
           if (!photoFileIn.files[0]) return;
           photoStatus.textContent = 'Uploading…';
@@ -594,11 +627,19 @@ permalink: /admin/dots-alumni/
           prevImg.src = block.url; prevImg.alt = '';
           prevImg.style.cssText = 'max-height:8rem;border-radius:.5rem;border:2px solid var(--ink);object-fit:cover';
           body.appendChild(prevImg);
+          var adjustImgBtn = document.createElement('button');
+          adjustImgBtn.type = 'button';
+          adjustImgBtn.className = 'btn !py-1 !px-2 text-xs self-start';
+          adjustImgBtn.textContent = 'Adjust photo';
+          adjustImgBtn.addEventListener('click', function () {
+            window.openCropModal(block.url, function (finalUrl) { block.url = finalUrl; renderBlocks(); });
+          });
+          body.appendChild(adjustImgBtn);
         }
         var fIn = document.createElement('input');
         fIn.className = 'input'; fIn.type = 'file'; fIn.accept = 'image/jpeg,image/png,image/webp';
         var upStatus = document.createElement('p');
-        upStatus.className = 'text-xs text-muted'; upStatus.textContent = block.url ? 'Choose a new file to replace this photo.' : '';
+        upStatus.className = 'text-xs text-muted'; upStatus.textContent = block.url ? 'Choose a new file to replace this photo entirely.' : '';
         fIn.addEventListener('change', function () {
           if (!fIn.files[0]) return;
           upStatus.textContent = 'Uploading…';
