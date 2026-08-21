@@ -115,15 +115,15 @@ export function deriveCoreFields(blocks) {
   };
 }
 
-// The things the rest of the site can't function without -- a photo is
-// encouraged (pre-seeded as a block by default) but optional, unlike
-// name/bio which every gallery card and admin listing needs. Returns an
-// error string naming what's missing, or null if all present -- checked
-// AFTER sanitizeBlocks + deriveCoreFields, since a block can exist but
-// still have an empty text/url after trimming/truncation.
+// The things the rest of the site can't function without -- name/bio/photo
+// are all required, since every gallery card and admin listing needs them.
+// Returns an error string naming what's missing, or null if all present --
+// checked AFTER sanitizeBlocks + deriveCoreFields, since a block can exist
+// but still have an empty text/url after trimming/truncation.
 export function validateCoreFields(core) {
   const missing = [];
   if (!core.name) missing.push('a name');
+  if (!core.photo_url) missing.push('a photo');
   if (!core.bio) missing.push('a bio');
   if (!missing.length) return null;
   return `Your page needs ${missing.join(', ')} — add ${missing.length > 1 ? 'them' : 'it'} as a block to continue.`;

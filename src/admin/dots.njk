@@ -48,7 +48,7 @@ permalink: /admin/dots/
       </div>
     </div>
 
-    <p class="text-xs text-muted mb-1">The whole page, one section at a time — drag to reorder anything. Name and bio are required and can't be removed entirely, only edited and repositioned. A photo is recommended but optional, same as everything else.</p>
+    <p class="text-xs text-muted mb-1">The whole page, one section at a time — drag to reorder anything. Name, photo, and bio are required and can't be removed entirely, only edited and repositioned. Everything else is optional.</p>
     <div id="blocksList" class="flex flex-col gap-3 mb-2"></div>
 
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -157,7 +157,7 @@ permalink: /admin/dots/
   var items = [];
   var editingId = null;
   var blocks = [];
-  var REQUIRED_TYPES = { name: true, bio: true };
+  var REQUIRED_TYPES = { name: true, photo: true, bio: true };
 
   var formCard = document.getElementById('formCard');
   var form = document.getElementById('alumniForm');
@@ -595,7 +595,7 @@ permalink: /admin/dots/
         photoFileIn.className = 'input'; photoFileIn.type = 'file'; photoFileIn.accept = 'image/jpeg,image/png,image/webp';
         var photoStatus = document.createElement('p');
         photoStatus.className = 'text-xs text-muted';
-        photoStatus.textContent = block.url ? 'Choose a new file to replace this photo entirely.' : 'Optional, but recommended. Shown on the gallery card and their page.';
+        photoStatus.textContent = block.url ? 'Choose a new file to replace this photo entirely.' : 'Required. Shown on the gallery card and their page.';
         photoFileIn.addEventListener('change', function () {
           if (!photoFileIn.files[0]) return;
           photoStatus.textContent = 'Uploading…';
@@ -764,7 +764,14 @@ permalink: /admin/dots/
 
   function buildBlocksFromItem(item) {
     var existing = safeParse(item.blocks_json, null);
-    if (isUnified(existing)) return existing.map(function (b) { return Object.assign({}, b); });
+    if (isUnified(existing)) {
+      var out2 = existing.map(function (b) { return Object.assign({}, b); });
+      if (!out2.some(function (b) { return b.type === 'photo'; })) {
+        var nameIdx2 = out2.findIndex(function (b) { return b.type === 'name'; });
+        out2.splice(nameIdx2 + 1, 0, { id: uid(), type: 'photo', url: '' });
+      }
+      return out2;
+    }
 
     var out = [
       { id: uid(), type: 'name', text: item.name || '', pronouns: item.pronouns || '' },
@@ -1062,8 +1069,8 @@ permalink: /admin/dots/
     if (!editingId) return;
 
     var core = deriveCoreFields(blocks);
-    if (!core.name || !core.bio) {
-      setFormStatus('Name and bio are both required.', true);
+    if (!core.name || !core.photoUrl || !core.bio) {
+      setFormStatus('Name, photo, and bio are all required.', true);
       return;
     }
 
@@ -1193,7 +1200,7 @@ permalink: /admin/dots/
   var proposedBlocks = [];
   var originalProposedBlocks = [];
   var originalProposedSlug = '';
-  var REQUIRED_TYPES = { name: true, bio: true };
+  var REQUIRED_TYPES = { name: true, photo: true, bio: true };
 
   var tbody = document.getElementById('editsTbody');
   var tableStatus = document.getElementById('editsTableStatus');
@@ -1715,7 +1722,15 @@ permalink: /admin/dots/
 
       var proposedBlocksRaw = safeParseArr(proposed.blocks_json) || [];
       proposedBlocks = proposedBlocksRaw.map(function (b) { return Object.assign({}, b); });
-      originalProposedBlocks = proposedBlocksRaw.map(function (b) { return Object.assign({}, b); });
+      // A proposal submitted before photo became required can have no
+      // photo block at all -- slot an empty one in so staff have
+      // somewhere to add one before approving, instead of the block
+      // simply never appearing in the review UI.
+      if (proposedBlocks.length && !proposedBlocks.some(function (b) { return b.type === 'photo'; })) {
+        var nameIdx = proposedBlocks.findIndex(function (b) { return b.type === 'name'; });
+        proposedBlocks.splice(nameIdx + 1, 0, { id: 'b' + Math.random().toString(36).slice(2, 10), type: 'photo', url: '' });
+      }
+      originalProposedBlocks = proposedBlocks.map(function (b) { return Object.assign({}, b); });
       renderProposedBlocks();
 
       var currentBlocks = safeParseArr(currentData.blocks_json);
@@ -1751,10 +1766,11 @@ permalink: /admin/dots/
 
     if (action === 'approve' && !isDelete) {
       var hasName = proposedBlocks.some(function (b) { return b.type === 'name' && b.text && b.text.trim(); });
+      var hasPhoto = proposedBlocks.some(function (b) { return b.type === 'photo' && b.url; });
       var hasBio = proposedBlocks.some(function (b) { return b.type === 'bio' && b.text && b.text.trim(); });
-      if (!hasName || !hasBio) {
+      if (!hasName || !hasPhoto || !hasBio) {
         reviewStatus.style.color = 'var(--coral-ink)';
-        reviewStatus.textContent = 'Name and bio are both required before you can approve this.';
+        reviewStatus.textContent = 'Name, photo, and bio are all required before you can approve this.';
         return;
       }
     }

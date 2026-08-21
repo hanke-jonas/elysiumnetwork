@@ -1,7 +1,7 @@
 import { requireStaff } from '../../../_lib/guard.js';
 import { badRequest, json } from '../../../_lib/http.js';
 import { scheduleRebuild } from '../../../_lib/rebuild.js';
-import { sanitizeBlocks, deriveCoreFields } from '../../../_lib/dotsBlocks.js';
+import { sanitizeBlocks, deriveCoreFields, validateCoreFields } from '../../../_lib/dotsBlocks.js';
 
 const MAX_SLUG_CHARS = 60;
 function slugify(value) {
@@ -65,7 +65,8 @@ export async function onRequestPut({ request, env, params, waitUntil }) {
         const blocks = sanitizeBlocks(body.blocks);
         if (!blocks) return badRequest('Your page is empty — add at least a name and bio.');
         const core = deriveCoreFields(blocks);
-        if (!core.name || !core.bio) return badRequest('Name and bio are both required.');
+        const coreError = validateCoreFields(core);
+        if (coreError) return badRequest(coreError);
         proposed = {
           name: core.name, pronouns: core.pronouns, current_role: core.current_role, location: core.location,
           quote: core.quote, bio: core.bio, photo_url: core.photo_url, photos_json: '[]',

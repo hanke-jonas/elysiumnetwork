@@ -33,7 +33,7 @@ permalink: /dots/alumni/submit/
       <p class="text-sm mt-1 mb-5" id="pendingEditNotice" hidden style="color:var(--coral-ink)">You already have a change waiting for review — submitting again updates that same proposal rather than adding a new one.</p>
 
       <div class="flex items-start justify-between gap-3 mb-4" id="formIntroRow">
-        <p class="text-xs text-muted">This is your whole page, one section at a time — drag to reorder anything. Your name and bio are required (shown in every gallery listing), so those two can be edited and repositioned but not removed entirely. A photo is recommended but optional — everything else, including your photo, is fully optional and removable.</p>
+        <p class="text-xs text-muted">This is your whole page, one section at a time — drag to reorder anything. Your name, photo, and bio are required (shown in every gallery listing), so those three can be edited and repositioned but not removed entirely. Everything else is fully optional and removable.</p>
         <button type="button" id="takeTourBtn" class="btn !py-1.5 !px-3 text-xs shrink-0">🎓 Take the tour</button>
       </div>
 
@@ -54,10 +54,6 @@ permalink: /dots/alumni/submit/
         <div id="blocksList" class="flex flex-col gap-3 mb-2"></div>
 
         <div id="paletteGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="photo">
-            <span class="block font-semibold text-sm">+ Photo</span>
-            <span class="block text-xs text-muted mt-0.5">Add a photo back if you removed it</span>
-          </button>
           <button type="button" class="rounded-xl border-2 border-ink p-3 text-left transition hover:-translate-y-0.5" style="background:#fff" data-add="quote">
             <span class="block font-semibold text-sm">+ Quote</span>
             <span class="block text-xs text-muted mt-0.5">A line of advice or a memory</span>
@@ -210,7 +206,7 @@ permalink: /dots/alumni/submit/
   var blocks = [];
   var blocksList = document.getElementById('blocksList');
   var blocksInput = document.getElementById('blocksInput');
-  var REQUIRED_TYPES = { name: true, bio: true };
+  var REQUIRED_TYPES = { name: true, photo: true, bio: true };
 
   function uid() { return 'b' + Math.random().toString(36).slice(2, 10); }
 
@@ -593,10 +589,9 @@ permalink: /dots/alumni/submit/
         getEl: function () { return blocksList.querySelector('[data-block-type="name"]'); },
       },
       {
-        label: 'Step 4 of 9', title: 'Add a photo (optional)',
-        body: "Want a photo? Add it here — you'll get a simple tool to drag and zoom it afterward, or you can let automatic face detection frame it for you. Don't want one? Skip it, that's fine too.",
+        label: 'Step 4 of 9', title: 'Add your photo',
+        body: "A photo is required here — you'll get a simple tool to drag and zoom it afterward, or you can let automatic face detection frame it for you.",
         getEl: function () { return blocksList.querySelector('[data-block-type="photo"]'); },
-        fallbackGetEl: function () { return document.querySelector('[data-add="photo"]'); },
       },
       {
         label: 'Step 5 of 9', title: 'Your bio',
@@ -623,7 +618,7 @@ permalink: /dots/alumni/submit/
         getEl: function () {
           var cards = blocksList.querySelectorAll('[data-block-type]');
           for (var i = 0; i < cards.length; i++) {
-            if (!['name', 'bio'].includes(cards[i].dataset.blockType)) return cards[i];
+            if (!['name', 'photo', 'bio'].includes(cards[i].dataset.blockType)) return cards[i];
           }
           return blocksList.firstElementChild;
         },
@@ -871,7 +866,7 @@ permalink: /dots/alumni/submit/
         photoFileIn.accept = 'image/jpeg,image/png,image/webp';
         var photoStatus = document.createElement('p');
         photoStatus.className = 'text-xs text-muted';
-        photoStatus.textContent = block.url ? 'Choose a new file to replace your photo entirely.' : 'Optional, but recommended. JPEG, PNG, or WebP — 5MB maximum.';
+        photoStatus.textContent = block.url ? 'Choose a new file to replace your photo entirely.' : 'Required. JPEG, PNG, or WebP — 5MB maximum.';
         photoFileIn.addEventListener('change', function () {
           if (!photoFileIn.files[0]) return;
           photoStatus.textContent = 'Uploading…';
@@ -1134,7 +1129,16 @@ permalink: /dots/alumni/submit/
 
   function buildBlocksFromCurrent(current) {
     if (isUnified(current.blocks)) {
-      return current.blocks.map(function (b) { return Object.assign({}, b); });
+      var out = current.blocks.map(function (b) { return Object.assign({}, b); });
+      // Photo used to be removable, so an entry edited while that was true
+      // can have no photo block at all -- there's no palette button to add
+      // one back now that it's required, so slot an empty one in right
+      // after the name block instead of leaving it permanently missing.
+      if (!out.some(function (b) { return b.type === 'photo'; })) {
+        var nameIdx = out.findIndex(function (b) { return b.type === 'name'; });
+        out.splice(nameIdx + 1, 0, newBlock('photo'));
+      }
+      return out;
     }
     var out = [
       { id: uid(), type: 'name', text: current.name || '', pronouns: current.pronouns || '' },
@@ -1224,8 +1228,10 @@ permalink: /dots/alumni/submit/
 
     var missing = [];
     var hasName = blocks.some(function (b) { return b.type === 'name' && b.text && b.text.trim(); });
+    var hasPhoto = blocks.some(function (b) { return b.type === 'photo' && b.url; });
     var hasBio = blocks.some(function (b) { return b.type === 'bio' && b.text && b.text.trim(); });
     if (!hasName) missing.push('a name');
+    if (!hasPhoto) missing.push('a photo');
     if (!hasBio) missing.push('a bio');
 
     var form = e.target;
