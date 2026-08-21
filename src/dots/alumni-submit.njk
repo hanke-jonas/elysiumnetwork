@@ -560,43 +560,48 @@ permalink: /dots/alumni/submit/
   (function () {
     var STEPS = [
       {
-        label: 'Step 1 of 8', title: 'Your page address',
-        body: "This is the web link to your page — like a house address, so people can find it. We've already suggested one based on your name; type here if you'd rather use something else.",
+        label: 'Step 1 of 9', title: 'Welcome! 👋',
+        body: "Let's build your DOTS alumni page together — it only takes a few minutes. We'll go through it one step at a time, and you can always come back and change anything later.",
+        getEl: function () { return null; },
+      },
+      {
+        label: 'Step 2 of 9', title: 'Your page address',
+        body: "This is the web link to your page. We've already picked one based on your name — type here if you'd rather use something else.",
         getEl: function () { return document.getElementById('slugCard'); },
       },
       {
-        label: 'Step 2 of 8', title: 'Your name',
-        body: "Every section below is a card you can edit, remove, or drag into a new order. Let's start here: type your name (and pronouns, if you'd like) right in this card.",
+        label: 'Step 3 of 9', title: 'Your name',
+        body: "Type your name here. You can add your pronouns too, if you'd like.",
         getEl: function () { return blocksList.querySelector('[data-block-type="name"]'); },
       },
       {
-        label: 'Step 3 of 8', title: 'Add a photo (optional)',
-        body: "Upload a photo here if you'd like one — you'll get a drag-and-zoom tool afterward, or automatic face detection can frame it for you. Skip it if you'd rather not.",
+        label: 'Step 4 of 9', title: 'Add a photo (optional)',
+        body: "Want a photo? Add it here — you'll get a simple tool to drag and zoom it afterward, or you can let automatic face detection frame it for you. Don't want one? Skip it, that's fine too.",
         getEl: function () { return blocksList.querySelector('[data-block-type="photo"]'); },
         fallbackGetEl: function () { return document.querySelector('[data-add="photo"]'); },
       },
       {
-        label: 'Step 4 of 8', title: 'Your bio',
-        body: 'A short bio is required — it\'s what shows on your gallery card and profile page. Write a few sentences about yourself right here.',
+        label: 'Step 5 of 9', title: 'Your bio',
+        body: "Write a few sentences about yourself here. This one's required — it's what shows on your gallery card.",
         getEl: function () { return blocksList.querySelector('[data-block-type="bio"]'); },
       },
       {
-        label: 'Step 5 of 8', title: 'Add more, any time',
-        body: "A quote, what you're up to and where, social links, free text, extra photos — try tapping one of these now to add a section to your page.",
+        label: 'Step 6 of 9', title: 'Add more, any time',
+        body: "Want to add a quote, links, extra photos, or something else? Tap any of these buttons. Try one now!",
         getEl: function () { return document.getElementById('paletteGrid'); },
         waitFor: 'elysium:blockAdded',
-        hint: 'Tap any button above to add a section — or hit Next to move on without adding one.',
+        hint: 'Tap any button above — or hit Next to move on without adding one.',
       },
       {
-        label: 'Step 6 of 8', title: 'Drag to reorder',
-        body: 'Press and hold the ⠿ handle on any card, then drag it up or down to put your page in exactly the order you want — this works with a finger on your phone too. Try moving one now.',
+        label: 'Step 7 of 9', title: 'Drag to reorder',
+        body: "Every section on your page is its own card, like the ones above. Press and hold the ⠿ handle, then drag up or down to put things in the order you want — this works with a finger on your phone too. Try it now!",
         getEl: function () { return blocksList.firstElementChild; },
         waitFor: 'elysium:blockMoved',
         hint: 'Drag any ⠿ handle up or down — or hit Next to move on without reordering.',
       },
       {
-        label: 'Step 7 of 8', title: 'Remove anything you don\'t want',
-        body: 'Any optional section (everything except name and bio) has a Remove button on it. Nothing is final until you submit, so feel free to experiment — you can always add it back from the buttons above.',
+        label: 'Step 8 of 9', title: "Removing things is safe",
+        body: "Don't want a section? Tap Remove. Nothing is final until you actually submit, so feel free to experiment — you can always add it back from the buttons above.",
         getEl: function () {
           var cards = blocksList.querySelectorAll('[data-block-type]');
           for (var i = 0; i < cards.length; i++) {
@@ -606,8 +611,8 @@ permalink: /dots/alumni/submit/
         },
       },
       {
-        label: 'Step 8 of 8', title: "Submitting, and editing later",
-        body: "When you submit, staff review it before it goes live — usually within a day or two. Your access code never expires: come back to this same page any time to edit your page, change its address, or ask for it to be removed.",
+        label: 'Step 9 of 9', title: "You're ready!",
+        body: "When you're happy with it, tap Submit. Staff review it before it goes live — usually within a day or two. Your code never expires, so come back any time to edit your page, change its address, or ask for it to be removed.",
         getEl: function () { return document.getElementById('submit-btn'); },
       },
     ];
@@ -1057,12 +1062,12 @@ permalink: /dots/alumni/submit/
         body.appendChild(lblIn);
         body.appendChild(hrefIn);
       } else if (block.type === 'spacer') {
-        var SPACER_SIZES = [{ label: 'Little space', value: 20 }, { label: 'Middle space', value: 48 }, { label: 'Big space', value: 96 }];
+        var SPACER_SIZES = [{ label: 'Little', value: 20 }, { label: 'Middle', value: 48 }, { label: 'Big', value: 96 }];
         var closest = SPACER_SIZES.reduce(function (a, b) {
           return Math.abs(b.value - (block.height || 40)) < Math.abs(a.value - (block.height || 40)) ? b : a;
         });
         var spacerRow = document.createElement('div');
-        spacerRow.className = 'flex gap-2';
+        spacerRow.className = 'flex flex-wrap gap-2';
         SPACER_SIZES.forEach(function (s) {
           var sBtn = document.createElement('button');
           sBtn.type = 'button';

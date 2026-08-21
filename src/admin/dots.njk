@@ -710,10 +710,22 @@ permalink: /admin/dots/
         hrefIn.addEventListener('input', function () { block.href = hrefIn.value; });
         body.appendChild(lblIn); body.appendChild(hrefIn);
       } else if (block.type === 'spacer') {
-        var hgtIn = document.createElement('input');
-        hgtIn.className = 'input'; hgtIn.type = 'number'; hgtIn.min = 0; hgtIn.max = 300; hgtIn.value = block.height || 40;
-        hgtIn.addEventListener('input', function () { block.height = Number(hgtIn.value) || 0; });
-        body.appendChild(hgtIn);
+        var SPACER_SIZES = [{ label: 'Little', value: 20 }, { label: 'Middle', value: 48 }, { label: 'Big', value: 96 }];
+        var closest = SPACER_SIZES.reduce(function (a, b) {
+          return Math.abs(b.value - (block.height || 40)) < Math.abs(a.value - (block.height || 40)) ? b : a;
+        });
+        var spacerRow = document.createElement('div');
+        spacerRow.className = 'flex flex-wrap gap-2';
+        SPACER_SIZES.forEach(function (s) {
+          var sBtn = document.createElement('button');
+          sBtn.type = 'button';
+          var active = s.value === closest.value;
+          sBtn.className = 'btn !py-2 !px-3 text-xs' + (active ? ' btn-accent' : '');
+          sBtn.textContent = s.label;
+          sBtn.addEventListener('click', function () { block.height = s.value; renderBlocks(); });
+          spacerRow.appendChild(sBtn);
+        });
+        body.appendChild(spacerRow);
       }
 
       card.appendChild(body);
@@ -1564,12 +1576,12 @@ permalink: /admin/dots/
         hrefIn.addEventListener('input', function () { block.href = hrefIn.value; });
         body.appendChild(lblIn); body.appendChild(hrefIn);
       } else if (block.type === 'spacer') {
-        var SPACER_SIZES = [{ label: 'Little space', value: 20 }, { label: 'Middle space', value: 48 }, { label: 'Big space', value: 96 }];
+        var SPACER_SIZES = [{ label: 'Little', value: 20 }, { label: 'Middle', value: 48 }, { label: 'Big', value: 96 }];
         var closest = SPACER_SIZES.reduce(function (a, b) {
           return Math.abs(b.value - (block.height || 40)) < Math.abs(a.value - (block.height || 40)) ? b : a;
         });
         var spacerRow = document.createElement('div');
-        spacerRow.className = 'flex gap-2';
+        spacerRow.className = 'flex flex-wrap gap-2';
         SPACER_SIZES.forEach(function (s) {
           var sBtn = document.createElement('button');
           sBtn.type = 'button';
